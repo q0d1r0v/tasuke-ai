@@ -1,0 +1,11 @@
+{
+  "name": "tasuke-ai-hooks",
+  "private": true,
+  "description": "Husky only. Tasuke AI is a Flutter app; there is no JavaScript in it.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

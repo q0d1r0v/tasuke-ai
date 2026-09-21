@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Tasuke AI privacy manifest.
+
+  ⚠️ This file is not optional and not a nicety. An upload without it, or with a
+  required-reason API left undeclared, is rejected by App Store Connect as
+  ITMS-91053 ("Missing API declaration") — automatically, minutes after upload,
+  before any human reviewer sees the build. There is no way to appeal it and no
+  way to patch it without a new build number.
+
+  It is in the Runner target's Copy Bundle Resources phase (see
+  Runner.xcodeproj/project.pbxproj). A manifest sitting in the repo but not in
+  the built .app does nothing at all.
+
+  Every pod ships its own PrivacyInfo.xcprivacy and Xcode aggregates them into
+  the app's privacy report; this file covers the app's OWN code only.
+-->
+<plist version="1.0">
+<dict>
+	<!-- No tracking. There is no IDFA, no ad SDK, no analytics, no attribution
+	     and no crash reporter in this app. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<!-- Empty because nothing is tracked. huggingface.co is NOT listed here:
+	     tracking domains are domains contacted for tracking purposes, and the
+	     model download is a plain asset fetch. Listing it would cause iOS to
+	     block it when "Allow Apps to Request to Track" is off — which would
+	     break first launch for a large share of users. -->
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<!-- ⚠️ Deliberately an EMPTY array, not an omitted key.
+	     Omitting the key and declaring an empty one look the same to a reader
+	     and are different to Apple's validator: the empty array is the positive
+	     statement "we collect nothing". Tasuke AI has no account, no backend
+	     and no telemetry — transcripts, task titles and reminders never leave
+	     the device, so there is no collected data type to declare. -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<!-- Required-reason APIs. Exactly three, each with the narrowest reason
+	     code that is true. -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<!-- UserDefaults, reached through shared_preferences: app settings,
+			     onboarding completion, the daily-usage counter. CA92.1 is the
+			     "access info from same app only" reason, which is exactly the
+			     case here — there is no app group and no shared container. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- File timestamps. The SQLite database, the copied-out whisper
+			     model and the downloaded GGUF all live inside the app's own
+			     container, and the installer compares modification times to
+			     decide whether a partial download can be resumed. 3B52.1 is the
+			     "inside the app container" reason. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>3B52.1</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- Available disk space, checked before starting the ~219 MB model
+			     download so the user is told up front instead of watching it
+			     fail at 98% (modelSetupNoSpace).
+
+			     ⚠️ E174.1, not 85F4.1. E174.1 is "check whether there is
+			     sufficient disk space to write files" — the free space GATES a
+			     feature and is never shown as a number. 85F4.1 is for
+			     *displaying* disk-space information to the user, which this app
+			     does not do; declaring it would be a false statement about an
+			     API use Apple's scanner can see. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

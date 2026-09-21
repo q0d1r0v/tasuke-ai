@@ -1,0 +1,207 @@
+name: tasuke_ai
+description: "Tasuke AI — speak naturally, get structured tasks. Everything runs on your device."
+# The app is never published to pub.dev; this guard stops an accidental `dart pub publish`.
+publish_to: 'none'
+
+# version+build. The build number is what App Store Connect and Play Console key
+# off, and neither store ever lets a number be reused — bump it for every upload,
+# even a rejected one.
+version: 1.0.0+1
+
+environment:
+  # Flutter 3.47.5 / Dart 3.13.4. The floor is 3.13 and not lower because
+  # freezed 4.x requires it; riverpod 3.4, go_router 18 and record 7 all need
+  # >=3.12. The older SDK on this machine (3.11.4) could not resolve any of them.
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # ── State + DI ──────────────────────────────────────────────────────────────
+  # Riverpod is both the state container and the DI graph; there is no get_it.
+  # Controllers are hand-written Notifier/AsyncNotifier classes — no
+  # riverpod_generator, so state management adds no build step.
+  flutter_riverpod: ^3.4.3
+
+  # ── Navigation ──────────────────────────────────────────────────────────────
+  go_router: ^18.0.1
+
+  # ── Database ────────────────────────────────────────────────────────────────
+  # drift_flutter bundles sqlite3_flutter_libs + path_provider and gives
+  # driftDatabase(name:).
+  #
+  # ⚠️ sqlite3_flutter_libs' latest version is literally tagged `0.6.0+eol` and
+  # its description says to move to package:sqlite3 3.x. Do NOT follow that
+  # advice here: sqlite3 3.x compiles SQLite from C source through Dart build
+  # hooks, which needs clang/cmake/ninja on every build machine. The EOL package
+  # ships prebuilt .so/.xcframework and is what drift_flutter still depends on.
+  drift: ^2.35.0
+  drift_flutter: ^0.3.1
+  sqlite3_flutter_libs: ^0.6.0+eol
+
+  # ── On-device AI ────────────────────────────────────────────────────────────
+  # Speech-to-text is the vendored whisper.cpp binding in packages/ — see its
+  # README for why upstream whisper_ggml could not be used as-is (it hard-depends
+  # on ffmpeg_kit, which is LGPL-3.0, ~20 MB per ABI of dead weight here, and
+  # whose upstream was retired in April 2025).
+  whisper_ggml:
+    path: packages/whisper_ggml
+
+  # llama.cpp for GGUF, with GBNF grammar-constrained decoding — which is what
+  # guarantees the extractor can only emit syntactically valid JSON.
+  # The companion package is pinned in lockstep with the core: 0.0.18 pairs with
+  # 0.8.23 and the Apple build verifies the pin before native symbol lookup.
+  llamadart: ^0.8.23
+
+  # ── Audio ───────────────────────────────────────────────────────────────────
+  # PCM16 / 16 kHz / mono streaming, which is exactly whisper.cpp's input format.
+  # Streaming (not recording to a file) is what lets the app promise that no
+  # audio is ever written to disk.
+  record: ^7.1.1
+
+  # ── Notifications ───────────────────────────────────────────────────────────
+  flutter_local_notifications: ^22.3.1
+  timezone: ^0.11.1
+  # muhaddis deliberately skipped flutter_timezone and accepted an hour of DST
+  # drift on a daily nudge. Tasuke cannot make that trade: reminders are
+  # per-task, at arbitrary hours, anywhere in the world.
+  flutter_timezone: ^4.1.0
+
+  # ── Purchases ───────────────────────────────────────────────────────────────
+  # First-party, StoreKit 2 by default. NOT RevenueCat: that is a backend, and
+  # this app is specified to have none.
+  in_app_purchase: ^3.3.1
+
+  # ── Platform ────────────────────────────────────────────────────────────────
+  permission_handler: ^13.0.2
+  path_provider: ^2.1.6
+  shared_preferences: ^2.5.5
+  package_info_plus: ^10.2.1
+  url_launcher: ^6.3.2
+
+  # ── Utilities ───────────────────────────────────────────────────────────────
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.9.0
+  intl: ^0.20.3
+  uuid: ^4.5.1
+  http: ^1.6.0
+  crypto: ^3.0.6
+  collection: ^1.19.1
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  build_runner: ^2.16.1
+  freezed: ^4.0.2
+  json_serializable: ^6.14.1
+  drift_dev: ^2.35.0
+  mocktail: ^1.0.5
+
+  # Platform-interface packages, declared directly so the analyzer's
+  # `depend_on_referenced_packages` does not flag the fakes that swap
+  # `SomethingPlatform.instance`. Without a real seam at this layer a widget test
+  # hits a MethodChannel, the throw lands inside a Future, and the test passes
+  # having exercised nothing.
+  record_platform_interface: ^2.1.0
+  in_app_purchase_platform_interface: ^1.4.1
+  permission_handler_platform_interface: ^4.4.0
+
+  # NativeDatabase.memory() under flutter_test needs a host sqlite3.
+  sqlite3: ^3.0.0
+
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
+
+# Native build-hook configuration for llamadart.
+#
+# ⚠️ Without this the release APK is 200 MB, and roughly 90 MB of that is
+# runtime the app can never reach:
+#   * LiteRT-LM (~50 MB across libLiteRtLm and five accelerators) only ever
+#     runs `.litertlm` models. Tasuke ships a GGUF, so it is dead weight.
+#   * The llama.cpp Vulkan backend (~35 MB) targets GPU offload. A 350M model
+#     runs comfortably on CPU, Android Vulkan drivers vary wildly by OEM, and
+#     ggml's backend registry falls back to CPU when the module is absent —
+#     so this costs nothing but the megabytes it saves.
+#
+# The CPU variants (armv8.0 … armv9.2) are deliberately KEPT. They are ~1.5 MB
+# each and ggml picks the best one at runtime; dropping them would make
+# inference measurably slower on exactly the newer phones this feature needs.
+hooks:
+  user_defines:
+    llamadart:
+      llamadart_native_runtimes: llama_cpp
+      # ⚠️ Backends are scoped by platform and a bare `cpu` is silently ignored
+      # — the build succeeds and libggml-vulkan.so ships anyway. The only way to
+      # know it took is to look inside the APK.
+      llamadart_native_backends:
+        platforms:
+          android: [cpu]
+          ios: [cpu]
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/images/
+    - assets/models/
+    - assets/legal/
+
+  fonts:
+    # Inter, variable, bundled rather than fetched through google_fonts, for
+    # three reasons that all bite this app specifically:
+    #   1. it is offline-first by definition and must render correctly on first
+    #      launch with no network — which is exactly when google_fonts is still
+    #      downloading and the app is drawing in a fallback face;
+    #   2. widget and golden tests need real glyphs; google_fonts falls back to a
+    #      stub under flutter_test and every text measurement is then wrong;
+    #   3. declared as ONE asset with NO `weight:` — registering a variable font
+    #      at a single weight makes Skia synthesise bold instead of cutting the
+    #      designed weight. The `wght` axis is driven from TasukeTypography,
+    #      which is what lets the design's 450 be an actual weight.
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+
+# Launcher icons.
+#
+# Regenerate with:  dart run flutter_launcher_icons
+#
+# ⚠️ `remove_alpha_ios: true` is not optional — App Store Connect rejects an
+# icon that carries an alpha channel at submission, long after the build passed.
+flutter_launcher_icons:
+  image_path: "assets/images/icon.png"
+  remove_alpha_ios: true
+  android: "launcher_icon"
+  # The adaptive foreground is drawn at ~70% of the canvas because the launcher
+  # mask crops the outer third; the background is the gradient's end colour, so
+  # a circular mask still reads as the brand tile.
+  adaptive_icon_background: "#2B75FA"
+  adaptive_icon_foreground: "assets/images/icon_foreground.png"
+  ios: true
+
+# Native splash.
+#
+# Regenerate with:  dart run flutter_native_splash:create
+#
+# This is the OS-drawn screen before Flutter has a frame. It deliberately
+# matches SplashScreen's own backdrop so there is no flash between the two.
+flutter_native_splash:
+  color: "#E2EEFD"
+  image: assets/images/splash_logo.png
+  android_12:
+    color: "#E2EEFD"
+    image: assets/images/icon_foreground.png
+    icon_background_color: "#2B75FA"
+  android: true
+  ios: true
+  web: false

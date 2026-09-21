@@ -1,0 +1,7 @@
+arb-dir: lib/app/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+# Makes AppLocalizations.of(context) non-nullable, so `context.l10n.foo` needs
+# no `!` at ~600 call sites.
+nullable-getter: false

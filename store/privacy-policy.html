@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Tasuke AI</title>
+<meta name="description" content="Tasuke AI — last updated 21 September 2026">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="data:,">
+<!--
+  Self-contained on purpose: no webfont, no CDN, no analytics, no cookie.
+  A privacy policy that loads a third-party script is its own counter-example,
+  and this page has to keep working when it is served from GitHub Pages with
+  nothing else alongside it.
+-->
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #F4F8FD;
+    --surface: #FFFFFF;
+    --text: #0F172A;
+    --muted: #64748B;
+    --primary: #2B7FFF;
+    --border: #E2E8F0;
+    --note-bg: #EAF2FF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0B1220;
+      --surface: #131C2E;
+      --text: #E8EDF6;
+      --muted: #94A3B8;
+      --primary: #5FA0FF;
+      --border: #24304A;
+      --note-bg: #16233B;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  }
+  .wrap { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  header {
+    display: flex; align-items: center; gap: .75rem;
+    padding-bottom: 1.5rem; margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .mark {
+    width: 2.5rem; height: 2.5rem; border-radius: .75rem; flex: none;
+    background: linear-gradient(135deg, #4FA6FE, #2B75FA);
+    color: #fff; font-weight: 700; font-size: 1.05rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .brand { font-weight: 650; letter-spacing: -.01em; }
+  .brand small { display: block; color: var(--muted); font-weight: 400; font-size: .8125rem; }
+  main {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1.125rem;
+    padding: 2rem 1.75rem;
+  }
+  h1 { font-size: 1.75rem; line-height: 1.25; letter-spacing: -.02em; margin: 0 0 .25rem; }
+  h2 {
+    font-size: 1.125rem; letter-spacing: -.01em;
+    margin: 2.25rem 0 .5rem; padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+  h2:first-of-type { border-top: 0; padding-top: 0; margin-top: 1.75rem; }
+  p, li { margin: 0 0 .85rem; }
+  ul { padding-left: 1.15rem; margin: 0 0 1rem; }
+  li { margin-bottom: .4rem; }
+  strong { font-weight: 640; }
+  code {
+    font: .875em/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--note-bg); border-radius: .3rem; padding: .15em .35em;
+  }
+  .meta { color: var(--muted); font-size: .9375rem; margin-bottom: 1.5rem; }
+  .warn {
+    background: var(--note-bg); border-left: 3px solid var(--primary);
+    border-radius: .5rem; padding: .85rem 1rem; margin: 0 0 1rem;
+  }
+  a { color: var(--primary); }
+  footer {
+    margin-top: 2rem; color: var(--muted); font-size: .875rem; text-align: center;
+  }
+  footer a { margin: 0 .4rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark" aria-hidden="true">T</div>
+    <div class="brand">Tasuke AI<small>Speak naturally, get structured tasks</small></div>
+  </header>
+  <main>
+    <h1>Privacy Policy</h1>
+    <p class="meta"><strong>Tasuke AI</strong> — last updated 21 September 2026</p>
+    <h2>The short version</h2>
+    <p>Tasuke AI collects nothing.</p>
+    <p>There is no account, no server and no analytics. Your voice, your transcripts and your tasks are created on your phone, stored on your phone, and stay on your phone. We cannot read them, because they never reach us.</p>
+    <h2>What we collect</h2>
+    <p>Nothing. Not an email address, not a device identifier, not a usage statistic, not a crash report.</p>
+    <p>We do not operate a server for this app. There is no database anywhere that has a row for you.</p>
+    <h2>What stays on your device</h2>
+    <p>All of it:</p>
+    <ul>
+      <li>the audio you record while the recording screen is open</li>
+      <li>the text your speech is transcribed into</li>
+      <li>your tasks, their dates, their reminders and their completion history</li>
+      <li>your settings, including whether you have Tasuke Pro</li>
+    </ul>
+    <p>This lives in the app's private storage area, which other apps on your device cannot read. Uninstalling Tasuke AI deletes it. <strong>Settings → Delete all data</strong> deletes it without uninstalling.</p>
+    <h2>Your microphone</h2>
+    <p>The microphone is used only while the recording screen is open, and only after you have granted permission.</p>
+    <p>Audio is streamed straight into the on-device speech model and discarded as it is processed. <strong>No audio file is ever written to storage</strong>, and no audio is ever transmitted anywhere. Nothing is recorded in the background — the app declares no background audio capability and cannot listen when it is not in front of you.</p>
+    <p>If you refuse microphone access, the rest of the app works normally; you type your tasks instead.</p>
+    <h2>The one network request</h2>
+    <p>Tasuke AI makes exactly one outbound request in its entire life: on first launch it downloads its language model file (about 219 MB) from <code>huggingface.co</code>.</p>
+    <p>That request carries no personal data. It is an ordinary file download, the same as any other; Hugging Face will see the request in their own server logs, as any website would, under their own privacy policy.</p>
+    <p>After the download finishes, Tasuke AI never contacts the network again. You can switch off mobile data and Wi-Fi permanently and every feature still works.</p>
+    <h2>Backups</h2>
+    <p>Your task database is part of your app data, so it is included in your device's own backup if you have one switched on — iCloud Backup on iOS, or Google's backup service on Android. Those backups are encrypted by Apple and Google and are governed by their privacy policies, not by ours. We have no access to them.</p>
+    <p>If you do not want your tasks in a backup, turn off backup for Tasuke AI in your device settings.</p>
+    <h2>Subscriptions</h2>
+    <p>Tasuke Pro is billed by Apple or by Google, never by us. We never see your name, your card or your billing address. The app asks the store whether a subscription is active and receives an answer; that answer is stored on your device and nowhere else.</p>
+    <p>Apple's and Google's handling of your purchase is covered by their own privacy policies.</p>
+    <h2>Notifications</h2>
+    <p>Reminders are local notifications, scheduled by your device for a time you chose. There is no push service, no notification token and no server that could send you a message.</p>
+    <h2>Children</h2>
+    <p>Tasuke AI is not directed at children and collects no data from anyone, including children.</p>
+    <h2>Your rights</h2>
+    <p>Data-protection law gives you the right to access, correct, export and delete the personal data a company holds about you. We hold none, so there is nothing to request. Your data is in your hands: it is on your device, and you can delete it at any moment from Settings, or by uninstalling the app.</p>
+    <h2>Third-party code</h2>
+    <p>Tasuke AI is built on open-source components — Flutter, whisper.cpp, llama.cpp, SQLite and the packages listed in the project's <code>pubspec.yaml</code>. All of them run locally on your device. None of them is an advertising, analytics or attribution SDK, and none of them sends data anywhere.</p>
+    <h2>Changes to this policy</h2>
+    <p>If this policy changes, the updated text ships inside the app and the date at the top changes with it. Because the policy is bundled in the app rather than fetched from a server, it cannot be changed underneath a version you have already installed.</p>
+    <h2>Contact</h2>
+    <p>support@tasuke.app</p>
+  </main>
+  <footer>
+    <a href="privacy-policy.html">Privacy Policy</a>·<a href="terms.html">Terms of Service</a>
+    <p>These pages are also bundled inside the app and open without a connection.</p>
+  </footer>
+</div>
+</body>
+</html>

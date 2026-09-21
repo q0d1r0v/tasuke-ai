@@ -1,0 +1,1 @@
+/home/user/projects/startup-apps/tasuke-ai/build/whisper_ggml/intermediates/cxx/Release/2j6k3z4f/obj/x86_64

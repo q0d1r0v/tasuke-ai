@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ⚠️ Must read exactly the same as `android:label` on <application> in
+         AndroidManifest.xml. Two places need it and neither can reference the
+         other: the manifest label is what the launcher shows, and this resource
+         is what the libraries that resolve @string/app_name use (the system
+         permission sheets, the notification channel's default group name, and
+         Play's app-name fallback). test/app/platform/android_manifest_test.dart
+         asserts the two strings agree, because a rename that touches only one
+         of them ships an app called "Tasuke AI" whose mic prompt says
+         "tasuke_ai". -->
+    <string name="app_name">Tasuke AI</string>
+</resources>

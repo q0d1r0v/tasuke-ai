@@ -1,0 +1,1472 @@
+[
+  {
+    "phrase": "today",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "today"
+  },
+  {
+    "phrase": "tomorrow",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "tomorrow"
+  },
+  {
+    "phrase": "Tomorrow",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "capitalised"
+  },
+  {
+    "phrase": "TOMORROW",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "shouted"
+  },
+  {
+    "phrase": "tonight",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "20:00",
+    "note": "tonight is today at the night hour"
+  },
+  {
+    "phrase": "tomorrow morning",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "named part of day"
+  },
+  {
+    "phrase": "tomorrow afternoon",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "14:00",
+    "note": "named part of day"
+  },
+  {
+    "phrase": "tomorrow evening",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "18:00",
+    "note": "named part of day"
+  },
+  {
+    "phrase": "tomorrow night",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "20:00",
+    "note": "named part of day"
+  },
+  {
+    "phrase": "the day after tomorrow",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": null,
+    "note": "beats the tomorrow inside it"
+  },
+  {
+    "phrase": "day after tomorrow",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": null,
+    "note": "without the article"
+  },
+  {
+    "phrase": "yesterday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-20",
+    "expectTime": null,
+    "note": "yesterday survives as overdue"
+  },
+  {
+    "phrase": "last night",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-20",
+    "expectTime": "20:00",
+    "note": "not tonight"
+  },
+  {
+    "phrase": "the day before yesterday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-19",
+    "expectTime": null,
+    "note": "symmetry"
+  },
+  {
+    "phrase": "this morning",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "09:00",
+    "note": "this + part of day"
+  },
+  {
+    "phrase": "this afternoon",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "14:00",
+    "note": "this + part of day"
+  },
+  {
+    "phrase": "this evening",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "18:00",
+    "note": "this + part of day"
+  },
+  {
+    "phrase": "later today",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "filler in front"
+  },
+  {
+    "phrase": "call Mark tomorrow",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "date behind the verb"
+  },
+  {
+    "phrase": "tomorrow, call Mark",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "comma after the date"
+  },
+  {
+    "phrase": "in 3 days",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-24",
+    "expectTime": null,
+    "note": "explicit count"
+  },
+  {
+    "phrase": "in 1 day",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "one day"
+  },
+  {
+    "phrase": "in a day",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "a = 1"
+  },
+  {
+    "phrase": "in two days",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": null,
+    "note": "number word"
+  },
+  {
+    "phrase": "in a couple of days",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": null,
+    "note": "couple = 2"
+  },
+  {
+    "phrase": "in a few days",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-24",
+    "expectTime": null,
+    "note": "few = 3"
+  },
+  {
+    "phrase": "in a week",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-28",
+    "expectTime": null,
+    "note": "a week"
+  },
+  {
+    "phrase": "in 2 weeks",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-05",
+    "expectTime": null,
+    "note": "two weeks"
+  },
+  {
+    "phrase": "in three weeks",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-12",
+    "expectTime": null,
+    "note": "number word"
+  },
+  {
+    "phrase": "in a month",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-21",
+    "expectTime": null,
+    "note": "one month"
+  },
+  {
+    "phrase": "in 2 months",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-11-21",
+    "expectTime": null,
+    "note": "two months"
+  },
+  {
+    "phrase": "in a year",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-09-21",
+    "expectTime": null,
+    "note": "a year is twelve months"
+  },
+  {
+    "phrase": "in 30 minutes",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "10:30",
+    "note": "minutes move the clock"
+  },
+  {
+    "phrase": "in 45 minutes",
+    "now": "2026-12-30T23:30",
+    "expectDate": "2026-12-31",
+    "expectTime": "00:15",
+    "note": "minutes across midnight"
+  },
+  {
+    "phrase": "in 2 hours",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "12:00",
+    "note": "hours move the clock"
+  },
+  {
+    "phrase": "in an hour",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "11:00",
+    "note": "an = 1"
+  },
+  {
+    "phrase": "in 8 hours",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-22",
+    "expectTime": "00:30",
+    "note": "hours across midnight"
+  },
+  {
+    "phrase": "monday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-28",
+    "expectTime": null,
+    "note": "bare weekday is strictly forward"
+  },
+  {
+    "phrase": "next monday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-28",
+    "expectTime": null,
+    "note": "next = the following week"
+  },
+  {
+    "phrase": "tuesday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "bare weekday is strictly forward"
+  },
+  {
+    "phrase": "next tuesday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-29",
+    "expectTime": null,
+    "note": "next = the following week"
+  },
+  {
+    "phrase": "wednesday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": null,
+    "note": "bare weekday is strictly forward"
+  },
+  {
+    "phrase": "next wednesday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-30",
+    "expectTime": null,
+    "note": "next = the following week"
+  },
+  {
+    "phrase": "thursday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-24",
+    "expectTime": null,
+    "note": "bare weekday is strictly forward"
+  },
+  {
+    "phrase": "next thursday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-01",
+    "expectTime": null,
+    "note": "next = the following week"
+  },
+  {
+    "phrase": "friday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-25",
+    "expectTime": null,
+    "note": "bare weekday is strictly forward"
+  },
+  {
+    "phrase": "next friday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-02",
+    "expectTime": null,
+    "note": "next = the following week"
+  },
+  {
+    "phrase": "saturday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-26",
+    "expectTime": null,
+    "note": "bare weekday is strictly forward"
+  },
+  {
+    "phrase": "next saturday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-03",
+    "expectTime": null,
+    "note": "next = the following week"
+  },
+  {
+    "phrase": "sunday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-27",
+    "expectTime": null,
+    "note": "bare weekday is strictly forward"
+  },
+  {
+    "phrase": "next sunday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-04",
+    "expectTime": null,
+    "note": "next = the following week"
+  },
+  {
+    "phrase": "on mon",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-28",
+    "expectTime": null,
+    "note": "abbreviation with a preposition"
+  },
+  {
+    "phrase": "on tue",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "abbreviation with a preposition"
+  },
+  {
+    "phrase": "on wed",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": null,
+    "note": "abbreviation with a preposition"
+  },
+  {
+    "phrase": "on thu",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-24",
+    "expectTime": null,
+    "note": "abbreviation with a preposition"
+  },
+  {
+    "phrase": "on fri",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-25",
+    "expectTime": null,
+    "note": "abbreviation with a preposition"
+  },
+  {
+    "phrase": "on sat",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-26",
+    "expectTime": null,
+    "note": "abbreviation with a preposition"
+  },
+  {
+    "phrase": "on sun",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-27",
+    "expectTime": null,
+    "note": "abbreviation with a preposition"
+  },
+  {
+    "phrase": "friday",
+    "now": "2026-09-25T09:00",
+    "expectDate": "2026-10-02",
+    "expectTime": null,
+    "note": "Friday said on a Friday is next Friday"
+  },
+  {
+    "phrase": "next friday",
+    "now": "2026-09-25T09:00",
+    "expectDate": "2026-10-02",
+    "expectTime": null,
+    "note": "next Friday from a Friday"
+  },
+  {
+    "phrase": "this friday",
+    "now": "2026-09-25T09:00",
+    "expectDate": "2026-09-25",
+    "expectTime": null,
+    "note": "this Friday can be today"
+  },
+  {
+    "phrase": "last friday",
+    "now": "2026-09-25T09:00",
+    "expectDate": "2026-09-18",
+    "expectTime": null,
+    "note": "last Friday from a Friday is a week back"
+  },
+  {
+    "phrase": "last monday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-14",
+    "expectTime": null,
+    "note": "last Monday from a Monday"
+  },
+  {
+    "phrase": "on friday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-25",
+    "expectTime": null,
+    "note": "preposition"
+  },
+  {
+    "phrase": "by friday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-25",
+    "expectTime": null,
+    "note": "deadline preposition"
+  },
+  {
+    "phrase": "this coming tuesday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "this coming"
+  },
+  {
+    "phrase": "next sunday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-04",
+    "expectTime": null,
+    "note": "next Sunday"
+  },
+  {
+    "phrase": "friday morning",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-25",
+    "expectTime": "09:00",
+    "note": "weekday plus part of day"
+  },
+  {
+    "phrase": "friday at 3pm",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-25",
+    "expectTime": "15:00",
+    "note": "weekday plus clock time"
+  },
+  {
+    "phrase": "sat morning",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-26",
+    "expectTime": "09:00",
+    "note": "abbreviation rescued by the part of day"
+  },
+  {
+    "phrase": "this weekend",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-26",
+    "expectTime": null,
+    "note": "the coming Saturday"
+  },
+  {
+    "phrase": "this weekend",
+    "now": "2026-09-26T11:00",
+    "expectDate": "2026-09-26",
+    "expectTime": null,
+    "note": "already in the weekend"
+  },
+  {
+    "phrase": "next weekend",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-03",
+    "expectTime": null,
+    "note": "the Saturday of next week"
+  },
+  {
+    "phrase": "next week",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-28",
+    "expectTime": null,
+    "note": "Monday of next week"
+  },
+  {
+    "phrase": "next month",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-01",
+    "expectTime": null,
+    "note": "first of next month"
+  },
+  {
+    "phrase": "on the 5th",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-05",
+    "expectTime": null,
+    "note": "day of month, next occurrence"
+  },
+  {
+    "phrase": "the 21st",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "day of month, today"
+  },
+  {
+    "phrase": "the 22nd",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": null,
+    "note": "day of month, tomorrow"
+  },
+  {
+    "phrase": "on the 1st",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-01",
+    "expectTime": null,
+    "note": "rolls into next month"
+  },
+  {
+    "phrase": "the 31st",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-31",
+    "expectTime": null,
+    "note": "September has no 31st"
+  },
+  {
+    "phrase": "the 31st",
+    "now": "2026-02-27T08:00",
+    "expectDate": "2026-03-31",
+    "expectTime": null,
+    "note": "February has no 31st either"
+  },
+  {
+    "phrase": "the 3rd",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-03",
+    "expectTime": null,
+    "note": "rolls into next month"
+  },
+  {
+    "phrase": "sep 21",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "month and day"
+  },
+  {
+    "phrase": "Sep 21",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "capitalised"
+  },
+  {
+    "phrase": "sept 21",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "four-letter abbreviation"
+  },
+  {
+    "phrase": "september 21",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "full month"
+  },
+  {
+    "phrase": "september 21st",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "with the ordinal"
+  },
+  {
+    "phrase": "21 sep",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "day first"
+  },
+  {
+    "phrase": "21st september",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "day first with the ordinal"
+  },
+  {
+    "phrase": "the 21st of september",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "of"
+  },
+  {
+    "phrase": "sep 21 2027",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-09-21",
+    "expectTime": null,
+    "note": "explicit year"
+  },
+  {
+    "phrase": "september 21, 2027",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-09-21",
+    "expectTime": null,
+    "note": "comma before the year"
+  },
+  {
+    "phrase": "21 september 2027",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-09-21",
+    "expectTime": null,
+    "note": "day first with a year"
+  },
+  {
+    "phrase": "sep 20",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-09-20",
+    "expectTime": null,
+    "note": "already past, so next year"
+  },
+  {
+    "phrase": "mar 5",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-03-05",
+    "expectTime": null,
+    "note": "March has gone, so next year"
+  },
+  {
+    "phrase": "jan 1",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-01-01",
+    "expectTime": null,
+    "note": "new year"
+  },
+  {
+    "phrase": "dec 25",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-12-25",
+    "expectTime": null,
+    "note": "still this year"
+  },
+  {
+    "phrase": "feb 29",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2028-02-29",
+    "expectTime": null,
+    "note": "skips to the next leap year"
+  },
+  {
+    "phrase": "2026-09-21",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "ISO"
+  },
+  {
+    "phrase": "2027-01-05",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-01-05",
+    "expectTime": null,
+    "note": "ISO next year"
+  },
+  {
+    "phrase": "on 2026-12-25",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-12-25",
+    "expectTime": null,
+    "note": "ISO with a preposition"
+  },
+  {
+    "phrase": "9/21",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": null,
+    "note": "US order"
+  },
+  {
+    "phrase": "12/25",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-12-25",
+    "expectTime": null,
+    "note": "US order"
+  },
+  {
+    "phrase": "9/21/2027",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-09-21",
+    "expectTime": null,
+    "note": "US order with a year"
+  },
+  {
+    "phrase": "9/21/27",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-09-21",
+    "expectTime": null,
+    "note": "two-digit year"
+  },
+  {
+    "phrase": "1/5",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-01-05",
+    "expectTime": null,
+    "note": "January, so next year"
+  },
+  {
+    "phrase": "end of the month",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-30",
+    "expectTime": null,
+    "note": "last day of this month"
+  },
+  {
+    "phrase": "end of month",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-30",
+    "expectTime": null,
+    "note": "without the article"
+  },
+  {
+    "phrase": "the end of the month",
+    "now": "2026-01-31T09:00",
+    "expectDate": "2026-01-31",
+    "expectTime": null,
+    "note": "already on the last day"
+  },
+  {
+    "phrase": "end of next month",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-10-31",
+    "expectTime": null,
+    "note": "last day of next month"
+  },
+  {
+    "phrase": "end of next month",
+    "now": "2026-01-31T09:00",
+    "expectDate": "2026-02-28",
+    "expectTime": null,
+    "note": "February from January"
+  },
+  {
+    "phrase": "last day of the month",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-30",
+    "expectTime": null,
+    "note": "spelled out"
+  },
+  {
+    "phrase": "last day of the month",
+    "now": "2026-02-27T08:00",
+    "expectDate": "2026-02-28",
+    "expectTime": null,
+    "note": "February"
+  },
+  {
+    "phrase": "in march",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2027-03-01",
+    "expectTime": null,
+    "note": "bare month needs a preposition"
+  },
+  {
+    "phrase": "in december",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-12-01",
+    "expectTime": null,
+    "note": "bare month later this year"
+  },
+  {
+    "phrase": "3pm",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "3 pm",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "3 PM",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "3 p.m.",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "3:30pm",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:30",
+    "note": "bare time"
+  },
+  {
+    "phrase": "3:30 p.m.",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:30",
+    "note": "bare time"
+  },
+  {
+    "phrase": "9am",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "9 a.m.",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "11:45am",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "11:45",
+    "note": "bare time"
+  },
+  {
+    "phrase": "12am",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "00:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "12pm",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "12:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "12:30am",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "00:30",
+    "note": "bare time"
+  },
+  {
+    "phrase": "15:00",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "15.00",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "18:45",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "18:45",
+    "note": "bare time"
+  },
+  {
+    "phrase": "9:30",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:30",
+    "note": "bare time"
+  },
+  {
+    "phrase": "03:30",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "03:30",
+    "note": "bare time"
+  },
+  {
+    "phrase": "23:59",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "23:59",
+    "note": "bare time"
+  },
+  {
+    "phrase": "at 3",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "at 5",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "17:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "at 9",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "at 11",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "11:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "at 15",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "at 3 o'clock",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "quarter past three",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:15",
+    "note": "bare time"
+  },
+  {
+    "phrase": "half past three",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:30",
+    "note": "bare time"
+  },
+  {
+    "phrase": "quarter to four",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:45",
+    "note": "bare time"
+  },
+  {
+    "phrase": "ten past nine",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:10",
+    "note": "bare time"
+  },
+  {
+    "phrase": "twenty to five",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "16:40",
+    "note": "bare time"
+  },
+  {
+    "phrase": "five past noon",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "12:05",
+    "note": "bare time"
+  },
+  {
+    "phrase": "ten to midnight",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "23:50",
+    "note": "bare time"
+  },
+  {
+    "phrase": "noon",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "12:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "midday",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "12:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "midnight",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "00:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "morning",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "afternoon",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "14:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "evening",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "18:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "night",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "20:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "in the morning",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "in the evening",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "18:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "at 3 in the afternoon",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "8 in the morning",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "08:00",
+    "note": "bare time"
+  },
+  {
+    "phrase": "9:30 in the evening",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "21:30",
+    "note": "bare time"
+  },
+  {
+    "phrase": "half past seven in the morning",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "07:30",
+    "note": "bare time"
+  },
+  {
+    "phrase": "3 PM",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-22",
+    "expectTime": "15:00",
+    "note": "already past, so tomorrow"
+  },
+  {
+    "phrase": "today at 3 PM",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "a date was given, so it stays today and is overdue"
+  },
+  {
+    "phrase": "at 3",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-22",
+    "expectTime": "15:00",
+    "note": "bare hour already past"
+  },
+  {
+    "phrase": "morning",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "morning has gone"
+  },
+  {
+    "phrase": "evening",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-21",
+    "expectTime": "18:00",
+    "note": "evening has not"
+  },
+  {
+    "phrase": "3 PM",
+    "now": "2026-09-21T15:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "15:00",
+    "note": "exactly now is not past"
+  },
+  {
+    "phrase": "3 PM",
+    "now": "2026-09-21T15:01",
+    "expectDate": "2026-09-22",
+    "expectTime": "15:00",
+    "note": "one minute past is past"
+  },
+  {
+    "phrase": "tomorrow at 9am",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "explicit date, no rollover"
+  },
+  {
+    "phrase": "friday at 9am",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-25",
+    "expectTime": "09:00",
+    "note": "weekday, no rollover"
+  },
+  {
+    "phrase": "midnight",
+    "now": "2026-09-21T16:30",
+    "expectDate": "2026-09-22",
+    "expectTime": "00:00",
+    "note": "midnight is tomorrow after 16:30"
+  },
+  {
+    "phrase": "in 3 days at 9am",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-24",
+    "expectTime": "09:00",
+    "note": "duration and clock together"
+  },
+  {
+    "phrase": "yesterday at 3pm",
+    "now": "2026-09-21T10:00",
+    "expectDate": "2026-09-20",
+    "expectTime": "15:00",
+    "note": "past date keeps its time"
+  },
+  {
+    "phrase": "in a month",
+    "now": "2026-01-31T09:00",
+    "expectDate": "2026-02-28",
+    "expectTime": null,
+    "note": "31 Jan + 1 month clamps to February"
+  },
+  {
+    "phrase": "in a month",
+    "now": "2028-01-31T09:00",
+    "expectDate": "2028-02-29",
+    "expectTime": null,
+    "note": "leap February"
+  },
+  {
+    "phrase": "in 1 month",
+    "now": "2026-02-27T08:00",
+    "expectDate": "2026-03-27",
+    "expectTime": null,
+    "note": "27 Feb + 1 month"
+  },
+  {
+    "phrase": "in 12 months",
+    "now": "2026-01-31T09:00",
+    "expectDate": "2027-01-31",
+    "expectTime": null,
+    "note": "a year of months"
+  },
+  {
+    "phrase": "end of the month",
+    "now": "2026-01-31T09:00",
+    "expectDate": "2026-01-31",
+    "expectTime": null,
+    "note": "January"
+  },
+  {
+    "phrase": "end of the month",
+    "now": "2028-01-31T09:00",
+    "expectDate": "2028-01-31",
+    "expectTime": null,
+    "note": "leap January"
+  },
+  {
+    "phrase": "end of next month",
+    "now": "2028-01-31T09:00",
+    "expectDate": "2028-02-29",
+    "expectTime": null,
+    "note": "leap February"
+  },
+  {
+    "phrase": "last day of the month",
+    "now": "2026-12-30T23:30",
+    "expectDate": "2026-12-31",
+    "expectTime": null,
+    "note": "December"
+  },
+  {
+    "phrase": "next month",
+    "now": "2026-12-30T23:30",
+    "expectDate": "2027-01-01",
+    "expectTime": null,
+    "note": "next month crosses the year"
+  },
+  {
+    "phrase": "in 3 days",
+    "now": "2026-12-30T23:30",
+    "expectDate": "2027-01-02",
+    "expectTime": null,
+    "note": "days cross the year"
+  },
+  {
+    "phrase": "call Mark",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "a name, not March"
+  },
+  {
+    "phrase": "buy 3 apples",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "a count"
+  },
+  {
+    "phrase": "version 2.1",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "a version number"
+  },
+  {
+    "phrase": "room 15",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "a room number"
+  },
+  {
+    "phrase": "send the 2026 report",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "a year inside a title"
+  },
+  {
+    "phrase": "at the office",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "a place, not a time"
+  },
+  {
+    "phrase": "march to the store",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "march as a verb"
+  },
+  {
+    "phrase": "may I call him",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "may as a modal"
+  },
+  {
+    "phrase": "sun is out",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "sun as the star"
+  },
+  {
+    "phrase": "I sat on the bench",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "sat as a verb"
+  },
+  {
+    "phrase": "a quarter of the team",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "quarter as a fraction"
+  },
+  {
+    "phrase": "version 2.30",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "a version that looks like a clock"
+  },
+  {
+    "phrase": "buy 5 to 10 apples",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "a range, not minutes to an hour"
+  },
+  {
+    "phrase": "the 3rd edition",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "an ordinal on a noun"
+  },
+  {
+    "phrase": "feb 30",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "February has no 30th"
+  },
+  {
+    "phrase": "2026-13-01",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "month 13"
+  },
+  {
+    "phrase": "2026-02-30",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "February 30th"
+  },
+  {
+    "phrase": "at 25",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "hour 25"
+  },
+  {
+    "phrase": "13pm",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "13 pm"
+  },
+  {
+    "phrase": "0pm",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "0 pm"
+  },
+  {
+    "phrase": "21/9",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "day/month is not US order"
+  },
+  {
+    "phrase": "13/40",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "neither a month nor a day"
+  },
+  {
+    "phrase": "wash the car",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "no time at all"
+  },
+  {
+    "phrase": "mark the release as done",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "mark, not March"
+  },
+  {
+    "phrase": "august heat",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "august as an adjective"
+  },
+  {
+    "phrase": "sat down and cried",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "sat as a verb again"
+  },
+  {
+    "phrase": "we may go",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "may as a modal again"
+  },
+  {
+    "phrase": "buy a sunflower",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "sun inside a word"
+  },
+  {
+    "phrase": "email the summary",
+    "now": "2026-09-21T10:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "nothing temporal"
+  }
+]

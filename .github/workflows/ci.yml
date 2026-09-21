@@ -1,0 +1,106 @@
+name: CI
+
+# Manual only.
+#
+# The same checks — format, analyze, codegen drift, tests — run locally before
+# every commit through `.husky/pre-commit`, so there is nothing for a push
+# trigger to catch that the committer has not already seen. Run this from the
+# Actions tab when you also want the goldens and a debug APK out of it.
+on:
+  workflow_dispatch:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Pinned to the exact SDK this repo is developed on. `channel: stable`
+      # alone would silently move the toolchain under the project, and a
+      # Flutter upgrade is a decision, not a side effect of a green build.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.5
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Regenerating and then DIFFING is the point. Without the diff this step
+      # only proves the generators run; a committed .g.dart that no longer
+      # matches its source passes silently, and you meet it as a runtime crash
+      # rather than as a red build.
+      - name: Generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          dart format lib
+          git diff --exit-code -- '**/*.g.dart'
+
+      # The drift schema dump is the INPUT to the migration tests. A schema
+      # change committed without re-dumping makes those tests assert against
+      # yesterday's shape and pass while the migration is broken.
+      - name: Drift schema dump is current
+        run: |
+          dart run drift_dev schema dump lib/core/database/app_database.dart drift_schemas/
+          git diff --exit-code -- drift_schemas/
+
+      - name: Localizations are up to date
+        run: |
+          flutter gen-l10n
+          git diff --exit-code -- lib/app/l10n
+
+      - name: Formatting
+        run: dart format --output=none --set-exit-if-changed lib test integration_test test_driver
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+      # Goldens are excluded here and run in their own non-blocking step below.
+      # The default comparator is an exact pixel match and the headless
+      # rasteriser does not render BoxShadow identically across machines, so a
+      # font or engine difference between this runner and the machine that
+      # generated them is a red build with no diff images to look at. Design
+      # drift is worth catching; it is not worth blocking every change on.
+      - name: Test
+        run: flutter test --exclude-tags golden --coverage
+
+      - name: Coverage floors
+        # Floors set to the numbers the suite actually reaches, minus a
+        # point or two of slack. A floor nobody meets is a step everyone
+        # learns to skip.
+        run: >
+          dart run tool/check_coverage.dart
+          --min 80
+          --min-path 'lib/core/time/**=95'
+          --min-path 'lib/features/extraction/domain/**=93'
+          --min-path 'lib/features/tasks/domain/**=90'
+
+      - name: Golden tests (informational)
+        continue-on-error: true
+        run: flutter test --tags golden
+
+      - name: Upload golden diffs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: test/**/failures/
+          if-no-files-found: ignore
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lcov
+          path: coverage/lcov.info
+
+      - name: Debug APK
+        run: flutter build apk --debug --target-platform android-arm64

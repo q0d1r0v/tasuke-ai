@@ -1,0 +1,125 @@
+================================================================================
+TASUKE AI — STORE LISTING COPY
+================================================================================
+Keep this file as the single source. Both stores get the same words; only the
+length limits differ, and each block below is labelled with the limit it fits.
+
+Paste as plain text. Neither store renders Markdown, and a stray asterisk shows
+up literally on the product page.
+
+--------------------------------------------------------------------------------
+APP NAME  (App Store: 30 max / Play title: 30 max)
+--------------------------------------------------------------------------------
+Tasuke AI: Voice to Tasks
+                                                                    [24 chars]
+
+--------------------------------------------------------------------------------
+SUBTITLE  (App Store only, 30 max)
+--------------------------------------------------------------------------------
+Speak it. It becomes a task.
+                                                                    [28 chars]
+
+--------------------------------------------------------------------------------
+SHORT DESCRIPTION  (Play only, 80 max)
+--------------------------------------------------------------------------------
+Say your to-dos out loud. AI turns them into tasks with dates — all offline.
+                                                                    [75 chars]
+
+--------------------------------------------------------------------------------
+PROMOTIONAL TEXT  (App Store only, 170 max — editable without a new build)
+--------------------------------------------------------------------------------
+Version 1.0 is here. Speak a sentence, get real tasks with real due dates —
+processed entirely on your device, with no account and no internet connection.
+                                                                   [152 chars]
+
+--------------------------------------------------------------------------------
+FULL DESCRIPTION  (App Store description: 4000 max / Play full: 4000 max)
+--------------------------------------------------------------------------------
+Say it once. Tasuke AI writes it down.
+
+"Tomorrow at 3 PM send the build to James and Friday check App Store."
+
+One sentence. Two tasks, each with the right date, each with a reminder set. No
+typing, no tapping through a date picker, no deciding where the first task ends
+and the second begins.
+
+EVERYTHING HAPPENS ON YOUR PHONE
+
+Tasuke AI runs its speech recognition and its language model on your device.
+Your voice is never uploaded. Your task list is never uploaded. There is no
+account to create, no server to trust and no data for anyone to lose, because
+none of it ever leaves your phone.
+
+It works in airplane mode. It works on a plane, in a lift, in a basement, on a
+train through a tunnel — which is exactly where you remember the thing you were
+supposed to do.
+
+WHAT IT DOES
+
+• Speak naturally — several tasks in one breath, and it splits them correctly
+• Understands real dates — "tomorrow at 3", "next Friday", "in two weeks",
+  "the 14th", "Monday morning"
+• Shows you everything before it saves, so nothing lands in your list unchecked
+• Reminders that arrive on time, even with the app closed
+• Search across everything you have ever captured
+• Groups your day into Today, Tomorrow, This Week and Later
+• Light and dark, and it follows your system setting
+
+WHAT IT DOES NOT DO
+
+• No account. No email address. No password.
+• No analytics. No crash reporting. No advertising. No tracking of any kind.
+• No cloud sync, because there is no cloud.
+• One single network request in the app's entire life: downloading its language
+  model, once, on first launch. After that you can turn the internet off
+  forever.
+
+FREE, AND HONESTLY FREE
+
+Five voice captures every day, permanently. Unlimited typed tasks, unlimited
+reminders, unlimited history — those are never limited and never will be.
+
+TASUKE PRO
+
+Unlimited voice capture, for people who talk to their phone all day.
+
+• $4.99 per month
+• $39.99 per year (save 33%)
+
+Subscriptions renew automatically unless cancelled at least 24 hours before the
+end of the current period. Payment is charged to your store account at
+confirmation of purchase. Manage or cancel in your store account settings at any
+time.
+
+Terms of Use and Privacy Policy are linked in the app, and bundled inside it so
+they open without a connection.
+
+--------------------------------------------------------------------------------
+KEYWORDS  (App Store only, 100 max, comma-separated, no spaces after commas)
+--------------------------------------------------------------------------------
+voice,todo,task,offline,speech,reminder,dictation,private,ai,notes,planner,gtd
+                                                                    [76 chars]
+
+--------------------------------------------------------------------------------
+CATEGORY
+--------------------------------------------------------------------------------
+App Store  : Productivity (primary), Utilities (secondary)
+Play       : Productivity
+
+--------------------------------------------------------------------------------
+SUPPORT / MARKETING URLS
+--------------------------------------------------------------------------------
+Privacy policy : https://<github-user>.github.io/tasuke-ai/privacy-policy.html
+Terms of use   : https://<github-user>.github.io/tasuke-ai/terms.html
+Support        : TODO(human) — a real, monitored address. Apple rejects a
+                 support URL that 404s, and Play requires a contact email.
+
+--------------------------------------------------------------------------------
+SCREENSHOT CAPTIONS  (in order)
+--------------------------------------------------------------------------------
+1. Speak a sentence. Get tasks.
+2. It hears every task in one breath.
+3. Real dates, understood.
+4. Check it before it saves.
+5. Reminders that arrive on time.
+6. Works with the internet off.

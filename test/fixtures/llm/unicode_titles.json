@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Bugun kechqurun Zuhra’ga qo’ng’iroq qilish",
+    "when_text": "tonight",
+    "has_reminder": true
+  },
+  {
+    "title": "Позвонить Марку завтра",
+    "when_text": "tomorrow",
+    "has_reminder": false
+  },
+  {
+    "title": "اتصل بمارك غداً",
+    "when_text": "tomorrow",
+    "has_reminder": false
+  },
+  {
+    "title": "明日の午後3時にビルドを送る",
+    "when_text": "tomorrow at 3 PM",
+    "has_reminder": true
+  },
+  {
+    "title": "Book the family photo 👨‍👩‍👧‍👦 session",
+    "when_text": "saturday",
+    "has_reminder": false
+  }
+]

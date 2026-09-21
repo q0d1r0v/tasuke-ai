@@ -1,0 +1,491 @@
+{
+  "_meta": {
+    "description": "This file contains a serialized version of schema entities for drift.",
+    "version": "1.3.0"
+  },
+  "options": {
+    "store_date_time_values_as_text": false
+  },
+  "entities": [
+    {
+      "id": 0,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "tasks",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "title",
+            "getter_name": "title",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "title_folded",
+            "getter_name": "titleFolded",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "notes",
+            "getter_name": "notes",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "due_date",
+            "getter_name": "dueDate",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const LocalDateConverter()",
+              "dart_type_name": "LocalDate"
+            }
+          },
+          {
+            "name": "due_minute_of_day",
+            "getter_name": "dueMinuteOfDay",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "reminder_enabled",
+            "getter_name": "reminderEnabled",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"reminder_enabled\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"reminder_enabled\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "reminder_lead_minutes",
+            "getter_name": "reminderLeadMinutes",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "reminder_at_local",
+            "getter_name": "reminderAtLocal",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const LocalDateTimeConverter()",
+              "dart_type_name": "LocalDateTime"
+            }
+          },
+          {
+            "name": "notification_id",
+            "getter_name": "notificationId",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "completed",
+            "getter_name": "completed",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"completed\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"completed\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "completed_at_utc_ms",
+            "getter_name": "completedAtUtcMs",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const UtcInstantConverter()",
+              "dart_type_name": "DateTime"
+            }
+          },
+          {
+            "name": "created_at_utc_ms",
+            "getter_name": "createdAtUtcMs",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const UtcInstantConverter()",
+              "dart_type_name": "DateTime"
+            }
+          },
+          {
+            "name": "updated_at_utc_ms",
+            "getter_name": "updatedAtUtcMs",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const UtcInstantConverter()",
+              "dart_type_name": "DateTime"
+            }
+          },
+          {
+            "name": "source",
+            "getter_name": "source",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "source_transcript",
+            "getter_name": "sourceTranscript",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "capture_id",
+            "getter_name": "captureId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "sort_order",
+            "getter_name": "sortOrder",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "id"
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "app_settings",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "key",
+            "getter_name": "key",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "value",
+            "getter_name": "value",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at_utc_ms",
+            "getter_name": "updatedAtUtcMs",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const UtcInstantConverter()",
+              "dart_type_name": "DateTime"
+            }
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "key"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "usage_days",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "day",
+            "getter_name": "day",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "capture_count",
+            "getter_name": "captureCount",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "task_count",
+            "getter_name": "taskCount",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "day"
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "references": [
+        0
+      ],
+      "type": "index",
+      "data": {
+        "on": 0,
+        "name": "tasks_pending_due",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "completed",
+            "order_by": null
+          },
+          {
+            "column": "due_date",
+            "order_by": null
+          },
+          {
+            "column": "due_minute_of_day",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "references": [
+        0
+      ],
+      "type": "index",
+      "data": {
+        "on": 0,
+        "name": "tasks_due_date",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "due_date",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "references": [
+        0
+      ],
+      "type": "index",
+      "data": {
+        "on": 0,
+        "name": "tasks_reminder_at",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "completed",
+            "order_by": null
+          },
+          {
+            "column": "reminder_enabled",
+            "order_by": null
+          },
+          {
+            "column": "reminder_at_local",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "references": [
+        0
+      ],
+      "type": "index",
+      "data": {
+        "on": 0,
+        "name": "tasks_completed_at",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "completed_at_utc_ms",
+            "order_by": null
+          }
+        ]
+      }
+    }
+  ],
+  "fixed_sql": [
+    {
+      "name": "tasks",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"tasks\" (\"id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"title_folded\" TEXT NOT NULL, \"notes\" TEXT NULL, \"due_date\" TEXT NULL, \"due_minute_of_day\" INTEGER NULL, \"reminder_enabled\" INTEGER NOT NULL DEFAULT 0 CHECK (\"reminder_enabled\" IN (0, 1)), \"reminder_lead_minutes\" INTEGER NOT NULL DEFAULT 0, \"reminder_at_local\" TEXT NULL, \"notification_id\" INTEGER NULL, \"completed\" INTEGER NOT NULL DEFAULT 0 CHECK (\"completed\" IN (0, 1)), \"completed_at_utc_ms\" INTEGER NULL, \"created_at_utc_ms\" INTEGER NOT NULL, \"updated_at_utc_ms\" INTEGER NOT NULL, \"source\" TEXT NOT NULL, \"source_transcript\" TEXT NULL, \"capture_id\" TEXT NULL, \"sort_order\" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (\"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "app_settings",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"app_settings\" (\"key\" TEXT NOT NULL, \"value\" TEXT NOT NULL, \"updated_at_utc_ms\" INTEGER NOT NULL, PRIMARY KEY (\"key\"));"
+        }
+      ]
+    },
+    {
+      "name": "usage_days",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"usage_days\" (\"day\" TEXT NOT NULL, \"capture_count\" INTEGER NOT NULL DEFAULT 0, \"task_count\" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (\"day\"));"
+        }
+      ]
+    },
+    {
+      "name": "tasks_pending_due",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX tasks_pending_due ON tasks (completed, due_date, due_minute_of_day)"
+        }
+      ]
+    },
+    {
+      "name": "tasks_due_date",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX tasks_due_date ON tasks (due_date)"
+        }
+      ]
+    },
+    {
+      "name": "tasks_reminder_at",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX tasks_reminder_at ON tasks (completed, reminder_enabled, reminder_at_local)"
+        }
+      ]
+    },
+    {
+      "name": "tasks_completed_at",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX tasks_completed_at ON tasks (completed_at_utc_ms)"
+        }
+      ]
+    }
+  ]
+}

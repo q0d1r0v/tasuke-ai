@@ -1,0 +1,40 @@
+name: whisper_ggml
+description: Vendored whisper.cpp binding for Tasuke AI, with the FFmpeg path removed. See NOTICE.md.
+version: 2.6.0+tasuke.1
+publish_to: 'none'
+repository: https://github.com/sk3llo/whisper_ggml
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  ffi: ^2.1.4
+  freezed_annotation: ^3.0.0
+  json_annotation: ^4.9.0
+  plugin_platform_interface: ^2.1.8
+  universal_io: ^2.2.2
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+topics:
+  - 'ggml'
+  - 'artificial-intelligence'
+  - 'machine-learning'
+
+flutter:
+  uses-material-design: true
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true
+      linux:
+        ffiPlugin: true

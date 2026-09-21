@@ -1,0 +1,57 @@
+#!/usr/bin/env sh
+# The checks CI used to run on every push.
+#
+# CI is workflow_dispatch-only (.github/workflows/ci.yml), so this hook is the
+# actual gate. Goldens and the APK build stay in the manual CI run: both are
+# slow, and goldens are machine-dependent.
+#
+# ⚠️ This runs against the WORKING TREE, not only the staged snapshot. A file you
+# changed but did not stage is checked too. Stashing would be more exact, but a
+# stash that fails to pop loses work, and that is the worse failure.
+
+set -eu
+
+# Git GUIs and IDEs routinely run hooks without the user's shell PATH.
+if ! command -v flutter >/dev/null 2>&1; then
+  for dir in "${FLUTTER_ROOT:-}/bin" "$HOME/sdks/flutter/bin" "$HOME/flutter/bin"; do
+    if [ -x "$dir/flutter" ]; then
+      PATH="$dir:$PATH"
+      export PATH
+      break
+    fi
+  done
+fi
+command -v flutter >/dev/null 2>&1 || {
+  echo "pre-commit: flutter not found. Put it on PATH or set FLUTTER_ROOT." >&2
+  exit 1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACMRD)
+
+# Nothing the Dart checks can see changed — docs, CI files, store copy.
+printf '%s\n' "$staged" | grep -qE '\.dart$|^pubspec\.(yaml|lock)$|^analysis_options\.yaml$|^l10n\.yaml$|^(lib|test|integration_test|test_driver|assets|drift_schemas|android|ios)/' || exit 0
+
+echo "pre-commit: dart format"
+dart format --output=none --set-exit-if-changed lib test integration_test test_driver
+
+echo "pre-commit: flutter analyze"
+flutter analyze --fatal-infos --fatal-warnings
+
+# Only when something that feeds a generator changed. Regenerating on every
+# commit would add a minute for nothing.
+if printf '%s\n' "$staged" | grep -qE '^lib/core/database/|\.drift$|^pubspec\.(yaml|lock)$'; then
+  echo "pre-commit: generated code and drift schema are current"
+  dart run build_runner build --delete-conflicting-outputs
+  dart run drift_dev schema dump lib/core/database/app_database.dart drift_schemas/
+  dart format lib >/dev/null
+  git diff --exit-code -- '**/*.g.dart' drift_schemas/
+fi
+
+if printf '%s\n' "$staged" | grep -qE '^lib/app/l10n/'; then
+  echo "pre-commit: localizations are current"
+  flutter gen-l10n
+  git diff --exit-code -- lib/app/l10n
+fi
+
+echo "pre-commit: flutter test (goldens excluded)"
+flutter test --exclude-tags golden

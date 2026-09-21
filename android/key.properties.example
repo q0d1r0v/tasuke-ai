@@ -1,0 +1,19 @@
+# Copy to android/key.properties and fill in. That file is gitignored; this one
+# is not, and must never contain a real password.
+#
+# Create the keystore once, and then never lose it: Play signs every future
+# update against the same upload key, and there is no self-service recovery —
+# losing it means a support ticket and a key reset, or a new listing.
+#
+#   keytool -genkey -v \
+#     -keystore ~/keys/tasuke-upload.jks \
+#     -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 \
+#     -alias tasuke
+#
+# storeFile may be absolute (recommended — keep the keystore outside the
+# checkout) or relative to the `android/` directory.
+
+storePassword=CHANGEME
+keyPassword=CHANGEME
+keyAlias=tasuke
+storeFile=/absolute/path/to/tasuke-upload.jks

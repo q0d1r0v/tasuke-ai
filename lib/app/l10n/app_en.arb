@@ -1,0 +1,332 @@
+{
+  "@@locale": "en",
+  "appTitle": "Tasuke AI",
+  "appSubtitle": "Voice to Tasks",
+  "appSlogan": "Speak. Plan. Done.",
+  "actionNext": "Next",
+  "actionSkip": "Skip",
+  "actionContinue": "Continue",
+  "actionCancel": "Cancel",
+  "actionStop": "Stop",
+  "actionSave": "Save",
+  "actionDelete": "Delete",
+  "actionEdit": "Edit",
+  "actionDone": "Done",
+  "actionClose": "Close",
+  "actionRetry": "Try again",
+  "actionOpenSettings": "Open Settings",
+  "actionAllow": "Allow",
+  "actionGotIt": "Got it",
+  "actionDismiss": "Dismiss",
+  "actionViewOnline": "View online",
+  "actionClear": "Clear",
+  "onboardingTitle1": "Turn Your Voice into Action",
+  "onboardingBody1": "Just speak naturally. Tasuke AI understands, organizes and creates tasks for you.",
+  "onboardingTitle2": "One Sentence, Many Tasks",
+  "onboardingBody2": "Say everything on your mind at once. We find each task and work out when it is due.",
+  "onboardingTitle3": "Private by Design",
+  "onboardingBody3": "Speech recognition and AI both run on this device. Your voice and your tasks never leave it.",
+  "permissionsTitle": "Let's Get Started",
+  "permissionsSubtitle": "Tasuke AI needs a few permissions to work at its best.",
+  "permissionsMicrophoneTitle": "Microphone",
+  "permissionsMicrophoneSubtitle": "To record your voice",
+  "permissionsNotificationsTitle": "Notifications",
+  "permissionsNotificationsSubtitle": "To remind you about your tasks",
+  "permissionsPrivacyNote": "We respect your privacy. Everything works on your device.",
+  "permissionsGranted": "Allowed",
+  "permissionsDenied": "Not allowed",
+  "modelSetupTitle": "Preparing your AI",
+  "modelSetupSubtitle": "Tasuke AI is downloading its language model. This happens once, and only needs {size}.",
+  "@modelSetupSubtitle": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelSetupWifiHint": "Best over Wi-Fi. You can keep using the app while it downloads.",
+  "modelSetupProgress": "{percent}% downloaded",
+  "@modelSetupProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "modelSetupDownload": "Download now",
+  "modelSetupLater": "Not now",
+  "modelSetupReady": "Your AI is ready",
+  "modelSetupFailed": "The download didn't finish",
+  "modelSetupChecksumFailed": "The downloaded file was incomplete and has been removed.",
+  "modelSetupNoSpace": "There isn't enough free space for the model.",
+  "modelSetupPreparing": "Preparing AI — {percent}%",
+  "@modelSetupPreparing": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "homeGreetingMorning": "Good morning,",
+  "homeGreetingAfternoon": "Good afternoon,",
+  "homeGreetingEvening": "Good evening,",
+  "homeTagline": "Let's make it happen today",
+  "homeTabToday": "Today",
+  "homeTabUpcoming": "Upcoming",
+  "homeTabCompleted": "Completed",
+  "homeSpeak": "Speak",
+  "emptyTodayTitle": "Nothing for today",
+  "emptyTodayBody": "Tap the microphone and say what's on your mind.",
+  "emptyUpcomingTitle": "Nothing coming up",
+  "emptyUpcomingBody": "Tasks with a future date will appear here.",
+  "emptyCompletedTitle": "Nothing completed yet",
+  "emptyCompletedBody": "Finished tasks collect here so you can see what you got done.",
+  "emptySearchPromptTitle": "Search your tasks",
+  "emptySearchPromptBody": "Type a word from a task title.",
+  "emptySearchNoResultsTitle": "No tasks match \"{query}\"",
+  "@emptySearchNoResultsTitle": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "emptySearchNoResultsBody": "Try a different word.",
+  "emptyStatsTitle": "No stats yet",
+  "emptyStatsBody": "Complete a task and your progress shows up here.",
+  "recordingTitle": "Recording...",
+  "recordingHint": "Speak naturally.\nYou can say multiple tasks at once.",
+  "recordingTooShort": "Hold on — say a bit more.",
+  "recordingMaxReached": "We stopped at one minute. Anything after that wasn't recorded.",
+  "processingTitle": "Turning your thoughts into tasks...",
+  "processingStepTranscribe": "Transcribing your voice",
+  "processingStepUnderstand": "Understanding with AI",
+  "processingStepFind": "Finding tasks and dates",
+  "processingStepFinish": "Almost done...",
+  "confirmTitle": "Confirm Tasks",
+  "confirmFoundTasks": "{count, plural, =0{We didn't find a task in that. Edit it below, or try again.} =1{We found 1 task. You can edit it before saving.} other{We found {count} tasks. You can edit them before saving.}}",
+  "@confirmFoundTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "confirmAddAnother": "Add another task",
+  "confirmSave": "Save Tasks",
+  "confirmDiscardTitle": "Discard these tasks?",
+  "confirmDiscardBody": "They haven't been saved yet.",
+  "confirmDiscardConfirm": "Discard",
+  "confirmTitleRequired": "Give every task a title first.",
+  "confirmLowConfidence": "Check this date",
+  "confirmSaved": "{count, plural, =1{1 task saved} other{{count} tasks saved}}",
+  "@confirmSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskDetailTitle": "Task Details",
+  "taskFieldTitle": "Title",
+  "taskFieldTitleHint": "What needs doing?",
+  "taskFieldNotes": "Notes",
+  "taskFieldDate": "Date",
+  "taskFieldTime": "Time",
+  "taskFieldReminder": "Reminder",
+  "taskNoDate": "No date",
+  "taskNoTime": "No time",
+  "taskAllDay": "All day",
+  "taskDelete": "Delete Task",
+  "taskDeleteConfirmTitle": "Delete this task?",
+  "taskDeleteConfirmBody": "This can't be undone.",
+  "taskDeleted": "Task deleted",
+  "taskCompleted": "Task completed",
+  "taskOverdue": "Overdue",
+  "taskMarkComplete": "Mark complete",
+  "taskMarkIncomplete": "Mark not done",
+  "dateToday": "Today",
+  "dateTomorrow": "Tomorrow",
+  "dateYesterday": "Yesterday",
+  "dateNextWeek": "Next Week",
+  "dateLater": "Later",
+  "dateSomeday": "Someday",
+  "taskMetaRelative": "{day}, {time}",
+  "@taskMetaRelative": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "searchTitle": "Search",
+  "searchHint": "Search tasks",
+  "statsTitle": "Stats",
+  "statsPending": "Pending",
+  "statsCompleted": "Completed",
+  "statsThisWeek": "This week",
+  "statsStreak": "{days, plural, =0{No streak yet} =1{1 day streak} other{{days} day streak}}",
+  "@statsStreak": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "statsLastSevenDays": "Last 7 days",
+  "settingsTitle": "Settings",
+  "settingsNotifications": "Notifications",
+  "settingsLanguage": "Language",
+  "settingsLanguageEnglish": "English",
+  "settingsSubscription": "Subscription",
+  "settingsSubscriptionFree": "Free Plan",
+  "settingsSubscriptionPro": "Tasuke Pro",
+  "settingsUsage": "Usage",
+  "settingsUsageValue": "{used} / {limit} today",
+  "@settingsUsageValue": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsUsageUnlimited": "Unlimited",
+  "settingsAiModel": "AI model",
+  "settingsAiModelReady": "Ready",
+  "settingsAiModelMissing": "Not downloaded",
+  "settingsAiModelDownloading": "Downloading…",
+  "settingsAllDayReminder": "All-day reminder time",
+  "settingsPrivacyPolicy": "Privacy Policy",
+  "settingsTerms": "Terms of Service",
+  "settingsHelp": "Help & Support",
+  "settingsAbout": "About",
+  "settingsRestorePurchases": "Restore Purchases",
+  "settingsDeleteData": "Delete all data",
+  "settingsDeleteDataConfirmTitle": "Delete everything?",
+  "settingsDeleteDataConfirmBody": "Every task, setting and reminder on this device will be erased. This can't be undone.",
+  "settingsDeleteDataDone": "All data deleted",
+  "aboutVersion": "v{version}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutBuiltFor": "Built for a more productive you.",
+  "aboutOnDeviceTitle": "Everything runs on your device",
+  "aboutOnDeviceBody": "Speech recognition and task extraction both happen on this phone. The only thing Tasuke AI ever downloads is its own language model.",
+  "aboutLicenses": "Open source licenses",
+  "paywallTitle": "Tasuke Pro",
+  "paywallSubtitle": "Unlock your full potential",
+  "paywallBenefitUnlimited": "Unlimited voice processing",
+  "paywallBenefitMultiple": "Multiple tasks from one voice input",
+  "paywallBenefitAdvanced": "Advanced AI processing",
+  "paywallBenefitPriority": "Priority updates",
+  "paywallBenefitSupport": "Support the development",
+  "paywallMonthly": "Monthly",
+  "paywallYearly": "Yearly",
+  "paywallPerMonth": "per month",
+  "paywallPerYear": "per year",
+  "paywallPeriodMonth": "1 month",
+  "paywallPeriodYear": "1 year",
+  "paywallYearlyEquivalent": "{price} per month, billed yearly",
+  "@paywallYearlyEquivalent": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallSave": "Save {percent}%",
+  "@paywallSave": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "paywallSubscribe": "Subscribe",
+  "paywallRestore": "Restore Purchases",
+  "paywallManage": "Manage subscription",
+  "paywallAutoRenewNotice": "Subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Payment is charged to your store account at confirmation of purchase.",
+  "paywallFreeTierNote": "Free: {limit} voice captures a day, unlimited manual tasks and reminders.",
+  "@paywallFreeTierNote": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "paywallLegal": "Terms of Use and Privacy Policy",
+  "paywallStoreUnavailableTitle": "The store isn't available",
+  "paywallStoreUnavailableBody": "Check your connection and store account, then try again.",
+  "paywallPending": "Waiting for approval",
+  "paywallPendingBody": "Your purchase needs approval before Pro unlocks.",
+  "paywallPurchased": "Welcome to Tasuke Pro",
+  "paywallRestoredNone": "No previous purchase found",
+  "paywallRestored": "Your subscription is active again",
+  "paywallQuotaHeader": "You've used {used} of {limit} voice captures today.",
+  "@paywallQuotaHeader": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "errorGenericTitle": "Something went wrong",
+  "errorGenericBody": "Please try again.",
+  "errorMicDeniedTitle": "Tasuke needs your microphone",
+  "errorMicDeniedBody": "It's used only while you're recording a task, and the audio never leaves this device.",
+  "errorMicPermanentBody": "Microphone access is off for Tasuke AI. You can turn it back on in Settings.",
+  "errorMicBusyTitle": "Your microphone is in use",
+  "errorMicBusyBody": "Another app or a call is using it. Try again in a moment.",
+  "errorNoSpeechTitle": "We didn't catch that",
+  "errorNoSpeechBody": "Try again a little closer to the microphone.",
+  "errorModelMissingTitle": "The voice model isn't ready",
+  "errorModelMissingBody": "Tasuke AI couldn't load its speech model. You can still type a task.",
+  "errorExtractorNotReadyTitle": "The AI is still downloading",
+  "errorExtractorNotReadyBody": "Voice capture unlocks once the model finishes. You can add tasks by hand in the meantime.",
+  "errorTypeInstead": "Type a task instead",
+  "errorDatabaseTitle": "Tasuke can't open its database",
+  "errorDatabaseBody": "This usually means the app's storage was damaged.",
+  "errorResetData": "Reset app data",
+  "errorDiskFull": "There isn't enough space to save. Free some up and try again.",
+  "bannerNotificationsOff": "Reminders are off. Turn on notifications to be reminded.",
+  "bannerExactAlarmOff": "Reminders may arrive a few minutes late on this device.",
+  "bannerBatteryOptimisation": "This device may delay reminders to save battery.",
+  "notificationChannelName": "Task reminders",
+  "notificationChannelDescription": "Reminders for the tasks you create.",
+  "notificationReminderBody": "Tap to open this task.",
+  "quotaExhaustedTitle": "You've used today's voice captures",
+  "quotaExhaustedBody": "Free includes {limit} a day. Tasuke Pro is unlimited.",
+  "@quotaExhaustedBody": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaSeeProPlans": "See Pro plans",
+  "helpTitle": "Help & Support",
+  "helpHowToTitle": "How to capture a task",
+  "helpHowToBody": "Tap the microphone and speak naturally. You can say several things at once — for example, \"Tomorrow at 3 PM send the build to James and Friday check App Store\". Tasuke AI splits that into two tasks with the right dates and shows them for you to confirm.",
+  "helpOfflineTitle": "Does it work offline?",
+  "helpOfflineBody": "Yes. Once the language model has downloaded, everything works with no connection at all.",
+  "helpRemindersTitle": "My reminders are late",
+  "helpRemindersBody": "Some devices delay alarms to save battery. Allowing exact alarms, and excluding Tasuke AI from battery optimisation, fixes it.",
+  "helpContact": "Contact support",
+  "legalPrivacyTitle": "Privacy Policy",
+  "legalTermsTitle": "Terms of Service",
+  "languageTitle": "Language",
+  "usageTitle": "Usage"
+}
