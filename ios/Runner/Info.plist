@@ -43,11 +43,11 @@
 	       is guideline 2.5.4 — "an app that declares background audio but does
 	       not play audible content". -->
 		<!-- ══ Export compliance ════════════════════════════════════════════════
-	     `false` because the only cryptography in the app is Apple's own TLS for
-	     the one model download and SHA-256 over the downloaded file. Setting
-	     this here answers the export-compliance questionnaire at build time;
-	     omitting it makes every single upload stop and wait for a human to
-	     answer the same two questions again. -->
+	     `false` because the app implements no cryptography and makes no network
+	     request of its own; the store's billing is Apple's. Setting this here
+	     answers the export-compliance questionnaire at build time; omitting it
+	     makes every single upload stop and wait for a human to answer the same
+	     two questions again. -->
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
 		<key>CFBundleDevelopmentRegion</key>
@@ -122,12 +122,16 @@
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
 		<!-- ══ Orientation ══════════════════════════════════════════════════════
-	     Portrait only, on both idioms. The recording sheet's waveform and the
-	     notched bottom nav are laid out against a fixed aspect ratio and the
-	     design sheet has no landscape frame. iPad is listed separately because
-	     omitting the ~ipad key does NOT inherit the iPhone list — it falls back
-	     to all four orientations, and the app would rotate on an iPad into a
-	     layout nobody designed. -->
+	     Portrait only. The recording sheet's waveform and the notched bottom
+	     nav are laid out against a fixed aspect ratio and the design sheet has
+	     no landscape frame.
+
+	     ⚠️ That is why the app is iPhone-only (TARGETED_DEVICE_FAMILY = 1 in
+	     project.pbxproj). A portrait-only iPad app is rejected at upload with
+	     ITMS-90474 (iPad multitasking needs all four orientations), and
+	     UIRequiresFullScreen, the old opt-out, is deprecated. On an iPad the
+	     app runs in iPhone compatibility mode. The ~ipad list is kept identical
+	     so nothing rotates on an iPad either way. -->
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
