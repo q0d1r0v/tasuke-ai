@@ -58,11 +58,20 @@ class TasukeLogo extends StatelessWidget {
 /// dart run flutter_native_splash:create
 /// ```
 class TasukeLogoPainter extends CustomPainter {
-  const TasukeLogoPainter({this.drawTile = true, this.markScale = 1});
+  const TasukeLogoPainter({
+    this.drawTile = true,
+    this.markScale = 1,
+    this.roundedTile = true,
+  });
 
   /// False for the Android adaptive foreground, which supplies its own
   /// background colour and must not carry a second tile inside the mask.
   final bool drawTile;
+
+  /// False for the iOS app icon and the store listings: iOS and both stores
+  /// apply their own corner mask, and a tile that is already rounded leaves the
+  /// flattened (white) corners showing inside it.
+  final bool roundedTile;
 
   /// Scales the whole drawing about the canvas centre.
   ///
@@ -100,7 +109,7 @@ class TasukeLogoPainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           tile,
-          Radius.circular(size.width * _cornerFraction),
+          Radius.circular(roundedTile ? size.width * _cornerFraction : 0),
         ),
         Paint()..shader = TasukeGradients.brand.createShader(tile),
       );

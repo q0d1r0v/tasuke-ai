@@ -60,7 +60,11 @@ void main() {
       const String dir = 'assets/images';
 
       // iOS and the Play listing: the full-bleed tile.
-      await _render('$dir/icon.png', 1024, const TasukeLogoPainter());
+      await _render(
+        '$dir/icon.png',
+        1024,
+        const TasukeLogoPainter(roundedTile: false),
+      );
 
       // Android adaptive foreground: the trace alone, inset to survive the
       // circular mask, over `adaptive_icon_background` from pubspec.yaml.
