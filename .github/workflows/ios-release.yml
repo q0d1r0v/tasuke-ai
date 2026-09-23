@@ -1,0 +1,248 @@
+# A signed iOS build, and — when the credentials exist — a TestFlight upload.
+#
+# workflow_dispatch only: an upload consumes a TestFlight build number that can
+# never be reused for that version, so it is a decision somebody makes, not a
+# side effect of merging.
+name: iOS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: 'Upload to TestFlight (needs Apple credentials)'
+        type: boolean
+        default: false
+
+env:
+  BUNDLE_ID: uz.digitalgroup.tasuke
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # App Store Connect only accepts builds made with a current SDK, and the
+      # runner image does not always default to the newest Xcode it has.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      # Same pin as ci.yml — the toolchain moves only when somebody moves it.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.5
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # A throwaway keychain, not the login one: the runner's default keychain
+      # is locked with a password we don't know, so codesign can't reach a key
+      # imported into it.
+      - name: Import the signing certificate
+        env:
+          P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          for VAR in P12_BASE64 P12_PASSWORD TEAM_ID; do
+            if [ -z "${!VAR:-}" ]; then
+              echo "::error::APPLE_$VAR is not set — add it in Settings → Secrets and variables → Actions"
+              exit 1
+            fi
+          done
+
+          KEYCHAIN="$RUNNER_TEMP/tasuke-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+
+          echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" \
+            -k "$KEYCHAIN" -P "$P12_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+
+          security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
+
+          # Asserted, not printed: `security find-identity` exits 0 whether it
+          # found anything or not, so a half-imported p12 is a green step here
+          # and a generic "no signing certificate" twenty minutes later.
+          IDENTITIES="$(security find-identity -v -p codesigning "$KEYCHAIN")"
+          echo "$IDENTITIES"
+          if ! grep -q "Apple Distribution: .*($TEAM_ID)" <<< "$IDENTITIES"; then
+            echo "::error::the imported p12 produced no Apple Distribution identity for team $TEAM_ID"
+            exit 1
+          fi
+
+      # Written to both directories: Xcode 15 and earlier read
+      # ~/Library/MobileDevice/Provisioning Profiles; Xcode 16 moved it to
+      # ~/Library/Developer/Xcode/UserData/Provisioning Profiles.
+      - name: Install the provisioning profile
+        env:
+          PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROFILE_BASE64:-}" ]; then
+            echo "::error::APPLE_PROVISIONING_PROFILE_BASE64 is not set"
+            exit 1
+          fi
+
+          PROFILE="$RUNNER_TEMP/tasuke.mobileprovision"
+          echo "$PROFILE_BASE64" | base64 --decode > "$PROFILE"
+
+          for DIR in "$HOME/Library/MobileDevice/Provisioning Profiles" \
+                     "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$DIR"
+            cp "$PROFILE" "$DIR/tasuke.mobileprovision"
+          done
+
+          security cms -D -i "$PROFILE" > "$RUNNER_TEMP/profile.plist"
+          NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/profile.plist")
+          APP_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$RUNNER_TEMP/profile.plist")
+          echo "PROFILE_NAME=$NAME" >> "$GITHUB_ENV"
+          echo "Installed '$NAME' for $APP_ID"
+
+          # Compared, not just echoed: a profile for the wrong App ID installs
+          # and reads back perfectly, and only fails at export.
+          if [[ "$APP_ID" != *".$BUNDLE_ID" ]]; then
+            echo "::error::the profile is for $APP_ID, not for $BUNDLE_ID"
+            exit 1
+          fi
+
+      # The archive, not the export: ExportOptions.plist is read only by
+      # `xcodebuild -exportArchive`, which runs after the archive is already
+      # built, so it cannot be what tells the compiler how to sign. Without
+      # this, the Runner target defaults to automatic signing with no team and
+      # the archive dies with "Signing for Runner requires a development team".
+      - name: Point the release build at the distribution identity
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          {
+            echo ""
+            echo "// Added by .github/workflows/ios-release.yml — CI only."
+            echo "CODE_SIGN_STYLE = Manual"
+            echo "DEVELOPMENT_TEAM = $TEAM_ID"
+            echo "CODE_SIGN_IDENTITY = Apple Distribution"
+            echo "CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Distribution"
+            echo "PROVISIONING_PROFILE_SPECIFIER = $PROFILE_NAME"
+          } >> ios/Flutter/Release.xcconfig
+          cat ios/Flutter/Release.xcconfig
+
+      - name: Write ExportOptions.plist
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+
+          # Xcode 16 renamed this value and Xcode 15 does not know the new
+          # name — read the version rather than guess.
+          XCODE_MAJOR=$(xcodebuild -version | awk 'NR==1 {print $2}' | cut -d. -f1)
+          if [ "$XCODE_MAJOR" -ge 16 ]; then
+            METHOD=app-store-connect
+          else
+            METHOD=app-store
+          fi
+          echo "Xcode $XCODE_MAJOR → export method $METHOD"
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>$METHOD</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>uploadSymbols</key><true/>
+            <key>provisioningProfiles</key>
+            <dict><key>$BUNDLE_ID</key><string>$PROFILE_NAME</string></dict>
+          </dict>
+          </plist>
+          PLIST
+          plutil -lint "$RUNNER_TEMP/ExportOptions.plist"
+          cat "$RUNNER_TEMP/ExportOptions.plist"
+
+      # --build-number from the run number, never from pubspec.yaml: App Store
+      # Connect refuses a build number it has already accepted for that
+      # version, forever.
+      - name: Build the signed IPA
+        run: |
+          set -euo pipefail
+          flutter build ipa \
+            --release \
+            --build-number=${{ github.run_number }} \
+            --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
+
+          # Asserted separately: `flutter build ipa` has been observed to
+          # print an -exportArchive failure and still exit 0.
+          IPA=$(find build/ios/ipa -name '*.ipa' -type f 2>/dev/null | head -1 || true)
+          if [ -z "$IPA" ]; then
+            echo "::error::no .ipa was produced — read the exportArchive output above"
+            exit 1
+          fi
+          echo "IPA=$IPA" >> "$GITHUB_ENV"
+          ls -lh "$IPA"
+
+      - name: Upload the IPA as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tasuke-ios-${{ github.run_number }}
+          path: build/ios/ipa/*.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      # Gated twice: on the button, and on credentials existing. The App
+      # Store Connect API key is the clean way in; an Apple ID plus an
+      # app-specific password is what any Admin can produce alone, and
+      # altool accepts it. The key wins when both are set.
+      - name: Upload to TestFlight
+        if: ${{ inputs.upload }}
+        env:
+          API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${API_KEY_ID:-}" ] && [ -n "${API_ISSUER_ID:-}" ] && [ -n "${API_KEY_P8:-}" ]; then
+            mkdir -p "$HOME/.appstoreconnect/private_keys"
+            printf '%s\n' "$API_KEY_P8" > "$HOME/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8"
+            AUTH=(--apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID")
+            echo "Authenticating with the App Store Connect API key"
+          elif [ -n "${APPLE_ID:-}" ] && [ -n "${APP_PASSWORD:-}" ]; then
+            AUTH=(--username "$APPLE_ID" --password "@env:APP_PASSWORD")
+            echo "Authenticating as $APPLE_ID with an app-specific password"
+          else
+            echo "::error::upload was requested but neither APPLE_API_KEY_ID + APPLE_API_ISSUER_ID + APPLE_API_KEY_P8 nor APPLE_ID + APPLE_APP_PASSWORD are set"
+            exit 1
+          fi
+
+          echo "Validating $IPA"
+          xcrun altool --validate-app -f "$IPA" -t ios "${AUTH[@]}"
+
+          echo "Uploading $IPA"
+          xcrun altool --upload-app -f "$IPA" -t ios "${AUTH[@]}"
+
+      - name: Remove the keychain
+        if: always()
+        run: |
+          rm -f "$HOME/.appstoreconnect/private_keys/"*.p8 || true
+          if [ -n "${KEYCHAIN:-}" ]; then
+            security delete-keychain "$KEYCHAIN" || true
+          fi
