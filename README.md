@@ -11,7 +11,7 @@ voice capture works in airplane mode from the start. The only network traffic
 is the store's own billing, and links that open in the browser.
 
 - Flutter 3.47.5 / Dart 3.13.4 · iOS 16.4+, iPhone only · Android (minSdk from the Flutter SDK)
-- App id `uz.digitalgroup.tasuke` · version `1.0.0+2` · English only
+- App id `uz.digitalgroup.tasuke` · version `1.0.0+3` · English only
 
 ---
 

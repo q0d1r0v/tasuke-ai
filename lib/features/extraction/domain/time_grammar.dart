@@ -295,13 +295,13 @@ abstract final class TimeGrammar {
   }
 
   static LocalTimeOfDay? _deadlineHour(RegExpMatch match, String text) {
-    if (!_endsClockTime(text, match.end)) return null;
+    if (!endsClockTime(text, match.end)) return null;
     return _bareHour(match, text);
   }
 
   /// Whether a clock time may end at [end]: the clause ends, a joining word,
   /// a day, or the next thing to do follows ("at six call Anna").
-  static bool _endsClockTime(String text, int end) {
+  static bool endsClockTime(String text, int end) {
     final String next = wordAfter(text, end);
     return next.isEmpty ||
         RegExp(r'^\s*[.,;:!?]').hasMatch(text.substring(end)) ||
@@ -316,7 +316,7 @@ abstract final class TimeGrammar {
     // counts, and there are more counted nouns than anyone can list. A clock
     // time is followed by the end of the clause, a joining word, a day, or
     // the next thing to do ("at six call Anna").
-    if (!_endsClockTime(text, match.end)) return null;
+    if (!endsClockTime(text, match.end)) return null;
     final int? hour = _hourWords[match[1]!];
     if (hour == null || hour == 0) return null;
     final int minute = switch (match[2]?.replaceAll(RegExp(r'[\s-]+'), ' ')) {
@@ -351,7 +351,7 @@ abstract final class TimeGrammar {
         match[4] != null || match[7] != null || match[8] != null;
     if (!settled &&
         (match[5] != null || match[2] != 'at') &&
-        !_endsClockTime(text, match.end)) {
+        !endsClockTime(text, match.end)) {
       return null;
     }
     final int minute = match[4] != null
@@ -469,6 +469,12 @@ abstract final class TimeGrammar {
     'sunday',
     'i',
     'we',
+    // "at five no six", "at five, sorry, six" — the time taken back.
+    'no',
+    'sorry',
+    'actually',
+    'wait',
+    'rather',
   };
 
   static const Map<String, int> _hourWords = <String, int>{
@@ -500,7 +506,34 @@ abstract final class TimeGrammar {
       r'(?:\b(?:at|by|around|about|from|before|until|till)\s+)?';
   static const String _meridiemTail = r'([ap])\.?\s?m\.?(?![a-z])';
 
+  /// "between 2 and 3", "between 10 and 11 a.m." — a window, which starts at
+  /// the first hour. ⚠️ Read as nothing, the "and" split the note and left
+  /// "Meet Sardor between 2" with no time.
+  static LocalTimeOfDay? _between(RegExpMatch match, String text) {
+    final String? meridiem = match[3] ?? match[4];
+    if (meridiem == null && !endsClockTime(text, match.end)) return null;
+    final int hour = int.parse(match[1]!);
+    final int minute = match[2] == null ? 0 : int.parse(match[2]!);
+    if (minute > 59) return null;
+    final int mapped = meridiem != null
+        ? _hourWithMeridiem(hour, meridiem)
+        : _hourWithoutMeridiem(
+            hour,
+            writtenAs24h: match[1]!.length == 2 && match[1]!.startsWith('0'),
+          );
+    if (mapped < 0 || mapped > 23) return null;
+    return LocalTimeOfDay.tryFromMinutes((mapped * 60) + minute);
+  }
+
   static final List<_TimeRule> _rules = <_TimeRule>[
+    _TimeRule(
+      RegExp(
+        r'\bbetween\s+(\d{1,2})(?:[:.](\d{2}))?(?:\s*([ap])\.?\s?m\.?)?'
+        r'\s+and\s+\d{1,2}(?:[:.]\d{2})?(?:\s*([ap])\.?\s?m\.?(?![a-z]))?'
+        r'(?![:.]?\d)',
+      ),
+      _between,
+    ),
     // "in the evening at 7", "in the morning at 7:30", "at night at eleven"
     //
     // ⚠️ The part of the day first, the way people learning English often put

@@ -1,5 +1,5 @@
 {
- "_about": "Regression cases from the adversarial reviews of the rule-based extractor: 2026-09-21, and from 'The electrician is coming tomorrow at 10' on, 2026-09-23 (relabelled for this file's reference moment). From 'Eh, call Anna at 5.' on, the generalisation and robustness reviews of 2026-09-23, relabelled the same way; from 'After the guests leave, wash the dishes.' on, variants of those findings that still failed after the first round of fixes; from 'Buy milk, need to call Anna at 5.' on, the review of those fixes, which found rules broader than their findings and notes that failed before them too. Every case reproduced a real bug. '*' accepts any value. From \"Pay the Internet bill. It's due on the 25th.\" on, whisper transcripts of the voice evaluation's TUNE clips (dev, fresh and complex-dev cases, as whisper base.en wrote them), each a note the extractor lost to how whisper writes speech down; the complex-dev ones relabelled from 2026-09-23T15:00 to this file's reference moment. From \"Remind me in 15 minutes to call the plumber, then tonight at 9 cent the invoice to Rustam.\" on, whisper-style variants of the four ways the owner's on-device transcripts of 2026-09-23 failed (extraction_device_transcripts.json), labelled for this file's reference moment: a \"then\" and a when before a verb whisper misheard or no rule knows; a full stop whisper put between \"then <when>\" and the task it introduces; the comma left out before \"on <date>\" and a verb; and two whens in one clause, the clock time said with a day of its own.",
+ "_about": "Regression cases from the adversarial reviews of the rule-based extractor: 2026-09-21, and from 'The electrician is coming tomorrow at 10' on, 2026-09-23 (relabelled for this file's reference moment). From 'Eh, call Anna at 5.' on, the generalisation and robustness reviews of 2026-09-23, relabelled the same way; from 'After the guests leave, wash the dishes.' on, variants of those findings that still failed after the first round of fixes; from 'Buy milk, need to call Anna at 5.' on, the review of those fixes, which found rules broader than their findings and notes that failed before them too. Every case reproduced a real bug. '*' accepts any value. From \"Pay the Internet bill. It's due on the 25th.\" on, whisper transcripts of the voice evaluation's TUNE clips (dev, fresh and complex-dev cases, as whisper base.en wrote them), each a note the extractor lost to how whisper writes speech down; the complex-dev ones relabelled from 2026-09-23T15:00 to this file's reference moment. From \"Remind me in 15 minutes to call the plumber, then tonight at 9 cent the invoice to Rustam.\" on, whisper-style variants of the four ways the owner's on-device transcripts of 2026-09-23 failed (extraction_device_transcripts.json), labelled for this file's reference moment: a \"then\" and a when before a verb whisper misheard or no rule knows; a full stop whisper put between \"then <when>\" and the task it introduces; the comma left out before \"on <date>\" and a verb; and two whens in one clause, the clock time said with a day of its own. From 'Tomorrow is, I have some tasks.' on, the list headings the owner's phone turned into cards on 2026-09-23 (a day and a dangling \"is\" before the heading, a count said twice, a \"so\" before it, the heading and the first task in one breath) and their variants. From 'Remind me in like 20 minutes…' on, the adversarial review of 2026-09-24 (60 fresh notes), relabelled for this file's reference moment: a hedged or \"after\" duration, \"or so\", a filler between \"and\" and the task, a time corrected to a bare hour, a day said twice, a window, \"before that\", a place said after \"go to\", a moved appointment and a trailing \"too\".",
  "now": "2026-09-21T10:00",
  "cases": [
   {
@@ -3180,6 +3180,380 @@
      "title": "Call the electrician back",
      "date": "2026-09-21",
      "time": "20:00"
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow is, I have some tasks. I have one some tasks.",
+   "tasks": []
+  },
+  {
+   "note": "So, I have three tasks for tomorrow. Call Aziz, pay the rent and go to the gym.",
+   "tasks": [
+    {
+     "title": "Call Aziz",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Pay the rent",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Go to the gym",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Okay so for tomorrow I have a few things. Call mom, buy bread.",
+   "tasks": [
+    {
+     "title": "Call mom",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Buy bread",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "My tasks for tomorrow are call Aziz and buy milk.",
+   "tasks": [
+    {
+     "title": "Call Aziz",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Buy milk",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow, I have two tasks: call the bank and buy milk.",
+   "tasks": [
+    {
+     "title": "Call the bank",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Buy milk",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Here are my tasks for Friday. Pay the rent. Call Aziz.",
+   "tasks": [
+    {
+     "title": "Pay the rent",
+     "date": "2026-09-25",
+     "time": null
+    },
+    {
+     "title": "Call Aziz",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow is Friday. Call the bank.",
+   "tasks": [
+    {
+     "title": "Call the bank",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow is, um, I have a task. Call Aziz.",
+   "tasks": [
+    {
+     "title": "Call Aziz",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "My to-do list for tomorrow is: call the bank, buy milk.",
+   "tasks": [
+    {
+     "title": "Call the bank",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Buy milk",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "My plan for tomorrow is to call Aziz and buy milk.",
+   "tasks": [
+    {
+     "title": "Call Aziz",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Buy milk",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "On October 5th I have two things. Pay the rent, call the landlord.",
+   "tasks": [
+    {
+     "title": "Pay the rent",
+     "date": "2026-10-05",
+     "time": null
+    },
+    {
+     "title": "Call the landlord",
+     "date": "2026-10-05",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow will be Wednesday, so pay the rent.",
+   "tasks": [
+    {
+     "title": "Pay the rent",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "The things are in the car, bring them inside.",
+   "tasks": [
+    {
+     "title": "The things are in the car",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Bring them inside",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Review the tasks for Monday.",
+   "tasks": [
+    {
+     "title": "Review the tasks",
+     "date": "2026-09-28",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Remind me in like 20 minutes to take the chicken out of the freezer.",
+   "tasks": [
+    {
+     "title": "Take the chicken out of the freezer",
+     "date": "2026-09-21",
+     "time": "10:20"
+    }
+   ]
+  },
+  {
+   "note": "In about an hour call the bank.",
+   "tasks": [
+    {
+     "title": "Call the bank",
+     "date": "2026-09-21",
+     "time": "11:00"
+    }
+   ]
+  },
+  {
+   "note": "In an hour or so call Anna.",
+   "tasks": [
+    {
+     "title": "Call Anna",
+     "date": "2026-09-21",
+     "time": "11:00"
+    }
+   ]
+  },
+  {
+   "note": "Remind me in half an hour or so to call Anna.",
+   "tasks": [
+    {
+     "title": "Call Anna",
+     "date": "2026-09-21",
+     "time": "10:30"
+    }
+   ]
+  },
+  {
+   "note": "I'm, remind me after two days to call Bobur about the money.",
+   "tasks": [
+    {
+     "title": "Call Bobur about the money",
+     "date": "2026-09-23",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "After 2 hours take the medicine.",
+   "tasks": [
+    {
+     "title": "Take the medicine",
+     "date": "2026-09-21",
+     "time": "12:00"
+    }
+   ]
+  },
+  {
+   "note": "After two days of rain, clean the gutters.",
+   "tasks": [
+    {
+     "title": "Clean the gutters",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Tonight I need to call my brother Jamshid and. Uh. Transfer him the money for the wedding.",
+   "tasks": [
+    {
+     "title": "Call my brother Jamshid",
+     "date": "2026-09-21",
+     "time": "20:00"
+    },
+    {
+     "title": "Transfer him the money for the wedding",
+     "date": "2026-09-21",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Call Jamshid tomorrow and, um, pay the bill.",
+   "tasks": [
+    {
+     "title": "Call Jamshid",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Pay the bill",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Remind me to call Aziza at 5 actually make it 6.",
+   "tasks": [
+    {
+     "title": "Call Aziza",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Call Aziza at 5, sorry, 6.",
+   "tasks": [
+    {
+     "title": "Call Aziza",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Call Aziza at five no six.",
+   "tasks": [
+    {
+     "title": "Call Aziza",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow tomorrow I have to go to the bank at 10 no 11 and then to the tax office.",
+   "tasks": [
+    {
+     "title": "Go to the bank",
+     "date": "2026-09-22",
+     "time": "11:00"
+    },
+    {
+     "title": "Go to the tax office",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Meet Sardor tomorrow between 2 and 3.",
+   "tasks": [
+    {
+     "title": "Meet Sardor",
+     "date": "2026-09-22",
+     "time": "14:00"
+    }
+   ]
+  },
+  {
+   "note": "Friday at 7 pm dinner at Afsona with the team, before that buy a gift for Shoxrux.",
+   "tasks": [
+    {
+     "title": "Dinner at Afsona with the team",
+     "date": "2026-09-25",
+     "time": "19:00"
+    },
+    {
+     "title": "Buy a gift for Shoxrux",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Call the dentist to move the appointment from Friday to Monday.",
+   "tasks": [
+    {
+     "title": "Call the dentist to move the appointment from Friday to Monday",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Order the cake from Bon too.",
+   "tasks": [
+    {
+     "title": "Order the cake from Bon",
+     "date": null,
+     "time": null
     }
    ]
   }

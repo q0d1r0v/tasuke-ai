@@ -64,6 +64,7 @@ final class TitleCleaner {
       text = _dropInfinitiveTo(text);
       text = _dropCallTo(text);
       text = _dropSubject(text);
+      text = _dropListHeading(text);
       text = text.replaceFirst(_trailingRemnant, '').trimRight();
       text = text.replaceFirst(_appositiveOne, '').trimRight();
       text = text.replaceFirst(_trailingRescheduled, '').trimRight();
@@ -234,6 +235,27 @@ final class TitleCleaner {
     final String next = wordAfter(rest.toLowerCase(), 0);
     return _isVerb(next) || next == 'go' ? rest : text;
   }
+
+  /// "My tasks (for tomorrow) are call Aziz" → "call Aziz", "the plan for
+  /// (Friday) is to pay the rent" → "to pay the rent": the list announced
+  /// and begun in one breath. Only when a verb comes next — "my list is too
+  /// long" is not a heading.
+  String _dropListHeading(String text) {
+    final Match? match = _listHeading.matchAsPrefix(text);
+    if (match == null) return text;
+    final String rest = text.substring(match.end);
+    final String lower = rest.toLowerCase();
+    final String next = wordAfter(lower, lower.startsWith('to ') ? 3 : 0);
+    return _isVerb(next) ? rest : text;
+  }
+
+  static final RegExp _listHeading = RegExp(
+    r'(?:my|our|the)\s+(?:(?:main|other|first|next)\s+)?(?:tasks?|things?'
+    r'|to[ -]?dos?|errands?|plans?|jobs?|(?:to[ -]?do\s+|task\s+)?list)'
+    r'(?:\s+(?:for|to do))?'
+    r'\s+(?:are|is|include|includes)\b[\s:,]*',
+    caseSensitive: false,
+  );
 
   static bool _isVerb(String word) =>
       ClauseLexicon.isImperativeVerb(word) ||
@@ -512,6 +534,9 @@ final class TitleCleaner {
     r'(?:,\s*)(?:both(?:\s+of\s+them)?|(?:all|each)\s+of\s+(?:them|these))$'
     r"|(?:,\s*|\s+)(?:it['\u2019]?s|it is|which is|that is)(?:\s+due)?$"
     r"|(?:,\s*|\s+)(?:don['\u2019]t forget|please|ok|okay)$"
+    // "Order the cake from Bon too", "…and then what else"
+    r'|(?:,\s*|\s+)(?:too|as\s+well)$'
+    r'|(?:,\s*|\s+)(?:and\s+)?(?:then\s+)?what\s+else$'
     // "change the oil on Saturday maybe": a hedge left behind by the day.
     r'|(?:,\s*|\s+)(?:maybe|probably|perhaps)$'
     // "print her homework, do it (tonight)"

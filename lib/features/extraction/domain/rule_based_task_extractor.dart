@@ -184,8 +184,10 @@ final class RuleBasedTaskExtractor implements TaskExtractor {
       if (NonTask.isNarration(clause) && when.isEmpty) continue;
       // "I'm free tomorrow, clean the garage", "I'm set for Friday, so today
       // buy the gift": how the speaker stands on a day is no task — the day
-      // is the one of the task after it, unless that names its own.
-      if (when.dateSpoken && NonTask.isSpeakerState(clause)) {
+      // is the one of the task after it, unless that names its own. So is
+      // which day it is: "tomorrow will be Monday, so pay the rent".
+      if (when.dateSpoken &&
+          (NonTask.isSpeakerState(clause) || NonTask.namesTheDay(clause))) {
         if (when.confidence == Confidence.high &&
             !isLast &&
             !_sentenceEnd.hasMatch(clause) &&
@@ -778,6 +780,9 @@ final class RuleBasedTaskExtractor implements TaskExtractor {
     'then',
     'and then',
     'after that',
+    // "Friday at 7 dinner with the team, before that buy a gift": the same
+    // day, just earlier.
+    'before that',
   };
 
   /// "the flight is at 6", "my job interview is at 10", "it's at noon" — a

@@ -19,13 +19,22 @@ abstract final class NonTask {
     // "Thank you, that's all for now." / "Okay, so I have a few tasks for
     // today, let me think." — every piece has to be empty talk, not just one.
     // "Um, is this thing on?" — the "um" says nothing either way.
-    return clause
+    final List<String> parts = clause
         .split(RegExp(r'[,;]|\band\b'))
         .map(_normalise)
         .where((String part) => part.isNotEmpty && !_onlyFiller.hasMatch(part))
-        .every(
-          (String part) => _smallTalk.hasMatch(part) || _isPreambleText(part),
-        );
+        .toList();
+    final List<String> said = parts
+        .where((String part) => !_dayAlone.hasMatch(part))
+        .toList();
+    // "Tomorrow:", "Okay, for Saturday." — the day, which the extractor
+    // reads as the day of what follows. Set aside only beside a preamble.
+    if (said.length != parts.length && !said.any(_isPreambleText)) {
+      return false;
+    }
+    return said.every(
+      (String part) => _smallTalk.hasMatch(part) || _isPreambleText(part),
+    );
   }
 
   /// Whether [clause] asks rather than says what to do: "did I pay the phone
@@ -120,6 +129,19 @@ abstract final class NonTask {
         _speaker.hasMatch(match[1]!) &&
         match[2] == null;
   }
+
+  /// "Tomorrow is Friday", "today's Monday" — which day it is, said aloud.
+  /// Never a task; its day may be the day of the one after it: "tomorrow
+  /// will be Monday, so pay the rent".
+  static bool namesTheDay(String clause) =>
+      _namesTheDay.hasMatch(_normalise(clause));
+
+  static final RegExp _namesTheDay = RegExp(
+    '^$_filler'
+    r"(?:today|tomorrow|tonight)(?: is|'s| will be) (?:a )?(?:monday|tuesday"
+    r'|wednesday|thursday|friday|saturday|sunday)'
+    r'(?: (?:so|and|then|already))?$',
+  );
 
   /// A state that is never a task, whatever else it names: how today is or
   /// was ("today is my father's birthday"), or where the speaker is right now
@@ -239,10 +261,35 @@ abstract final class NonTask {
       r'|hi|hey|hello|ah|ooh|wow|anyway|and|but)\s+)*';
 
   /// A comma-separated piece that says nothing. "like" counts only here, as a
-  /// whole piece: "I have to, like, buy milk".
+  /// whole piece: "I have to, like, buy milk". "So, I have three tasks for
+  /// tomorrow" — the "so" said nothing, and it kept the preamble a card.
   static final RegExp _onlyFiller = RegExp(
-    '^(?:${ClauseLexicon.hesitations}|ah|ooh|like)\$',
+    '^(?:$_fillerWord)(?:\\s+(?:$_fillerWord))*\$',
   );
+
+  static const String _fillerWord =
+      '${ClauseLexicon.hesitations}|ah|ooh|like|so|well|oh|and|but|then|now';
+
+  /// A piece that is only the day, or the day and a dangling "is": "Tomorrow,
+  /// I have two tasks", "Tomorrow is, I have some tasks" — the speaker
+  /// starting the sentence twice. The day still frames the list.
+  static final RegExp _dayAlone = RegExp(
+    '^(?:for |on )?$_day(?: is| was| will be|\x27s)?\$',
+  );
+
+  /// The day a list is for: "tomorrow", "this Friday", "Monday morning",
+  /// "October 5th".
+  static const String _day =
+      r'(?:today|tomorrow|tonight|this (?:morning|afternoon|evening|week'
+      r'|weekend)|next (?:week|weekend)'
+      r'|(?:this |next )?(?:monday|tuesday|wednesday|thursday|friday|saturday'
+      r'|sunday)|(?:the \d{1,2}(?:st|nd|rd|th)?|\d{1,2}(?:st|nd|rd|th))'
+      '(?: of $_month)?|$_month (?:the )?\\d{1,2}(?:st|nd|rd|th)?)'
+      r'(?: (?:morning|afternoon|evening|night))?';
+
+  static const String _month =
+      r'(?:january|february|march|april|may|june|july|august|september'
+      r'|october|november|december)';
 
   static final RegExp _smallTalk = RegExp(
     '^$_filler'
@@ -283,25 +330,31 @@ abstract final class NonTask {
 
   static final RegExp _preamble = RegExp(
     '^$_filler'
-    r'(?:(?:today|tomorrow|tonight|this (?:morning|afternoon|evening|week)'
-    r'|on (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)'
-    r'|next week)\s+)?'
+    // "Tomorrow I have…", "on Friday there are…", "for tomorrow I have…"
+    '(?:(?:for |on )?$_day\\s+)?'
     r"(?:(?:(?:i|we) (?:have|have got|'ve got|got|need to do|must do|want to do"
     r'|should do)'
     r'|there (?:are|is)|here (?:are|is)|here s|these are|this is)\s+)?'
-    r'(?:some|a few|a couple of|a couple|many|several|lots of|a lot of|few'
-    r'|my|the|our|\d+|one|a|an|single|two|three|four|five|six|seven|eight'
-    r'|nine|ten)?\s*'
+    // ⚠️ Any number of them: whisper wrote "I have one some tasks" for a
+    // speaker who changed their mind mid-word. One word each — "a few",
+    // "a lot of" are two and three — so that a phrase can be read only one
+    // way: with "a few" as well as "a" and "few", whisper looping "a few a
+    // few a few…" took 16 seconds to fail.
+    r'(?:(?:some|a|an|few|couple|of|lots|lot|many|several|my|the|our|\d+'
+    r'|one|single|two|three|four|five|six|seven|eight|nine|ten)\s+)*'
     // "the last thing, call Anna", "one last thing" — what comes next, not
     // a thing the task is about.
     r'(?:small |little |important |quick |more |other |last |final |next )?'
     // "work stuff", "house things", "school tasks"
     r'(?:(?:work|home|house|household|school|university|family|office'
     r'|personal|business) )?'
-    r'(?:tasks?|things?|items?|to ?dos?|errands?|stuff|jobs?|list|plans?'
-    r'|reminders?)'
-    r'(?:\s+(?:to do|for (?:today|tomorrow|tonight|this week|the day|now)'
-    r'|today|tomorrow|tonight))*$',
+    r'(?:tasks?|things?|items?|to[ -]?dos?|errands?|stuff|jobs?'
+    r'|(?:to[ -]?do |task |shopping )?list|plans?|reminders?)'
+    // "…for tomorrow", "…for Friday", "…on the 5th", "…to do today"
+    '(?:\\s+(?:to do|for now|for the (?:day|week|weekend)'
+    '|(?:for |on )?$_day))*'
+    // "My to-do list for tomorrow is: call the bank…"
+    r'(?:\s+(?:is|are|include))?$',
   );
 
   /// [_narration] in [text] — unless its subject is two things joined by

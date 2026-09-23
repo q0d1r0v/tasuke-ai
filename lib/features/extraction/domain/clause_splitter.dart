@@ -525,7 +525,8 @@ final class ClauseSplitter {
         .replaceAllMapped(
           _byTheWay,
           (Match m) => '${m[1]}${m[2] == 'B' ? 'Oh' : 'oh'}',
-        );
+        )
+        .replaceAllMapped(_danglingJoint, (Match m) => '${m[1]}, ');
     if (text.isEmpty) return const <SplitClause>[];
     final List<SplitClause> clauses = <SplitClause>[];
     final List<String> sentences = _toppedSentences(
@@ -588,6 +589,15 @@ final class ClauseSplitter {
     r'([Bb])y the way\b',
   );
 
+  /// "…call my brother Jamshid and. Uh. Transfer him the money": the "and"
+  /// whisper ended a sentence with, and the hesitation it wrote as one of its
+  /// own. ⚠️ Read as two stops, the transfer lost the day of the call.
+  static final RegExp _danglingJoint = RegExp(
+    r'\b(and then|and|then)[.!]+\s+'
+    '(?:(?:${ClauseLexicon.hesitations})[.,!]*\\s+)*(?=\\S)',
+    caseSensitive: false,
+  );
+
   /// "And", "Then", "And then", "After that", "And after that" — with any
   /// hesitation in front — opening a sentence.
   static final RegExp _openingJoint = RegExp(
@@ -609,8 +619,10 @@ final class ClauseSplitter {
   /// And "had had" and "that that" are English.
   static final RegExp _stutter = RegExp(
     r"(?<![\w'-])(at|to|for|with|about|from|the|a|an|and|or|but|so|then|i|we"
-    r"|my)(?:,\s*\1(?![\w'-]))+"
-    r"|(?<![\w'-])(at|to|for|the|a|an|and|i|we|my)(?:\s+\2(?![\w'-]))+"
+    r"|my|today|tomorrow|tonight)(?:,\s*\1(?![\w'-]))+"
+    // "Tomorrow tomorrow I have to…" — ⚠️ only one was cut from the title.
+    r"|(?<![\w'-])(at|to|for|the|a|an|and|i|we|my|today|tomorrow|tonight)"
+    r"(?:\s+\2(?![\w'-]))+"
     r"|(?<![\w'-])([a-z']+)(?:,\s*\3(?![\w'-])){2,}",
     caseSensitive: false,
   );
@@ -936,7 +948,7 @@ final class ClauseSplitter {
   /// re-parsing the whole sentence for the next grew with the cube of the
   /// input: 100 corrections in 5,000 characters took over a second.
   String _withoutRetractedWhen(String sentence) {
-    String out = sentence;
+    String out = _correctedToBareHour(sentence);
     while (true) {
       final String folded = foldTemporalCase(out);
       final List<_Cut> cuts = <_Cut>[
@@ -960,6 +972,50 @@ final class ClauseSplitter {
       out = kept.toString();
     }
   }
+
+  /// [sentence] with an "at" in front of the bare hour a clock time was
+  /// corrected to: "at 5 actually make it 6", "at 10 no 11", "at five, sorry,
+  /// six" — so that [_retractions] sees the hour said instead. ⚠️ Without it
+  /// the first time stayed and the correction was in the title: "Call Aziza
+  /// actually make it 6" at 17:00.
+  ///
+  /// Only where the result reads as a clock time: "at 5, no, 6 people" is not
+  /// one, and gets no "at".
+  static String _correctedToBareHour(String sentence) {
+    String out = sentence;
+    for (final TimeMatch time in TimeGrammar.allMatches(
+      foldTemporalCase(sentence),
+    ).toList().reversed) {
+      final String folded = foldTemporalCase(out);
+      final Match? retraction = _toBareHour.matchAsPrefix(folded, time.end);
+      if (retraction == null) continue;
+      final int at = retraction.end;
+      // Read only what follows: the whole sentence again for every
+      // correction doubled the time a long note took.
+      final Match? words = _nextWords.matchAsPrefix(folded, at);
+      final String said = 'at ${words![0]}';
+      final bool reads = TimeGrammar.allMatches(said).any(
+        (TimeMatch m) =>
+            m.start == 0 && m.end > 3 && TimeGrammar.endsClockTime(said, m.end),
+      );
+      if (reads) out = '${out.substring(0, at)}at ${out.substring(at)}';
+    }
+    return out;
+  }
+
+  /// The hour and what follows it in the sentence, up to 60 characters:
+  /// enough to tell "6 p.m." and "6, call Anna" from "6 people".
+  static final RegExp _nextWords = RegExp(r'[^.!?]{0,60}');
+
+  static final RegExp _toBareHour = RegExp(
+    '[\\s,.;–—-]*(?:(?:${ClauseLexicon.hesitations}|oh)[\\s,.;–—-]+)*'
+    r'(?:no|wait|sorry|actually|i\s+mean|or\s+rather|rather|make\s+(?:it|that))'
+    r'(?:[\s,.;–—-]+(?:no|wait|sorry|actually|i\s+mean'
+    '|${ClauseLexicon.hesitations}|make\\s+(?:it|that)))*'
+    r'[\s,.;–—-]+'
+    r'(?=(?:\d{1,2}(?:[:.]\d{2})?|one|two|three|four|five|six|seven|eight'
+    r'|nine|ten|eleven|twelve)\b)',
+  );
 
   /// The ranges of [folded] to replace — with nothing, or with the when said
   /// instead — from each when in [spans] up to the one that replaces it.
@@ -1104,7 +1160,13 @@ final class ClauseSplitter {
     int cursor = 0;
     String pending = '';
     for (final RegExpMatch match in _connective.allMatches(folded)) {
-      if (whens.any(((int, int) w) => w.$1 < match.start && match.end < w.$2)) {
+      // The joint itself, without the spaces around it: the "so" of "in an
+      // hour or so" is the last word of its when.
+      final String said = match[0]!;
+      final int jointStart =
+          match.start + (said.length - said.trimLeft().length);
+      final int jointEnd = match.end - (said.length - said.trimRight().length);
+      if (whens.any(((int, int) w) => w.$1 < jointStart && jointEnd <= w.$2)) {
         continue;
       }
       // "I also need to call him" — an "also" right after its subject is an
@@ -1112,6 +1174,13 @@ final class ClauseSplitter {
       final String joint = (match[1] ?? '').trim();
       if (joint == 'also' &&
           _alsoGlue.contains(wordBefore(folded, match.start))) {
+        continue;
+      }
+      // "Finish the report before that meeting": a "that" of its own. Only
+      // "…, before that buy a gift", "before that, call Anna" join two tasks.
+      if (joint.startsWith('before') &&
+          !RegExp(r'^\s*,').hasMatch(folded.substring(match.end)) &&
+          !ClauseLexicon.isImperativeVerb(wordAfter(folded, match.end))) {
         continue;
       }
       // "It's raining so cancel the picnic" — "so" and "but" only join two
@@ -1345,8 +1414,10 @@ final class ClauseSplitter {
       joints.add(joint);
     }
 
-    // Filler between two tasks, held for the one after it.
+    // Filler between two tasks, held for the one after it, and the joint it
+    // was said after.
     String carried = '';
+    String carriedJoint = '';
     // The thing said first, for the tasks after it that say "it" or "them":
     // "The tickets, I need to buy them and send them to Aziz".
     String? topic;
@@ -1367,21 +1438,32 @@ final class ClauseSplitter {
       // still counts: "finish the deck, second, print it" is two tasks.
       if (_isFillerOnly(fragment.text)) {
         carried = '$carried${fragment.text}, ';
+        // "…tomorrow and, um, pay the bill": the "and" said before the
+        // filler is the joint of what follows it. ⚠️ Dropped, it left the
+        // comma after the "um" as the joint, and the bill lost the day of the
+        // task before it.
+        if (carriedJoint.isEmpty && fragment.separator != ',') {
+          carriedJoint = fragment.separator;
+        }
         continue;
       }
       if (carried.isNotEmpty) {
         fragment = _Fragment(
-          separator: fragment.separator,
+          separator: fragment.separator == ',' && carriedJoint.isNotEmpty
+              ? carriedJoint
+              : fragment.separator,
           text: '$carried${fragment.text}',
         );
         carried = '';
+        carriedJoint = '';
       }
       // "…because guests are coming": why, not what.
       if (fragment.separator == 'because') continue;
       final String sofar = current.toString();
       // "on the 1st pay the mortgage, on the 2nd the gas bill" — the verb is
       // said once and meant twice.
-      final String? gapped = _gapped(sofar, fragment);
+      final String? gapped =
+          _gapped(sofar, fragment) ?? _gappedGoing(sofar, fragment);
       if (gapped != null) {
         fragment = _Fragment(separator: fragment.separator, text: gapped);
       }
@@ -2557,6 +2639,35 @@ final class ClauseSplitter {
         '${verb[0]!.trim()} ${fragment.text.substring(lead.start)}';
   }
 
+  /// "go to the bank at 11 and then to the tax office" is "…and then go to
+  /// the tax office": [fragment] with the going put back, or null when it is
+  /// not a place said after one. ⚠️ Glued on, it was one card, "Go to the
+  /// bank and then to the tax office", and the office had no day of its own.
+  String? _gappedGoing(String sofar, _Fragment fragment) {
+    // ⚠️ Only a next stop: "go to the gym and to the pool" is one trip.
+    if (!fragment.separator.contains('then') &&
+        !fragment.separator.contains('that')) {
+      return null;
+    }
+    final String folded = foldTemporalCase(fragment.text);
+    final int start = _lead(folded).start;
+    if (_destination.matchAsPrefix(folded, start) == null) return null;
+    final List<RegExpMatch> going = _going
+        .allMatches(foldTemporalCase(sofar))
+        .toList();
+    if (going.isEmpty) return null;
+    return '${fragment.text.substring(0, start)}${going.last[1]} '
+        '${fragment.text.substring(start)}';
+  }
+
+  static final RegExp _going = RegExp(
+    r'\b(go|drive|walk|head|run|come)\s+(?:back\s+|over\s+)?to\b',
+  );
+
+  static final RegExp _destination = RegExp(
+    r'to\s+(?:the|my|our|his|her|their|a|an)\s+[a-z]',
+  );
+
   /// Whether [fragment] opens with a when and goes on to a word in a verb's
   /// place — one with its object after it: "tonight at 10 cent the report to
   /// Amma", "tomorrow at 9 fax the documents to Bob".
@@ -2755,7 +2866,8 @@ final class ClauseSplitter {
   /// "because" is one only so that what follows it can be dropped: "buy rice
   /// for plov because guests are coming" is a reason, not part of the task.
   static final RegExp _connective = RegExp(
-    r'\s*(?:,\s*)?\b(and\s+then|and\s+also|after\s+that|and|also|then|plus'
+    r'\s*(?:,\s*)?\b(and\s+then|and\s+also|after\s+that|before\s+that|and'
+    r'|also|then|plus'
     r'|so|but|because)\b\s*'
     r'|\s*(;)\s*'
     r'|\s*(,)\s*',
