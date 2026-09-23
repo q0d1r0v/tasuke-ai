@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tasuke_ai/app/app.dart';
 import 'package:tasuke_ai/core/clock/clock.dart';
 import 'package:tasuke_ai/core/clock/clock_provider.dart';
+import 'package:tasuke_ai/core/permissions/app_permission.dart';
+import 'package:tasuke_ai/core/permissions/permission_providers.dart';
 import 'package:tasuke_ai/core/storage/pref_keys.dart';
 import 'package:tasuke_ai/core/storage/prefs.dart';
 import 'package:tasuke_ai/core/time/local_date.dart';
@@ -55,6 +57,11 @@ void main() {
         overrides: <Override>[
           sharedPreferencesProvider.overrideWithValue(preferences),
           clockProvider.overrideWithValue(clock),
+          // A fresh simulator has granted nothing, and the home banner that
+          // says so would sit on top of every listing screenshot.
+          missingPermissionsProvider.overrideWith(
+            (Ref ref) async => const <AppPermission>[],
+          ),
         ],
         child: const TasukeApp(),
       ),
