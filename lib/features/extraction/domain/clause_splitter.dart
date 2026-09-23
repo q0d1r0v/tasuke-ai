@@ -690,6 +690,11 @@ final class ClauseSplitter {
           _endsWithFullStop(sentence)) {
         out[i + 1] =
             '${sentence.replaceFirst(_terminalStop, '')}, ${out[i + 1]}';
+      } else if (i + 1 < out.length &&
+          _endsWithWhenForNext(sentence, out[i + 1])) {
+        out[i + 1] =
+            '${sentence.replaceFirst(_terminalStop, '')}, '
+            '${_verbInLowerCase(out[i + 1])}';
       } else {
         merged.add(sentence);
       }
@@ -739,6 +744,82 @@ final class ClauseSplitter {
               ClauseLexicon.isImperativeVerb(m[0]!) &&
               !_statementVerbs.contains(m[0]!),
         );
+  }
+
+  /// Whether [sentence] ends in "then" and a when only, and [next] is a
+  /// task with no when of its own that opens with its verb: "…take my
+  /// medicine, then tonight at 10. Send the report to Anna."
+  ///
+  /// ⚠️ whisper heard the pause after the when, not the one before it. Read
+  /// where it put the stop, "then tonight at 10" went back onto the task
+  /// before — the medicine at 10:00, with "then tonight" in its title — and
+  /// the report had no when at all. Said with its own when ("…at 10. Call
+  /// Anna at 5.") the next task is not the one the when is for; said after
+  /// no "then" ("Buy milk. Tomorrow.") the when is the task's before it.
+  bool _endsWithWhenForNext(String sentence, String next) {
+    if (!_endsWithFullStop(sentence)) return false;
+    final String folded = foldTemporalCase(sentence);
+    RegExpMatch? then;
+    for (final RegExpMatch m in _thenJoint.allMatches(folded)) {
+      // "…until then tomorrow", "by then" — a when, not the next thing.
+      if (_thenAsWhen.contains(wordBefore(folded, m.start + 1))) continue;
+      then = m;
+    }
+    if (then == null || !_isWhenOnly(folded.substring(then.end))) return false;
+    final String before = sentence.substring(0, then.start);
+    if (!_isClause(before) && !_hasSubstance(before)) return false;
+    final String after = foldTemporalCase(next);
+    final String body = after.substring(_lead(after).start);
+    final String head = wordAfter(body, 0);
+    return (ClauseLexicon.isImperativeVerb(head) ||
+            (ClauseLexicon.isLeadingOnlyVerb(head) &&
+                _hasObject(body, head))) &&
+        _isClause(body) &&
+        !_saysAnyWhen(after);
+  }
+
+  /// "then", "and then", ", then" — said before a when.
+  static final RegExp _thenJoint = RegExp(r'(?:,\s*|\s+)(?:and\s+)?then\s+');
+
+  /// The words that make the "then" after them a when of its own.
+  static const Set<String> _thenAsWhen = <String>{
+    'until',
+    'till',
+    'til',
+    'by',
+    'since',
+    'from',
+    'before',
+    'after',
+    'back',
+    'even',
+    'only',
+    'just',
+    'right',
+  };
+
+  /// Whether any when at all is said in [folded]: a day, a clock time, a part
+  /// of the day, "in two hours", "at some point".
+  static bool _saysAnyWhen(String folded) =>
+      DateGrammar.spans(folded).isNotEmpty ||
+      TimeGrammar.allMatches(folded).isNotEmpty ||
+      ClauseLexicon.vagueWhen.hasMatch(folded) ||
+      _anchor.hasMatch(folded);
+
+  /// [sentence] with its first word in lower case when that word is the verb
+  /// it opens with: "Send the report" goes on after a comma as "send the
+  /// report". A name stays as it is.
+  static String _verbInLowerCase(String sentence) {
+    final String head = wordAfter(sentence, 0);
+    if (head.isEmpty) return sentence;
+    final String folded = foldTemporalCase(head);
+    if (!ClauseLexicon.isImperativeVerb(folded) &&
+        !ClauseLexicon.isLeadingOnlyVerb(folded)) {
+      return sentence;
+    }
+    final int at = sentence.indexOf(head);
+    return '${sentence.substring(0, at)}$folded'
+        '${sentence.substring(at + head.length)}';
   }
 
   static bool _refersBack(String sentence, String previous) {
@@ -1145,8 +1226,65 @@ final class ClauseSplitter {
       if (!ClauseLexicon.isImperativeVerb(wordAfter(folded, after))) continue;
       cuts.add(match.start);
     }
+    cuts.addAll(_onDateCuts(folded));
+    return (cuts.toSet().toList())..sort();
+  }
+
+  /// Offsets in [folded] where "on" and a date start the next task: "…go to
+  /// the dentist on October 5th pay the rent", the comma whisper left out
+  /// before the "on".
+  ///
+  /// ⚠️ Only when the date is followed straight away by a verb a task starts
+  /// with, and a task stands before the "on": "meet Anna on Friday at the
+  /// cafe" and "book a table on Friday for dinner" are one task, on Friday.
+  /// Read as one, the dentist's card took the rent and the milk in its title,
+  /// on Monday. A time after the date ("…on the 5th at 9 pay…") could be
+  /// either task's, so it cuts nothing.
+  List<int> _onDateCuts(String folded) {
+    final List<int> cuts = <int>[];
+    final List<(int, int)> dates = DateGrammar.spans(folded);
+    for (final RegExpMatch on in _onWord.allMatches(folded)) {
+      if (on.start == 0) continue;
+      // "…next week on Tuesday pay…" — one date, said in two parts.
+      if (dates.any(
+        ((int, int) span) => span.$1 < on.start && on.start < span.$2,
+      )) {
+        continue;
+      }
+      final int dayAt = _wordStart(folded, on.end);
+      int end = -1;
+      for (final (int, int) span in dates) {
+        if ((span.$1 == on.start || span.$1 == dayAt) && span.$2 > end) {
+          end = span.$2;
+        }
+      }
+      if (end < 0) continue;
+      final String rest = folded.substring(end);
+      if (!RegExp(r'^\s+[a-z]').hasMatch(rest)) continue;
+      if (!ClauseLexicon.isImperativeVerb(wordAfter(rest, 0))) continue;
+      final String before = folded.substring(0, on.start).trimRight();
+      if (!_isClause(rest) || !_isClause(before)) continue;
+      // "We meet on Friday…", "leave on Monday…": the day is the verb's own.
+      if (_opensWithVerb(wordBefore(before, before.length))) continue;
+      // "Tell Anna on Friday bring the documents", "remind me on Monday call
+      // the plumber": what the person is to do, not a task after theirs.
+      if (_handsOver.hasMatch(before)) continue;
+      // "Book the flight on Friday return on Sunday": the task after the
+      // verb has a day of its own, so the Friday is not its day.
+      if (_saysAnyWhen(rest)) continue;
+      cuts.add(on.start);
+    }
     return cuts;
   }
+
+  static final RegExp _onWord = RegExp(r'\bon\b');
+
+  /// "tell Anna", "ask my brother", "remind me" — at the end of the words
+  /// before a when: the task that follows is theirs to do.
+  static final RegExp _handsOver = RegExp(
+    r"\b(?:tell|ask|remind|let|get|beg|help|teach)\s+(?:[a-z']+\s+){0,2}"
+    r"[a-z']+$",
+  );
 
   // ── Pass 2b: a when said on its own, in front of the task it is for ───────
 
@@ -1360,8 +1498,16 @@ final class ClauseSplitter {
           !_isClause(fragment.text) &&
           _isClause(sofar) &&
           _isClause(fragments[at + 1].text);
+      // "…take my medicine, then tonight at 10 cent the report to Amma" —
+      // "then" and a when open the next task, whatever whisper made of its
+      // verb. ⚠️ Glued on, the medicine took the report into its title and
+      // "at 10" as its time.
+      final bool thenWhen =
+          (fragment.separator == 'then' || fragment.separator == 'and then') &&
+          _opensWithWhenThenUnknownVerb(fragment.text);
       final bool ownClause =
           (_isClause(fragment.text) && !purposeName) ||
+          thenWhen ||
           ownTime ||
           someoneElse ||
           whenItem ||
@@ -2410,6 +2556,94 @@ final class ClauseSplitter {
     return '${fragment.text.substring(0, lead.start)}'
         '${verb[0]!.trim()} ${fragment.text.substring(lead.start)}';
   }
+
+  /// Whether [fragment] opens with a when and goes on to a word in a verb's
+  /// place — one with its object after it: "tonight at 10 cent the report to
+  /// Amma", "tomorrow at 9 fax the documents to Bob".
+  ///
+  /// ⚠️ Not a subject, a pronoun, a copula or filler ("then tomorrow it
+  /// rains", "then at 5 as well"), and not a name alone ("then tomorrow
+  /// Anna"), which is who, not what to do.
+  bool _opensWithWhenThenUnknownVerb(String fragment) {
+    final String folded = foldTemporalCase(fragment);
+    final ({int start, bool whens}) lead = _lead(folded);
+    if (!lead.whens || lead.start >= folded.length) return false;
+    final String head = wordAfter(folded, lead.start);
+    if (!RegExp(r'^[a-z]{2,}$').hasMatch(head) ||
+        // "then next week hopefully the mechanic fixes it" — how, not what.
+        head.endsWith('ly') ||
+        _capital.hasMatch(fragment[lead.start]) ||
+        ClauseLexicon.isClauseHead(head) ||
+        ClauseLexicon.isDiscourseWord(head) ||
+        _subjects.contains(head) ||
+        _notATopic.contains(head) ||
+        _notAVerb.contains(head)) {
+      return false;
+    }
+    final int headEnd = lead.start + head.length;
+    if (RegExp(r'^\s*[,.;:!?]').hasMatch(folded.substring(headEnd))) {
+      return false;
+    }
+    final String object = wordAfter(folded, headEnd);
+    if (object.isEmpty) return false;
+    final int objectAt = folded.indexOf(object, headEnd);
+    return _verbObjects.contains(object) ||
+        _capital.hasMatch(fragment[objectAt]);
+  }
+
+  /// Words that stand where a verb would and are none: "then tomorrow as
+  /// well", "then at 5 maybe".
+  static const Set<String> _notAVerb = <String>{
+    'as',
+    'maybe',
+    'probably',
+    'perhaps',
+    'or',
+    'if',
+    'when',
+    'because',
+    'since',
+    'no',
+    'not',
+    'yes',
+    "it's",
+    "that's",
+    "there's",
+    'everything',
+    'everyone',
+    'everybody',
+    'something',
+    'someone',
+    'somebody',
+    'anything',
+    'anyone',
+    'anybody',
+    'nothing',
+    'nobody',
+  };
+
+  /// What comes straight after a verb that has its object.
+  static const Set<String> _verbObjects = <String>{
+    'the',
+    'a',
+    'an',
+    'my',
+    'his',
+    'her',
+    'our',
+    'their',
+    'your',
+    'this',
+    'that',
+    'these',
+    'those',
+    'some',
+    'it',
+    'them',
+    'him',
+    'me',
+    'us',
+  };
 
   /// Whether [fragment] opens with a when and goes on to name a thing: "tomorrow
   /// evening the laundry", "tomorrow at 6 Anna" — not "at 5 p.m. sharp".

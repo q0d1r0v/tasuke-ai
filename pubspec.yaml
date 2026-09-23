@@ -6,7 +6,7 @@ publish_to: 'none'
 # version+build. The build number is what App Store Connect and Play Console key
 # off, and neither store ever lets a number be reused — bump it for every upload,
 # even a rejected one.
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   # Flutter 3.47.5 / Dart 3.13.4. The floor is 3.13 and not lower because

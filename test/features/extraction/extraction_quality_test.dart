@@ -106,6 +106,21 @@ void main() {
       dates: 0.97,
       times: 0.97,
     ),
+    // What whisper wrote on the owner's phone (2026-09-23) for the six test
+    // sentences — the notes the app is judged by. Before the fixes 11 of 14
+    // were exact: a "cent" for "send" glued two tasks into one card at
+    // 10:00, a stop after "then tonight at 10" left the report with no when,
+    // and a comma left out before "on October 5th" merged three tasks. Every
+    // case must stay exact, so the floor is all of them on every line.
+    const _Corpus(
+      'device transcripts',
+      'test/fixtures/nl/extraction_device_transcripts.json',
+      1,
+      recall: 1,
+      precision: 1,
+      dates: 1,
+      times: 1,
+    ),
   ]) {
     test('rule-based extraction quality — ${corpus.name}', () async {
       if (!File(corpus.path).existsSync()) {

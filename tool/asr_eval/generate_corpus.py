@@ -54,6 +54,13 @@ With the 242 labelled cases that is 726 clean + 11 x 40 = 1,166 clips.
 ``--tempo-scope all`` puts fast and slow on every sentence instead (one voice
 each, 1,570 clips). The subset is drawn per corpus in proportion to its size.
 
+``--owner`` adds the owner's six phone-test sentences (``OWNER_CASES``,
+source_corpus "owner", case ids owner-1 .. owner-6, now 2026-09-23T03:40)
+after the corpora: 3 clean voices each, and all six join the subset on top
+of the 40 drawn, so +18 clean and +66 degraded = 1,250 clips. They take no
+part in the subset draw and are never babble talkers, so every other clip is
+bit-identical to a run without --owner.
+
 A subset sentence is spoken by the same voice in all eleven degraded
 conditions, and that voice is one of its three clean voices, so every
 degraded clip has a clean clip of the same case and voice
@@ -92,6 +99,7 @@ import os
 import random
 import re
 import shutil
+import socket
 import statistics
 import sys
 import time
@@ -115,6 +123,57 @@ CORPORA: list[tuple[str, str]] = [
     ("heldout", "extraction_heldout_corpus"),
     ("cxdev", "extraction_complex_dev_corpus"),
     ("cxheld", "extraction_complex_heldout_corpus"),
+]
+
+# The owner's six test sentences (--owner), worded as the Piper voices read
+# them in the phone test of 2026-09-23. The labels are those of
+# test/fixtures/nl/extraction_device_transcripts.json, which holds what the
+# phone's whisper made of them.
+OWNER_SOURCE = "owner"
+OWNER_NOW = "2026-09-23T03:40"
+OWNER_CASES: list[tuple[str, list[dict[str, Optional[str]]]]] = [
+    (
+        "Tomorrow at 9 AM call the bank, and on Friday at 6 PM pick up the kids from school.",
+        [
+            {"title": "Call the bank", "date": "2026-09-24", "time": "09:00"},
+            {"title": "Pick up the kids from school", "date": "2026-09-25", "time": "18:00"},
+        ],
+    ),
+    (
+        "Remind me in half an hour to take my medicine, then tonight at 10 send the report to Anna.",
+        [
+            {"title": "Take my medicine", "date": "2026-09-23", "time": "04:10"},
+            {"title": "Send the report to Anna", "date": "2026-09-23", "time": "22:00"},
+        ],
+    ),
+    (
+        "On Monday at 3 PM go to the dentist, on October 5th pay the rent, and buy milk.",
+        [
+            {"title": "Go to the dentist", "date": "2026-09-28", "time": "15:00"},
+            {"title": "Pay the rent", "date": "2026-10-05", "time": None},
+            {"title": "Buy milk", "date": "2026-10-05", "time": None},
+        ],
+    ),
+    (
+        "On Thursday morning, October 15th at 10, meeting with the client from Dubai.",
+        [
+            {"title": "Meeting with the client from Dubai", "date": "2026-10-15", "time": "10:00"},
+        ],
+    ),
+    (
+        "In two hours call mom, and the day after tomorrow at 7:30 in the morning go to the gym.",
+        [
+            {"title": "Call mom", "date": "2026-09-23", "time": "05:40"},
+            {"title": "Go to the gym", "date": "2026-09-25", "time": "07:30"},
+        ],
+    ),
+    (
+        "Next week on Tuesday at noon lunch with Sardor, and remind me on Sunday evening to prepare the presentation.",
+        [
+            {"title": "Lunch with Sardor", "date": "2026-09-29", "time": "12:00"},
+            {"title": "Prepare the presentation", "date": "2026-09-27", "time": "18:00"},
+        ],
+    ),
 ]
 
 
@@ -385,7 +444,8 @@ class Sentence:
     profile: Optional[str]
 
 
-def load_sentences() -> list[Sentence]:
+def load_sentences(owner: bool = False) -> list[Sentence]:
+    """The labelled cases in corpus order, then (``owner``) owner-1..owner-6."""
     sentences: list[Sentence] = []
     for tag, stem in CORPORA:
         doc = json.loads((FIXTURES / f"{stem}.json").read_text(encoding="utf-8"))
@@ -406,14 +466,21 @@ def load_sentences() -> list[Sentence]:
                     profile=case.get("profile"),
                 )
             )
+    if owner:
+        for i, (text, tasks) in enumerate(OWNER_CASES, start=1):
+            sentences.append(Sentence(f"owner-{i}", text, OWNER_NOW, [dict(t) for t in tasks], OWNER_SOURCE, None))
     return sentences
 
 
 def pick_subset(sentences: list[Sentence], size: int, seed: int) -> list[str]:
     """``size`` sentences drawn per corpus in proportion to its size
-    (largest-remainder quotas), with a seeded RNG; returned in corpus order."""
+    (largest-remainder quotas), with a seeded RNG, plus every owner sentence
+    on top; returned in corpus order. The owner sentences take no part in
+    the draw, so the drawn subset is the same with or without --owner."""
+    owner = [s.case_id for s in sentences if s.source_corpus == OWNER_SOURCE]
+    sentences = [s for s in sentences if s.source_corpus != OWNER_SOURCE]
     if size >= len(sentences):
-        return [s.case_id for s in sentences]
+        return [s.case_id for s in sentences] + owner
     by_corpus: dict[str, list[str]] = {}
     for s in sentences:
         by_corpus.setdefault(s.source_corpus, []).append(s.case_id)
@@ -430,7 +497,7 @@ def pick_subset(sentences: list[Sentence], size: int, seed: int) -> list[str]:
     for stem in corpus_order:
         if stem in by_corpus:
             chosen.update(rng.sample(by_corpus[stem], counts[stem]))
-    return [s.case_id for s in sentences if s.case_id in chosen]
+    return [s.case_id for s in sentences if s.case_id in chosen] + owner
 
 
 # --------------------------------------------------------------------------
@@ -471,10 +538,16 @@ def ensure_voice(voices_dir: Path, model: str, attempts: int, offline: bool) -> 
     for attempt in range(1, attempts + 1):
         for p in _voice_files(voices_dir, model):
             p.unlink(missing_ok=True)
+        # piper's urlopen has no timeout: a stalled transfer would hang
+        # forever instead of failing into the next attempt.
+        previous_timeout = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(60)
         try:
             download_voice(model, voices_dir)
         except Exception as error:  # network flakiness
             print(f"  download {model} attempt {attempt}/{attempts} failed: {error}", flush=True)
+        finally:
+            socket.setdefaulttimeout(previous_timeout)
         if _voice_is_valid(voices_dir, model):
             return True
         time.sleep(min(30, 2**attempt))
@@ -647,9 +720,10 @@ def babble_sources(
     clip: Clip, sentences: list[Sentence], clean_voices: dict[str, list[VoiceSpec]], seed: int
 ) -> list[tuple[str, str]]:
     """Three other sentences, each by a clean voice distinct from the target's
-    and from each other. Returns [(case_id, voice_tag)]."""
+    and from each other. Returns [(case_id, voice_tag)]. Owner sentences are
+    never talkers, so --owner leaves every other babble clip unchanged."""
     rng = random.Random(seed_of(seed, "babble", clip.clip_id))
-    order = [s for s in sentences if s.text != clip.sentence.text]
+    order = [s for s in sentences if s.text != clip.sentence.text and s.source_corpus != OWNER_SOURCE]
     rng.shuffle(order)
     used = {clip.voice.tag}
     out: list[tuple[str, str]] = []
@@ -902,6 +976,11 @@ def main() -> int:
     ap.add_argument("--asr-check-lib", type=Path, help="libwhisper_ggml.so for an optional ASR spot-check")
     ap.add_argument("--asr-check-model", type=Path, default=REPO_ROOT / "assets/models/ggml-base.en-q5_1.bin")
     ap.add_argument("--asr-check-per-condition", type=int, default=1)
+    ap.add_argument(
+        "--owner",
+        action="store_true",
+        help="also speak the owner's six test sentences (owner-1..owner-6) in every condition (+84 clips)",
+    )
     args = ap.parse_args()
 
     try:
@@ -918,7 +997,7 @@ def main() -> int:
 
     out: Path = args.out.resolve()
     voices_dir: Path = args.voices_dir.resolve()
-    sentences = load_sentences()
+    sentences = load_sentences(owner=args.owner)
     subset = pick_subset(sentences, args.subset_size, seed_of(args.seed, "subset"))
     per_source: dict[str, int] = {}
     for s in sentences:
@@ -1065,6 +1144,7 @@ def main() -> int:
         "onnxruntime": onnxruntime.__version__,
         "numpy": np.__version__,
         "tempo_scope": args.tempo_scope,
+        "owner": args.owner,
         "conditions": [dataclasses.asdict(c) for c in conditions],
         "counts": counts,
         "total_clips": len(manifest),

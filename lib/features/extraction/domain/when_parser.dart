@@ -119,7 +119,7 @@ final class WhenParser {
       excludeStart: dateHit?.start ?? -1,
       excludeEnd: dateHit?.end ?? -1,
     );
-    final TimeMatch? timeHit = timeHits.isEmpty ? null : timeHits.first;
+    TimeMatch? timeHit = timeHits.isEmpty ? null : timeHits.first;
     if (dateHit == null && timeHit == null) return ParsedWhen.empty;
     // "In the evening go to the gym at 7", "At 7 go jogging in the morning":
     // the part of the day and its clock time, said apart.
@@ -127,6 +127,33 @@ final class WhenParser {
     final TimeMatch? clockHit = partHit == null
         ? null
         : _clockBesides(timeHits, partHit, text);
+
+    // "…in half an hour to take my medicine then tonight at 10": the clock
+    // time is said with a day of its own, not with the first one. ⚠️ Paired
+    // with the first, it took the place of the half hour's own minute and
+    // read as the first day's hour — 10:00, with "tonight" left unread in
+    // the title. Said of the same day ("today call Anna tonight at 8") the
+    // two are one moment, and the clock's day says which half of it; of
+    // another day, or after a moment already exact, they clash, and the
+    // first when stands alone — the second stays in the title, where the
+    // Confirm card shows it.
+    DateMatch? clockDay;
+    if (dateHit != null && timeHit != null && partHit == null) {
+      final DateMatch? own = _otherDayOf(timeHit, dateHit, text, now);
+      if (own != null) {
+        if (!dateHit.exact && own.date == dateHit.date) {
+          clockDay = own;
+        } else {
+          timeHit = null;
+        }
+      }
+    }
+    // The day that says which half of the day the clock time is: the one it
+    // was said with — unless only the first names a part of the day, as in
+    // "tomorrow evening … tomorrow at 8".
+    final DateMatch? timeDay = clockDay?.impliedMinute != null
+        ? clockDay
+        : dateHit;
 
     LocalTimeOfDay? time;
     if (partHit != null && clockHit != null) {
@@ -138,7 +165,7 @@ final class WhenParser {
           ? clockHit.time
           : TimeGrammar.clockInDayPart(clockHit.time, partHit.dayPart!);
     } else if (timeHit != null) {
-      time = _inEveningIfSaid(timeHit, dateHit, text);
+      time = _inEveningIfSaid(timeHit, timeDay, text);
     } else if (dateHit?.impliedMinute != null) {
       // "tomorrow morning" carries its own time.
       time = LocalTimeOfDay(dateHit!.impliedMinute!);
@@ -148,7 +175,7 @@ final class WhenParser {
     // "tonight at 12", "tonight at 1" — past midnight, so the next calendar
     // day: said at night, noon and one in the afternoon are not meant. An
     // evening rolls over only for midnight itself ("this evening at midnight").
-    final int implied = dateHit?.impliedMinute ?? -1;
+    final int implied = timeDay?.impliedMinute ?? -1;
     if (timeHit != null &&
         clockHit == null &&
         date != null &&
@@ -164,7 +191,7 @@ final class WhenParser {
         // named day's night ("Friday night") is still the one ahead.
         final bool stillTonight =
             date == now.date &&
-            dateHit!.weekday == null &&
+            timeDay!.weekday == null &&
             small.minuteOfDay > now.time.minuteOfDay;
         if (!stillTonight) date = date.addDays(1);
         time = small;
@@ -181,6 +208,7 @@ final class WhenParser {
 
     final List<MatchSpan> spans = _spansOf(<MatchSpan>[
       if (dateHit != null) MatchSpan(dateHit.start, dateHit.end),
+      if (clockDay != null) MatchSpan(clockDay.start, clockDay.end),
       if (clockHit != null) ...<MatchSpan>[
         MatchSpan(partHit!.start, partHit.end),
         MatchSpan(clockHit.start, clockHit.end),
@@ -197,6 +225,54 @@ final class WhenParser {
       dateSpoken: dateHit != null,
     );
   }
+
+  /// The day phrase after [day] that [clock] is said with — "tonight" in
+  /// "…in half an hour … then tonight at 10", "Friday" in "…on Friday at 3"
+  /// — or null when [clock] is said with [day] itself, or with no day.
+  static DateMatch? _otherDayOf(
+    TimeMatch clock,
+    DateMatch day,
+    String text,
+    LocalDateTime now,
+  ) {
+    if (_saidTogether(text, day.start, day.end, clock.start, clock.end)) {
+      return null;
+    }
+    DateMatch? best;
+    for (final DateMatch other in DateGrammar.allMatches(text, now: now)) {
+      if (other.start < day.end) continue;
+      if (!_saidTogether(
+        text,
+        other.start,
+        other.end,
+        clock.start,
+        clock.end,
+      )) {
+        continue;
+      }
+      if (best == null || other.length > best.length) best = other;
+    }
+    return best;
+  }
+
+  /// Whether only spaces and commas stand between the two ranges, or they
+  /// overlap: one phrase, "tonight at 10", "at 10 tonight", "Friday, at 3".
+  static bool _saidTogether(
+    String text,
+    int aStart,
+    int aEnd,
+    int bStart,
+    int bEnd,
+  ) {
+    final String between = aEnd <= bStart
+        ? text.substring(aEnd, bStart)
+        : bEnd <= aStart
+        ? text.substring(bEnd, aStart)
+        : '';
+    return _separators.hasMatch(between);
+  }
+
+  static final RegExp _separators = RegExp(r'^[\s,]*$');
 
   /// "tonight at 8.45", "this evening at 7" — an hour under twelve said with
   /// an evening day is that evening's hour. Without this, "pick up Anna

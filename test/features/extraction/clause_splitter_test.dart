@@ -255,9 +255,25 @@ void main() {
 
     test('an anchor behind a preposition does not start a new task', () {
       expect(
-        splitter.splitClauses('meet Ana on Friday check the agenda'),
+        splitter.splitClauses('meet Ana on Friday at the cafe'),
         hasLength(1),
         reason: '"on Friday" is the tail of the first clause',
+      );
+      expect(
+        splitter.splitClauses('book a table on Friday for dinner'),
+        hasLength(1),
+      );
+      expect(
+        splitter.splitClauses('Leave on Friday return on Sunday'),
+        hasLength(1),
+        reason: 'no task stands before the "on" to end there',
+      );
+      // ⚠️ Until the device transcripts of 2026-09-23 this was one clause
+      // too. A verb straight after the date is the comma whisper left out:
+      // "…go to the dentist on October 5th pay the rent" was one card.
+      expect(
+        splitter.splitClauses('meet Ana on Friday check the agenda'),
+        <String>['meet Ana', 'on Friday check the agenda'],
       );
     });
   });

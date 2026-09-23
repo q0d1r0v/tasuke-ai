@@ -447,13 +447,32 @@ final class TranscriptNormaliser {
           : null;
     }
     if (word == 'goes') return nextFolded == 'to' ? 'go' : null;
-    final String? base = pastTenseBase(word);
-    if (base == null) return null;
     // "Yesterday called the bank", "Booked the table already" — said as
     // done.
     final String clause = foldTemporalCase(
       text.substring(boundary, _clauseEnd(text, boundary)),
     );
+    // "then tonight at 10 cent the report to Amma", "scent the photos to
+    // Timur" — "send" as whisper hears it where a task starts. ⚠️ Only with
+    // the thing sent right after it: kept, the task had no verb the splitter
+    // knew, and it was glued onto the task before, time and all. Said as
+    // done ("Yesterday cent the contract…", "Sardor called and cent the
+    // photos") it is whisper's "sent", which the rules read as done.
+    if (word == 'cent' || word == 'scent') {
+      if (!_sentThing.contains(nextFolded) ||
+          RegExp(r'^\s*[,.;:!?]').hasMatch(text.substring(end))) {
+        return null;
+      }
+      final bool done =
+          _pastDay.hasMatch(lead) ||
+          _pastDay.hasMatch(clause) ||
+          (now != null &&
+              const WhenParser().parse(clause, now: now).isOverAt(now)) ||
+          _reportedBefore(text, boundary);
+      return done ? 'sent' : 'send';
+    }
+    final String? base = pastTenseBase(word);
+    if (base == null) return null;
     if (_pastDay.hasMatch(lead) || _pastDay.hasMatch(clause)) return null;
     if (now != null &&
         const WhenParser().parse(clause, now: now).isOverAt(now)) {
@@ -494,6 +513,26 @@ final class TranscriptNormaliser {
     }
     return base;
   }
+
+  /// What "send" takes straight after it: the thing, or who it goes to.
+  static const Set<String> _sentThing = <String>{
+    'the',
+    'a',
+    'an',
+    'it',
+    'them',
+    'him',
+    'her',
+    'my',
+    'his',
+    'our',
+    'their',
+    'your',
+    'this',
+    'that',
+    'these',
+    'those',
+  };
 
   static final RegExp _obligation = RegExp(
     r'\b(?:forget|remember|need|needs|have|has|remind me|want)\s+to\b|\bmust\b|\bshould\b',
@@ -777,7 +816,7 @@ final class TranscriptNormaliser {
   }
 
   static final RegExp _candidate = RegExp(
-    r'\b(?:[a-z]+ed|sent|by|pickup|goes)\b',
+    r'\b(?:[a-z]+ed|sent|by|pickup|goes|cent|scent)\b',
   );
 
   static final RegExp _boundary = RegExp(

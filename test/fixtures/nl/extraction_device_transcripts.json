@@ -1,0 +1,221 @@
+{
+ "_about": "Real whisper transcripts from the owner's phone (Redmi Note 13 Pro+, 2026-09-23) of the six owner test sentences read by Piper voices. Every case must stay exact.",
+ "now": "2026-09-23T03:40",
+ "cases": [
+  {
+   "note": "Tomorrow at 9am call the bank and on Friday at 6pm pick up the kids from school.",
+   "tasks": [
+    {
+     "title": "Call the bank",
+     "date": "2026-09-24",
+     "time": "09:00"
+    },
+    {
+     "title": "Pick up the kids from school",
+     "date": "2026-09-25",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow at 9am call the bank, and on Friday at 6pm pick up the kids from school.",
+   "tasks": [
+    {
+     "title": "Call the bank",
+     "date": "2026-09-24",
+     "time": "09:00"
+    },
+    {
+     "title": "Pick up the kids from school",
+     "date": "2026-09-25",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Remind me in half an hour to take my medicine, then tonight at 10 send the report to Anna.",
+   "tasks": [
+    {
+     "title": "Take my medicine",
+     "date": "2026-09-23",
+     "time": "04:10"
+    },
+    {
+     "title": "Send the report to Anna",
+     "date": "2026-09-23",
+     "time": "22:00"
+    }
+   ]
+  },
+  {
+   "note": "Remind me in half an hour to take my medicine, then tonight at 10 cent the report to Amma.",
+   "tasks": [
+    {
+     "title": "Take my medicine",
+     "date": "2026-09-23",
+     "time": "04:10"
+    },
+    {
+     "title": "Send the report to Amma",
+     "date": "2026-09-23",
+     "time": "22:00"
+    }
+   ]
+  },
+  {
+   "note": "Remind me in half an hour to take my medicine, then tonight at 10. Send the report to Anna.",
+   "tasks": [
+    {
+     "title": "Take my medicine",
+     "date": "2026-09-23",
+     "time": "04:10"
+    },
+    {
+     "title": "Send the report to Anna",
+     "date": "2026-09-23",
+     "time": "22:00"
+    }
+   ]
+  },
+  {
+   "note": "On Monday at 3pm go to the dentist, on October 5th pay the rent and buy milk.",
+   "tasks": [
+    {
+     "title": "Go to the dentist",
+     "date": "2026-09-28",
+     "time": "15:00"
+    },
+    {
+     "title": "Pay the rent",
+     "date": "2026-10-05",
+     "time": null
+    },
+    {
+     "title": "Buy milk",
+     "date": "2026-10-05",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "On Monday at 3 p.m. go to the dentist on October 5th pay the rent and buy milk.",
+   "tasks": [
+    {
+     "title": "Go to the dentist",
+     "date": "2026-09-28",
+     "time": "15:00"
+    },
+    {
+     "title": "Pay the rent",
+     "date": "2026-10-05",
+     "time": null
+    },
+    {
+     "title": "Buy milk",
+     "date": "2026-10-05",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "On Monday of 3 p.m. Go to the Dentist, on October 5th pay the rent and buy milk.",
+   "tasks": [
+    {
+     "title": "Go to the dentist",
+     "date": "2026-09-28",
+     "time": "15:00"
+    },
+    {
+     "title": "Pay the rent",
+     "date": "2026-10-05",
+     "time": null
+    },
+    {
+     "title": "Buy milk",
+     "date": "2026-10-05",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "On Thursday morning, October 15th at 10, meeting with the client from Dubai.",
+   "tasks": [
+    {
+     "title": "Meeting with the client from Dubai",
+     "date": "2026-10-15",
+     "time": "10:00"
+    }
+   ]
+  },
+  {
+   "note": "On Thursday morning, October 15 at 10, meeting with the client from Dubai.",
+   "tasks": [
+    {
+     "title": "Meeting with the client from Dubai",
+     "date": "2026-10-15",
+     "time": "10:00"
+    }
+   ]
+  },
+  {
+   "note": "In two hours call Mom, and the day after tomorrow at 7.30 in the morning go to the gym.",
+   "tasks": [
+    {
+     "title": "Call mom",
+     "date": "2026-09-23",
+     "time": "05:40"
+    },
+    {
+     "title": "Go to the gym",
+     "date": "2026-09-25",
+     "time": "07:30"
+    }
+   ]
+  },
+  {
+   "note": "In two hours call mom and the day after tomorrow at 7.30 in the morning go to the gym.",
+   "tasks": [
+    {
+     "title": "Call mom",
+     "date": "2026-09-23",
+     "time": "05:40"
+    },
+    {
+     "title": "Go to the gym",
+     "date": "2026-09-25",
+     "time": "07:30"
+    }
+   ]
+  },
+  {
+   "note": "Next week on Tuesday at noon lunch with Sardor and remind me on Sunday evening to prepare the presentation.",
+   "tasks": [
+    {
+     "title": "Lunch with Sardor",
+     "date": "2026-09-29",
+     "time": "12:00"
+    },
+    {
+     "title": "Prepare the presentation",
+     "date": "2026-09-27",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Next week on Tuesday at noon lunch with Sardor, and remind me on Sunday evening to prepare the presentation.",
+   "tasks": [
+    {
+     "title": "Lunch with Sardor",
+     "date": "2026-09-29",
+     "time": "12:00"
+    },
+    {
+     "title": "Prepare the presentation",
+     "date": "2026-09-27",
+     "time": "18:00"
+    }
+   ]
+  }
+ ]
+}

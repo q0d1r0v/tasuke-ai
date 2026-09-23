@@ -18,6 +18,7 @@ final class DateMatch {
     this.namesMonth = false,
     this.weekday,
     this.dayOfMonth,
+    this.exact = false,
   });
 
   final LocalDate date;
@@ -42,6 +43,10 @@ final class DateMatch {
   /// fifth"). [date] is only the next such day; a weekday said with it can
   /// say which month is meant.
   final int? dayOfMonth;
+
+  /// Whether the phrase names a moment to the minute — "in half an hour", "in
+  /// two hours" — so that no clock time said elsewhere can be its time.
+  final bool exact;
 
   int get length => end - start;
 
@@ -490,6 +495,7 @@ abstract final class DateGrammar {
       start: match.start,
       end: match.end,
       impliedMinute: at.time.minuteOfDay,
+      exact: true,
     );
   }
 
