@@ -16,7 +16,7 @@ enum TaskGroupLabel {
   /// Beyond seven days but inside the next calendar week block.
   nextWeek,
 
-  /// Further out — rendered as an absolute date.
+  /// Two weeks out and beyond — a range, rendered as "Later".
   later,
 
   /// Completed lists group by the day the task was finished.

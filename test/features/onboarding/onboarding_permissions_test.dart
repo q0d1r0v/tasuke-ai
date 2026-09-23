@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ⚠️ riverpod 3.x exports `Override` only from `misc.dart`. Naming it without
@@ -14,6 +16,7 @@ import 'package:tasuke_ai/app/widgets/widgets.dart';
 import 'package:tasuke_ai/core/permissions/app_permission.dart';
 import 'package:tasuke_ai/core/storage/pref_keys.dart';
 import 'package:tasuke_ai/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:tasuke_ai/features/onboarding/presentation/widgets/onboarding_illustration.dart';
 import 'package:tasuke_ai/features/permissions/presentation/permissions_screen.dart';
 
 import '../../helpers/fakes.dart';
@@ -131,6 +134,34 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('each page carries its own picture', (
+      WidgetTester tester,
+    ) async {
+      // ⚠️ The bug this replaces shipped. All three pages drew the same
+      // blurred brand orb with a brand-blue Material glyph on top of it —
+      // blue on blue — so on a real phone the glyph was invisible and the
+      // three pages were indistinguishable smudges. Asserting the picture
+      // *changes* is what catches that coming back; asserting one exists is
+      // not, because the broken version had one too.
+      await pumpFirstRun(tester, at: AppRoute.onboarding.path);
+
+      String currentArt() => tester
+          .widget<OnboardingIllustration>(
+            find.byType(OnboardingIllustration).first,
+          )
+          .asset;
+
+      expect(currentArt(), TasukeArt.guideVoice);
+
+      await swipeForward(tester);
+      expect(currentArt(), TasukeArt.guideTasks);
+
+      await swipeForward(tester);
+      expect(currentArt(), TasukeArt.guidePrivacy);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('Next walks the pager rather than skipping to the end', (
       WidgetTester tester,
     ) async {
@@ -179,6 +210,50 @@ void main() {
     });
   });
 
+  testWidgets('every onboarding page fits the smallest phone at 2× type', (
+    WidgetTester tester,
+  ) async {
+    // ⚠️ The pages were plain Columns: at large type the body ran past the
+    // pager and was clipped, with no way to scroll it back.
+    await pumpScreen(
+      tester,
+      const OnboardingScreen(),
+      overrides: defaultOverrides(
+        permissions: permissions,
+        preferences: preferences,
+      ),
+      frame: DeviceFrame.smallNoInsets,
+      textScale: 2,
+    );
+
+    for (int page = 0; page < 3; page++) {
+      expect(tester.takeException(), isNull, reason: 'page ${page + 1}');
+      if (page < 2) {
+        await tester.tap(find.text('Next'));
+        await pumpSettled(tester);
+      }
+    }
+
+    // The privacy promise, the last line of the last page, can be scrolled
+    // into the pager rather than sitting clipped below it.
+    final Finder promise = find.text(
+      'Speech recognition and AI both run on this device. Your voice and '
+      'your tasks never leave it.',
+    );
+    final Finder pageScroll = find.byWidgetPredicate(
+      (Widget w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+    );
+    await tester.drag(pageScroll, const Offset(0, -2000));
+    await pumpSettled(tester);
+    expect(
+      tester.getBottomLeft(promise).dy,
+      lessThanOrEqualTo(tester.getBottomLeft(find.byType(PageView)).dy),
+    );
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   group('permissions primer', () {
     testWidgets('asks for nothing on its own', (WidgetTester tester) async {
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
@@ -186,6 +261,7 @@ void main() {
       expect(find.text("Let's Get Started"), findsOneWidget);
       expect(find.text('Microphone'), findsOneWidget);
       expect(find.text('Notifications'), findsOneWidget);
+      expect(find.text('Alarms & reminders'), findsOneWidget);
       // A prompt the user did not ask for is the one prompt iOS will not show
       // again. The primer explains first and asks on a tap.
       expect(permissions.requested, isEmpty);
@@ -193,19 +269,63 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('the exact-alarm card is Android only', (
+      WidgetTester tester,
+    ) async {
+      // iOS reports notApplicable. A card there would say "Allowed" about a
+      // permission the user was never asked for.
+      permissions.set(AppPermission.exactAlarm, PermissionState.notApplicable);
+      await pumpFirstRun(tester, at: AppRoute.permissions.path);
+
+      expect(find.text('Alarms & reminders'), findsNothing);
+      expect(find.text('Allow'), findsNWidgets(2));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('a card asks the OS, and reports the answer it got', (
       WidgetTester tester,
     ) async {
+      permissions = FakePermissionService(
+        states: <AppPermission, PermissionState>{
+          AppPermission.microphone: PermissionState.notDetermined,
+          AppPermission.notifications: PermissionState.notDetermined,
+        },
+        grantOnRequest: true,
+      );
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
-      expect(find.text('Allow'), findsNWidgets(2));
+      expect(find.text('Allow'), findsNWidgets(3));
 
-      permissions.set(AppPermission.microphone, PermissionState.granted);
       await tester.tap(find.text('Microphone'));
       await pumpSettled(tester);
 
       expect(permissions.requested, <AppPermission>[AppPermission.microphone]);
       expect(find.text('Allowed'), findsOneWidget);
-      expect(find.text('Allow'), findsOneWidget);
+      expect(find.text('Allow'), findsNWidgets(2));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('the exact-alarm card opens its settings page', (
+      WidgetTester tester,
+    ) async {
+      permissions = FakePermissionService(
+        states: <AppPermission, PermissionState>{
+          AppPermission.microphone: PermissionState.notDetermined,
+          AppPermission.notifications: PermissionState.notDetermined,
+          AppPermission.exactAlarm: PermissionState.denied,
+        },
+        grantOnRequest: true,
+      );
+      await pumpFirstRun(tester, at: AppRoute.permissions.path);
+
+      await tester.tap(find.text('Alarms & reminders'));
+      await pumpSettled(tester);
+
+      // Android has no dialog for this one: `request` is what opens the
+      // "Alarms & reminders" page.
+      expect(permissions.requested, <AppPermission>[AppPermission.exactAlarm]);
+      expect(find.text('Allowed'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
     });
@@ -236,7 +356,133 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('Continue works with nothing granted — a primer, not a gate', (
+    testWidgets('Android: a silent refusal turns the card into Open Settings', (
+      WidgetTester tester,
+    ) async {
+      // Android's status check says plain `denied` even after "never ask
+      // again"; only the request's answer reveals it, with no dialog shown.
+      permissions = FakePermissionService(
+        states: <AppPermission, PermissionState>{
+          AppPermission.microphone: PermissionState.denied,
+          AppPermission.notifications: PermissionState.granted,
+          AppPermission.exactAlarm: PermissionState.granted,
+        },
+        answers: <AppPermission, PermissionState>{
+          AppPermission.microphone: PermissionState.permanentlyDenied,
+        },
+      );
+      await pumpFirstRun(tester, at: AppRoute.permissions.path);
+      expect(find.text('Allow'), findsOneWidget);
+
+      await tester.tap(find.text('Microphone'));
+      await pumpSettled(tester);
+
+      // Visible feedback, and not a forced trip out of the app.
+      expect(find.text('Open Settings'), findsOneWidget);
+      expect(permissions.settingsOpened, 0);
+
+      await tester.tap(find.text('Microphone'));
+      await pumpSettled(tester);
+      expect(permissions.settingsOpened, 1);
+      expect(permissions.requested, <AppPermission>[AppPermission.microphone]);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('Allow all asks for each one in order, then moves on', (
+      WidgetTester tester,
+    ) async {
+      permissions = FakePermissionService(
+        states: <AppPermission, PermissionState>{
+          AppPermission.microphone: PermissionState.notDetermined,
+          AppPermission.notifications: PermissionState.notDetermined,
+          AppPermission.exactAlarm: PermissionState.denied,
+        },
+        grantOnRequest: true,
+      );
+      await pumpFirstRun(tester, at: AppRoute.permissions.path);
+
+      await tester.tap(find.text('Allow all'));
+      await pumpSettled(tester);
+
+      // Microphone first, exact alarms last: the dependency order.
+      expect(permissions.requested, <AppPermission>[
+        AppPermission.microphone,
+        AppPermission.notifications,
+        AppPermission.exactAlarm,
+      ]);
+      expect(find.text('Home'), findsOneWidget);
+      expect(preferences.getBool(PrefKeys.permissionsPrimerSeen), isTrue);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('Allow all skips what is already granted', (
+      WidgetTester tester,
+    ) async {
+      permissions = FakePermissionService(
+        states: <AppPermission, PermissionState>{
+          AppPermission.microphone: PermissionState.granted,
+          AppPermission.notifications: PermissionState.notDetermined,
+          AppPermission.exactAlarm: PermissionState.granted,
+        },
+        grantOnRequest: true,
+      );
+      await pumpFirstRun(tester, at: AppRoute.permissions.path);
+
+      await tester.tap(find.text('Allow all'));
+      await pumpSettled(tester);
+
+      expect(permissions.requested, <AppPermission>[
+        AppPermission.notifications,
+      ]);
+      expect(find.text('Home'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('Allow all stays put while something is still refused', (
+      WidgetTester tester,
+    ) async {
+      // Every prompt answered "Don't Allow".
+      await pumpFirstRun(tester, at: AppRoute.permissions.path);
+
+      await tester.tap(find.text('Allow all'));
+      await pumpSettled(tester);
+
+      expect(permissions.requested, hasLength(3));
+      expect(find.byType(PermissionsScreen), findsOneWidget);
+      expect(find.text('Allow all'), findsOneWidget);
+      expect(preferences.getBool(PrefKeys.permissionsPrimerSeen), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('Allow all sends permanent denials to Settings, once', (
+      WidgetTester tester,
+    ) async {
+      permissions = FakePermissionService(
+        states: <AppPermission, PermissionState>{
+          AppPermission.microphone: PermissionState.permanentlyDenied,
+          AppPermission.notifications: PermissionState.permanentlyDenied,
+          AppPermission.exactAlarm: PermissionState.denied,
+        },
+        grantOnRequest: true,
+      );
+      await pumpFirstRun(tester, at: AppRoute.permissions.path);
+
+      await tester.tap(find.text('Allow all'));
+      await pumpSettled(tester);
+
+      // One trip out of the app, not one per permission.
+      expect(permissions.settingsOpened, 1);
+      expect(permissions.requested, <AppPermission>[AppPermission.exactAlarm]);
+      expect(find.byType(PermissionsScreen), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('Not now works with nothing granted — a primer, not a gate', (
       WidgetTester tester,
     ) async {
       permissions
@@ -244,14 +490,9 @@ void main() {
         ..set(AppPermission.notifications, PermissionState.denied);
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
 
-      // ⚠️ A blocked Continue would be a dead end the app cannot escape: iOS
-      // never prompts twice, so the button could never become enabled.
-      expect(
-        tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed,
-        isNotNull,
-      );
-
-      await tester.tap(find.text('Continue'));
+      // ⚠️ A blocked way forward would be a dead end the app cannot escape:
+      // iOS never prompts twice. The Home banner is what keeps nagging.
+      await tester.tap(find.text('Not now'));
       await pumpSettled(tester);
 
       expect(find.text('Home'), findsOneWidget);
@@ -261,19 +502,123 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('Continue works with everything granted too', (
+    testWidgets('with everything granted the button is just Continue', (
       WidgetTester tester,
     ) async {
       permissions
         ..set(AppPermission.microphone, PermissionState.granted)
-        ..set(AppPermission.notifications, PermissionState.granted);
+        ..set(AppPermission.notifications, PermissionState.granted)
+        ..set(AppPermission.exactAlarm, PermissionState.granted);
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
 
-      expect(find.text('Allowed'), findsNWidgets(2));
+      expect(find.text('Allowed'), findsNWidgets(3));
+      expect(find.text('Not now'), findsNothing);
 
       await tester.tap(find.text('Continue'));
       await pumpSettled(tester);
 
+      expect(find.text('Home'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  testWidgets('three cards fit the smallest phone at 2× type', (
+    WidgetTester tester,
+  ) async {
+    // Three cards, a two-line title and two buttons do not fit 320×568 at 2×.
+    // The screen scrolls instead of painting an overflow stripe.
+    for (final bool fixing in <bool>[false, true]) {
+      await pumpScreen(
+        tester,
+        PermissionsScreen(fixing: fixing),
+        overrides: defaultOverrides(
+          permissions: permissions,
+          preferences: preferences,
+        ),
+        frame: DeviceFrame.smallNoInsets,
+        textScale: 2,
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text('Alarms & reminders'), findsOneWidget);
+    }
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  group('fixing from Home', () {
+    /// Home pushes `/access`; the screen must pop back to it.
+    Future<GoRouter> pumpFix(WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(DeviceFrame.iPhoneNotch.size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final GoRouter router = GoRouter(
+        initialLocation: AppRoute.home.path,
+        routes: <RouteBase>[
+          GoRoute(
+            path: AppRoute.home.path,
+            builder: (_, _) =>
+                const Scaffold(body: Center(child: Text('Home'))),
+          ),
+          GoRoute(
+            path: AppRoute.access.path,
+            builder: (_, _) => const PermissionsScreen(fixing: true),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            ...defaultOverrides(
+              permissions: permissions,
+              preferences: preferences,
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: TasukeTheme.light(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      unawaited(router.push<void>(AppRoute.access.path));
+      await pumpSettled(tester);
+      return router;
+    }
+
+    testWidgets('says what is wrong and pops back once it is fixed', (
+      WidgetTester tester,
+    ) async {
+      permissions = FakePermissionService(
+        states: <AppPermission, PermissionState>{
+          AppPermission.microphone: PermissionState.denied,
+          AppPermission.notifications: PermissionState.denied,
+          AppPermission.exactAlarm: PermissionState.granted,
+        },
+        grantOnRequest: true,
+      );
+      await pumpFix(tester);
+
+      expect(find.text('Turn On Permissions'), findsOneWidget);
+
+      await tester.tap(find.text('Allow all'));
+      await pumpSettled(tester);
+
+      expect(find.byType(PermissionsScreen), findsNothing);
+      expect(find.text('Home'), findsOneWidget);
+      // The first-run flag belongs to first run.
+      expect(preferences.getBool(PrefKeys.permissionsPrimerSeen), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('Not now pops back too', (WidgetTester tester) async {
+      await pumpFix(tester);
+
+      await tester.tap(find.text('Not now'));
+      await pumpSettled(tester);
+
+      expect(find.byType(PermissionsScreen), findsNothing);
       expect(find.text('Home'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());

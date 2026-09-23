@@ -34,19 +34,40 @@ abstract final class ExtractionDefaults {
   /// Below this the recorder refuses rather than transcribing a cough.
   static const Duration minRecordingDuration = Duration(milliseconds: 900);
 
-  /// Hard ceiling on tasks from one utterance. A model that returns 200 is
-  /// malfunctioning, and rendering 200 Confirm cards is worse than truncating.
+  /// Hard ceiling on tasks from one utterance. A transcript that splits into
+  /// 200 is a whisper repetition loop, not a to-do list, and rendering 200
+  /// Confirm cards is worse than truncating.
   static const int maxTasksPerCapture = 20;
 
-  /// How far ahead a date may be before it is treated as a hallucination.
-  static const int maxFutureDays = 3650;
+  /// How long the pipeline waits for extraction before it gives up on it and
+  /// runs the fallback extractor once more.
+  ///
+  /// ⚠️ It was 45 s, sized for on-device language-model inference, which the
+  /// app no longer does. The rule-based extractor takes a few milliseconds on
+  /// a normal note and about 1.5 s on a laptop for the worst transcript
+  /// whisper can produce (60 s of a repetition loop), so 5 s only ever means
+  /// a hung extractor, and it still fits the 10 s p95 budget for Stop →
+  /// Confirm. It bounds the wait, not the work: `extract` does everything
+  /// before it returns its future, so the timer starts once the work is
+  /// done. It only bites if extraction ever moves off this isolate.
+  static const Duration extractionTimeout = Duration(seconds: 5);
 
-  /// How far back. One day, so "yesterday" survives as an overdue task.
-  static const int maxPastDays = 1;
+  /// How long the recogniser may take to finalise after Stop before the
+  /// pipeline gives up and keeps whatever it already heard.
+  ///
+  /// ⚠️ There was no bound here at all. `stopRecording` awaited the transcript
+  /// completer directly, so a whisper session that never finalised — a dead
+  /// worker isolate, a native abort — left the Processing screen animating
+  /// forever with no way out but killing the app. 30 s is generous: the whole
+  /// budget for Stop → Confirm is 10 s at p95.
+  static const Duration transcriptionTimeout = Duration(seconds: 30);
 
-  /// How long inference may run before the pipeline gives up.
-  static const Duration extractionTimeout = Duration(seconds: 45);
-
-  /// Free tier: voice captures per local day.
-  static const int freeDailyCaptures = 5;
+  /// Free tier: voice captures per local day. The next one opens the paywall.
+  ///
+  /// Every string that shows this number is an ICU plural, so changing it
+  /// needs no copy edits in the app — but the store texts (store/terms.html,
+  /// assets/legal/terms_en.md, store/REVIEW_NOTES.md, store/PRODUCTS.md,
+  /// store/store-listing.txt) state it in words and must move with it —
+  /// `store_products_test.dart` checks the listing.
+  static const int freeDailyCaptures = 1;
 }

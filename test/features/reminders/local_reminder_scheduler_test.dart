@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tasuke_ai/core/clock/clock.dart';
 import 'package:tasuke_ai/core/notifications/local_notifier.dart';
@@ -185,9 +187,7 @@ void main() {
       expect(fakeNotifier.scheduled.single.atLocal, civil(11, 15));
     });
 
-    test('leaves an alarm the OS already holds exactly where it is', () async {
-      // Re-scheduling is harmless on iOS and a wasted AlarmManager slot on
-      // Android, which is a resource the app is rationed on.
+    test('re-arms a held alarm in place, never beside it', () async {
       tasks.seed(<Task>[
         reminderTask(id: 't-1', notificationId: 11, at: civil(11, 15)),
       ]);
@@ -196,9 +196,60 @@ void main() {
 
       final SyncOutcome again = await scheduler().sync();
 
-      expect(again.scheduled, 0);
-      expect(notifier.calls, isEmpty);
+      // Same id, so the OS replaces the alarm: still exactly one.
+      expect(again.scheduled, 1);
+      expect(notifier.calls, <String>['schedule:11']);
       expect(fakeNotifier.scheduled, hasLength(1));
+    });
+
+    test('a reminder moved to a new time moves its alarm', () async {
+      // ⚠️ The bug this pins shipped. The sweep skipped every id the plugin
+      // already listed, and that list has ids but no times — so a reminder
+      // moved from 15:00 to 18:00 kept ringing at 15:00 and never at 18:00.
+      tasks.seed(<Task>[
+        reminderTask(id: 't-1', notificationId: 11, at: civil(11, 15)),
+      ]);
+      await scheduler().sync();
+
+      tasks.seed(<Task>[
+        reminderTask(id: 't-1', notificationId: 11, at: civil(11, 18)),
+      ]);
+      await scheduler().sync();
+
+      expect(fakeNotifier.scheduled.single.atLocal, civil(11, 18));
+    });
+
+    test('a renamed task re-arms with its new title', () async {
+      tasks.seed(<Task>[
+        reminderTask(id: 't-1', notificationId: 11, at: civil(11, 15)),
+      ]);
+      await scheduler().sync();
+
+      tasks.seed(<Task>[
+        reminderTask(
+          id: 't-1',
+          notificationId: 11,
+          at: civil(11, 15),
+          title: 'Call James',
+        ),
+      ]);
+      await scheduler().sync();
+
+      expect(fakeNotifier.scheduled.single.title, 'Call James');
+    });
+
+    test('an exact-alarm grant upgrades what is already scheduled', () async {
+      fakeNotifier.exact = false;
+      tasks.seed(<Task>[
+        reminderTask(id: 't-1', notificationId: 11, at: civil(11, 15)),
+      ]);
+      expect((await scheduler().sync()).exact, isFalse);
+
+      fakeNotifier.exact = true;
+      final SyncOutcome after = await scheduler().sync();
+
+      expect(after.exact, isTrue);
+      expect(after.scheduled, 1);
     });
 
     test(
@@ -234,14 +285,63 @@ void main() {
       );
 
       expect(outcomes, hasLength(2));
-      // The loser of the race finds both alarms already held and adds nothing.
+      // Both calls land before a sweep starts, so they share one.
       expect(outcomes.first.scheduled, 2);
-      expect(outcomes.last.scheduled, 0);
+      expect(outcomes.last.scheduled, 2);
       expect(
         fakeNotifier.scheduled.map((ScheduledReminder r) => r.id).toSet(),
         <int>{11, 22},
         reason: 'neither sweep may re-create what the other just scheduled',
       );
+    });
+
+    test('calls made before a sweep starts share it', () async {
+      // A tick, a title debounce and a resume each ask for a sweep; each used
+      // to re-arm the whole window on its own.
+      tasks.seed(<Task>[
+        reminderTask(id: 't-1', notificationId: 11, at: civil(11, 15)),
+      ]);
+      final LocalReminderScheduler subject = scheduler();
+
+      final List<SyncOutcome> outcomes = await Future.wait<SyncOutcome>(
+        <Future<SyncOutcome>>[subject.sync(), subject.sync(), subject.sync()],
+      );
+
+      expect(notifier.calls, <String>['schedule:11']);
+      expect(outcomes.map((SyncOutcome o) => o.scheduled), <int>[1, 1, 1]);
+    });
+
+    test('a call made while a sweep runs gets its own, after it', () async {
+      // ⚠️ The shared sweep is released when it STARTS. This caller may have
+      // written after the running sweep read the tasks, so sharing it would
+      // drop that write until the next unrelated sweep.
+      final _GatedNotifier gated = _GatedNotifier(fakeNotifier);
+      final Completer<void> release = Completer<void>();
+      gated.gate = release;
+      tasks.seed(<Task>[
+        reminderTask(id: 't-1', notificationId: 11, at: civil(11, 15)),
+      ]);
+      final LocalReminderScheduler subject = schedulerOver(gated);
+
+      final Future<SyncOutcome> running = subject.sync();
+      await Future<void>.delayed(Duration.zero);
+      expect(gated.gate, isNull, reason: 'parked after reading the tasks');
+
+      tasks.seed(<Task>[
+        reminderTask(id: 't-1', notificationId: 11, at: civil(11, 15)),
+        reminderTask(id: 't-2', notificationId: 22, at: civil(12, 9)),
+      ]);
+      final Future<SyncOutcome> later = subject.sync();
+      expect(later, isNot(same(running)));
+
+      release.complete();
+      expect((await running).scheduled, 1);
+      expect((await later).scheduled, 2, reason: 'it saw the mid-sweep write');
+      expect(gated.calls, <String>[
+        'schedule:11',
+        'schedule:11',
+        'schedule:22',
+      ]);
     });
 
     test('a failed sweep does not poison the ones queued behind it', () async {
@@ -373,6 +473,22 @@ void main() {
       }
     });
   });
+}
+
+/// Parks the first `schedule` call on [gate], so a sweep can be caught after
+/// it has read the tasks and before it has finished.
+final class _GatedNotifier extends RecordingNotifier {
+  _GatedNotifier(super.inner);
+
+  Completer<void>? gate;
+
+  @override
+  Future<ScheduleResult> schedule(ScheduledReminder reminder) async {
+    final Completer<void>? held = gate;
+    gate = null;
+    if (held != null) await held.future;
+    return super.schedule(reminder);
+  }
 }
 
 /// Fails the first `pendingIds` call, so the sweep behind it can be observed

@@ -1,0 +1,15 @@
+# Android native build output.
+#
+# ⚠️ 161 MB and ~210 files of CMake cache, and every one of them is wrong the
+# moment it leaves this machine: CMakeCache.txt and the .cmake/api replies hold
+# ABSOLUTE paths to this NDK, this SDK and this checkout, and .ninja_deps /
+# .ninja_log / *.bin are rewritten by every build — so they show up as modified
+# in `git status` after any `flutter build`, forever.
+#
+# whisper.cpp is compiled from the sources in android/src/whisper/, which ARE
+# tracked. Nothing here is needed to reproduce a build.
+/android/.cxx/
+/android/build/
+/android/.gradle/
+/ios/.symlinks/
+/example/

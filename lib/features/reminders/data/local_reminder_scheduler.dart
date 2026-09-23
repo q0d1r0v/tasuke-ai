@@ -62,9 +62,30 @@ final class LocalReminderScheduler implements ReminderScheduler {
   /// watchdog can interrupt it.
   Future<void> _queue = Future<void>.value();
 
+  /// The queued sweep that has not started yet. Every caller that arrives
+  /// before it starts shares it.
+  ///
+  /// A tick, a title debounce and a resume each ask for a sweep, and each one
+  /// used to get its own full re-arm of the window. Sharing is safe because
+  /// every caller has committed its write before it calls [sync], and a sweep
+  /// that has not started reads the database when it does.
+  ///
+  /// ⚠️ Cleared when the sweep STARTS, not when it finishes. A caller that
+  /// arrives mid-sweep may have written after that sweep read the tasks, so it
+  /// must get a sweep of its own.
+  Future<SyncOutcome>? _pending;
+
   @override
   Future<SyncOutcome> sync() {
-    final Future<SyncOutcome> next = _queue.then((_) => _sync());
+    final Future<SyncOutcome>? pending = _pending;
+    if (pending != null) return pending;
+
+    late final Future<SyncOutcome> next;
+    next = _queue.then((_) {
+      if (identical(_pending, next)) _pending = null;
+      return _sync();
+    });
+    _pending = next;
     // Swallow the error on the chain itself: one failed sweep must not poison
     // every later one. Callers still see the error through [next].
     _queue = next.then<void>((_) {}, onError: (Object _) {});
@@ -92,7 +113,12 @@ final class LocalReminderScheduler implements ReminderScheduler {
       );
     }
 
-    final List<Task> candidates = await _tasks.allSchedulable(now);
+    // From an hour back, not from now: an inexact alarm may still be on its
+    // way after its minute has passed, and the planner has to see its task to
+    // know not to cancel it. See [ReminderPlanner.inFlightMinutes].
+    final List<Task> candidates = await _tasks.allSchedulable(
+      now.subtractMinutes(ReminderPlanner.inFlightMinutes),
+    );
     final ReminderPlan plan = ReminderPlanner.plan(
       tasks: candidates,
       now: now,
@@ -106,14 +132,21 @@ final class LocalReminderScheduler implements ReminderScheduler {
 
     bool exact = true;
     int scheduled = 0;
+    // ⚠️ Every reminder in the window is re-armed on every sweep, including
+    // the ones the OS already "holds". `held` is the plugin's own cache of what
+    // it once scheduled — ids only, no time — not what AlarmManager actually
+    // holds. Skipping held ids, as this once did, meant:
+    //   * a reminder moved from 17:00 to 18:00 kept ringing at 17:00,
+    //   * a timezone change or a later exact-alarm grant changed nothing,
+    //   * alarms the OS dropped (Force stop, an exact-alarm revocation, a
+    //     reboot on a ROM that blocks the boot receiver, as HyperOS does)
+    //     were never re-armed, because the cache still listed them.
+    // Re-arming reuses the id, so it replaces the alarm rather than adding a
+    // second one; it costs no extra AlarmManager slot. The notifier may skip a
+    // re-arm, but only one this same process set with the identical instant,
+    // precision and content — its memo lives in memory, and every way the OS
+    // drops alarms wholesale also ends the process.
     for (final PlannedReminder reminder in plan.toSchedule) {
-      // Already held at the right moment? Re-scheduling it would be harmless on
-      // iOS and a wasted AlarmManager slot on Android, so skip when the id is
-      // held and the plan did not ask to cancel it.
-      if (held.contains(reminder.notificationId) &&
-          !plan.toCancel.contains(reminder.notificationId)) {
-        continue;
-      }
       try {
         final ScheduleResult result = await _notifier.schedule(
           ScheduledReminder(

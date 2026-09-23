@@ -13,7 +13,6 @@ import 'package:tasuke_ai/features/capture/domain/capture_phase.dart';
 import 'package:tasuke_ai/features/confirm/presentation/confirm_tasks_screen.dart';
 import 'package:tasuke_ai/features/extraction/data/extraction_providers.dart';
 import 'package:tasuke_ai/features/pipeline/presentation/capture_controller.dart';
-import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
 import 'package:tasuke_ai/features/tasks/data/task_providers.dart';
 import 'package:tasuke_ai/features/tasks/domain/task.dart';
 import 'package:tasuke_ai/features/tasks/domain/task_draft.dart';
@@ -107,12 +106,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: <Override>[
-          ...defaultOverrides(clock: clock, notifier: notifier),
+          ...defaultOverrides(
+            settings: settings,
+            clock: clock,
+            notifier: notifier,
+          ),
           // ⚠️ Every one of these is backed by drift in production, and a drift
           // database opened inside `testWidgets`' FakeAsync deadlocks the
           // isolate outright.
           taskRepositoryProvider.overrideWithValue(repository ?? tasks),
-          settingsRepositoryProvider.overrideWithValue(settings),
           usageRepositoryProvider.overrideWithValue(usage),
           primaryTaskExtractorProvider.overrideWithValue(FakeTaskExtractor()),
           fallbackTaskExtractorProvider.overrideWithValue(FakeTaskExtractor()),
@@ -200,6 +202,27 @@ void main() {
 
       await shutdown(tester);
     });
+
+    testWidgets('a task typed by hand is not called found', (
+      WidgetTester tester,
+    ) async {
+      // "Type a task instead": nothing was recorded, so "We found 1 task"
+      // reads like the app misheard something.
+      await pumpConfirm(
+        tester,
+        seed: const CaptureState(
+          phase: CapturePhase.confirming,
+          drafts: <TaskDraft>[
+            TaskDraft(draftId: 'm', title: '', source: TaskSource.manual),
+          ],
+        ),
+      );
+
+      expect(find.text('Type your task, then save it.'), findsOneWidget);
+      expect(find.textContaining('We found'), findsNothing);
+
+      await shutdown(tester);
+    });
   });
 
   testWidgets('editing a title writes straight through to the draft', (
@@ -250,6 +273,40 @@ void main() {
     expect(find.text('Book the flight'), findsNothing);
 
     await shutdown(tester);
+  });
+
+  testWidgets('deleting a card above the focused one keeps typing in place', (
+    WidgetTester tester,
+  ) async {
+    // ⚠️ Unkeyed cards are matched by position. Deleting the first handed the
+    // focused second field the THIRD draft, and what the user typed next was
+    // saved into a task they never touched.
+    await pumpConfirm(
+      tester,
+      seed: CaptureState(
+        phase: CapturePhase.confirming,
+        drafts: <TaskDraft>[
+          draft('a', title: 'Call mum'),
+          draft('b', title: 'Book the flight'),
+          draft('c', title: 'Buy milk'),
+        ],
+      ),
+    );
+
+    await tester.showKeyboard(find.byType(TextField).at(1));
+    await tester.tap(
+      find.widgetWithIcon(IconButton, Icons.close_rounded).at(0),
+    );
+    await pumpSettled(tester);
+    tester.testTextInput.enterText('Book the flight to Tokyo');
+    await pumpSettled(tester);
+
+    final List<TaskDraft> drafts = stateOf(tester).drafts;
+    await shutdown(tester);
+
+    expect(drafts.map((TaskDraft d) => d.draftId), <String>['b', 'c']);
+    expect(drafts[0].title, 'Book the flight to Tokyo');
+    expect(drafts[1].title, 'Buy milk');
   });
 
   testWidgets('"Add another task" appends an empty draft', (

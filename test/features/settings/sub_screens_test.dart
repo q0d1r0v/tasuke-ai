@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,8 +103,8 @@ void main() {
       expect(find.text('Everything runs on your device'), findsOneWidget);
       expect(
         find.text(
-          'Speech recognition and task extraction both happen on this phone. '
-          'The only thing Tasuke AI ever downloads is its own language model.',
+          'Speech recognition and task extraction both happen on this phone, '
+          'and Tasuke AI downloads nothing after you install it.',
         ),
         findsOneWidget,
       );
@@ -155,6 +156,38 @@ void main() {
         find.textContaining('Some devices delay alarms to save battery'),
         findsOneWidget,
       );
+      // Nothing is downloaded any more; the answer must not promise a model.
+      expect(find.textContaining('language model'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('shows the support inbox the store listing names', (
+      WidgetTester tester,
+    ) async {
+      await pumpSub(tester, const HelpScreen());
+      await tester.scrollUntilVisible(
+        find.text('info@digital-group.uz'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Contact support'), findsOneWidget);
+      expect(find.text('info@digital-group.uz'), findsOneWidget);
+
+      // One inbox everywhere: the listing, the review notes and both policies.
+      for (final String path in <String>[
+        'store/store-listing.txt',
+        'store/REVIEW_NOTES.md',
+        'store/privacy-policy.html',
+        'store/terms.html',
+        'assets/legal/privacy_en.md',
+        'assets/legal/terms_en.md',
+      ]) {
+        final String text = File(path).readAsStringSync();
+        expect(text, contains('info@digital-group.uz'), reason: path);
+        expect(text, isNot(contains('support@tasuke.app')), reason: path);
+      }
 
       await tester.pumpWidget(const SizedBox.shrink());
     });
@@ -210,19 +243,18 @@ void main() {
       WidgetTester tester,
     ) async {
       await usage.recordCapture(today, taskCount: 2);
-      await usage.recordCapture(today, taskCount: 1);
-      await usage.recordCapture(today, taskCount: 4);
 
       await pumpSub(tester, const UsageScreen());
 
-      expect(find.text('3 / 5'), findsOneWidget);
+      // One free capture a day: after it, the bar is full.
+      expect(find.text('1 / 1'), findsOneWidget);
       expect(
         tester
             .widget<LinearProgressIndicator>(
               find.byType(LinearProgressIndicator),
             )
             .value,
-        closeTo(0.6, 0.001),
+        closeTo(1, 0.001),
       );
 
       await tester.tap(find.text('See Pro plans'));
@@ -246,7 +278,7 @@ void main() {
       await pumpSub(tester, const UsageScreen());
 
       expect(find.text('Unlimited'), findsOneWidget);
-      expect(find.textContaining('/ 5'), findsNothing);
+      expect(find.textContaining('/ 1'), findsNothing);
       // Selling Pro to someone who already bought it is how a refund starts.
       expect(find.byType(LinearProgressIndicator), findsNothing);
       expect(find.text('See Pro plans'), findsNothing);

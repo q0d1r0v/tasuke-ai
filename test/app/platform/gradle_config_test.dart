@@ -139,9 +139,9 @@ void main() {
     });
 
     test('native method names survive R8', () {
-      // ⚠️ whisper.cpp and llama.cpp are reached through dart:ffi by symbol
-      // NAME. R8 renames them, DynamicLibrary.lookup throws, and transcription
-      // fails in release builds only — i.e. in the build a reviewer runs.
+      // ⚠️ whisper.cpp is reached through dart:ffi by symbol NAME. R8 renames
+      // them, DynamicLibrary.lookup throws, and transcription fails in release
+      // builds only — i.e. in the build a reviewer runs.
       expect(proguard, contains('-keepclasseswithmembernames class * {'));
       expect(proguard, contains('native <methods>;'));
     });

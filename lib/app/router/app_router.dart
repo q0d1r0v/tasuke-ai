@@ -15,8 +15,6 @@ import 'package:tasuke_ai/features/capture/domain/capture_phase.dart';
 import 'package:tasuke_ai/features/capture/presentation/recording_screen.dart';
 import 'package:tasuke_ai/features/confirm/presentation/confirm_tasks_screen.dart';
 import 'package:tasuke_ai/features/home/presentation/home_screen.dart';
-import 'package:tasuke_ai/features/model_setup/presentation/model_setup_providers.dart';
-import 'package:tasuke_ai/features/model_setup/presentation/model_setup_screen.dart';
 import 'package:tasuke_ai/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:tasuke_ai/features/permissions/presentation/permissions_screen.dart';
 import 'package:tasuke_ai/features/pipeline/presentation/capture_controller.dart';
@@ -47,7 +45,6 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
       appBootstrapProvider,
       onboardingSeenProvider,
       permissionsPrimerSeenProvider,
-      currentExtractorModelStateProvider,
       captureControllerProvider.select((CaptureState state) => state.phase),
     ],
   );
@@ -76,9 +73,9 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         builder: (_, _) => const PermissionsScreen(),
       ),
       GoRoute(
-        path: AppRoute.modelSetup.path,
-        name: AppRoute.modelSetup.routeName,
-        builder: (_, _) => const ModelSetupScreen(),
+        path: AppRoute.access.path,
+        name: AppRoute.access.routeName,
+        builder: (_, _) => const PermissionsScreen(fixing: true),
       ),
 
       // The four bottom-nav destinations.
@@ -163,7 +160,9 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoute.paywall.path,
         name: AppRoute.paywall.routeName,
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, _) => const PaywallScreen(),
+        builder: (_, GoRouterState state) => PaywallScreen(
+          reason: PaywallReason.fromQuery(state.uri.queryParameters),
+        ),
       ),
 
       // Settings sub-screens, in their own namespace — see routes.dart for why
@@ -242,18 +241,7 @@ String? _redirect(Ref ref, GoRouterState state) {
         : AppRoute.permissions.path;
   }
 
-  // 4. The model-setup screen is offered once, and is skippable. It is not a
-  //    gate either: the app is fully usable — manual tasks, reminders, every
-  //    screen — while the model downloads. Making it a gate would also be an
-  //    App Review risk, since a first launch that is nothing but a progress bar
-  //    reads as an app with no functionality.
-  // `/model-setup` is reachable two ways: once during first run, and from
-  // Settings → AI model at any time afterwards. It is never a gate — the app is
-  // fully usable while the model downloads — so the guard lets it through and
-  // the screen decides what to render for the current state.
-  if (location == AppRoute.modelSetup.path) return null;
-
-  // 5. The capture family. The ROUTER owns which capture screen is up; the
+  // 4. The capture family. The ROUTER owns which capture screen is up; the
   //    pipeline only advances a phase. That inversion is what makes each
   //    capture screen independently pumpable in a test, and what makes a cold
   //    start into `/capture/confirm` land on Home rather than on a confirm
@@ -262,13 +250,21 @@ String? _redirect(Ref ref, GoRouterState state) {
     final CapturePhase phase = ref.read(
       captureControllerProvider.select((CaptureState s) => s.phase),
     );
-    if (phase == CapturePhase.failed) return null;
+    if (phase == CapturePhase.failed) {
+      // ⚠️ Except on Processing, which has no error UI: every failure after
+      // Stop (too short, silence, a recogniser that died) left the user under
+      // a spinner that never finished. The Recording screen underneath renders
+      // every capture failure.
+      return location == AppRoute.captureProcessing.path
+          ? AppRoute.capture.path
+          : null;
+    }
     final String? allowed = captureLocationFor(phase);
     if (allowed == null) return AppRoute.home.path;
     return location == allowed ? null : allowed;
   }
 
-  // 6. Nobody who is set up belongs on a transient screen.
+  // 5. Nobody who is set up belongs on a transient screen.
   if (kTransientPaths.contains(location)) return AppRoute.home.path;
 
   return null;

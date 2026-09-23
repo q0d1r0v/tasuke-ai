@@ -75,6 +75,16 @@ abstract final class TasukeColors {
 
   /// The unchecked task circle's stroke, and the dashed "Add another task"
   /// outline on Confirm.
+  /// The unfilled part of a progress bar.
+  ///
+  /// ⚠️ A token of its own, and it has to be. [primaryTint] measures 1.06:1
+  /// against [canvas] and 1.13:1 against [surface], so a bar drawn on it has no
+  /// visible end: 24% reads as a blue stub floating on the page, 24% of
+  /// nothing. Nothing already in the palette is dark enough — [outlineSoft] is
+  /// 1.37:1 and [inkFaint] is 2.27:1 — which is why this exists rather than
+  /// reusing one. 2.83:1 on canvas.
+  static const Color progressTrack = Color(0xFF8695B2);
+
   static const Color outlineSoft = Color(0xFFCBD7E8);
 
   // ── Semantic ───────────────────────────────────────────────────────────────

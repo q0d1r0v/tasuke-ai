@@ -47,6 +47,17 @@ abstract final class DateLabels {
     return context.l10n.taskMetaRelative(dayLabel, time(context, at));
   }
 
+  /// The time half of a task tile's date chip.
+  ///
+  /// Null for an undated task, so its chip reads "Someday" alone: "no date"
+  /// and "all day" are different things, and "Someday, All day" says both.
+  static String? tileTime(BuildContext context, Task task) {
+    final TaskDue? due = task.due;
+    if (due == null) return null;
+    final LocalTimeOfDay? at = due.time;
+    return at == null ? context.l10n.taskAllDay : time(context, at);
+  }
+
   /// The section header above a group on Upcoming and Completed.
   static String groupHeader(
     BuildContext context,
@@ -60,7 +71,10 @@ abstract final class DateLabels {
         _locale(context),
       ).format(group.date.toDateTimeLocal()),
       TaskGroupLabel.nextWeek => context.l10n.dateNextWeek,
-      TaskGroupLabel.later ||
+      // ⚠️ A range, not a day: every far-future date is merged into one group
+      // whose `date` is only the earliest, so a date here would title the whole
+      // run after its first task. Each row still shows its own date.
+      TaskGroupLabel.later => context.l10n.dateLater,
       TaskGroupLabel.completedOn => day(context, group.date, today),
     };
   }

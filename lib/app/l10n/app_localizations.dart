@@ -286,6 +286,48 @@ abstract class AppLocalizations {
   /// **'To remind you about your tasks'**
   String get permissionsNotificationsSubtitle;
 
+  /// No description provided for @permissionsExactAlarmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarms & reminders'**
+  String get permissionsExactAlarmTitle;
+
+  /// No description provided for @permissionsExactAlarmSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'So reminders ring on the exact minute'**
+  String get permissionsExactAlarmSubtitle;
+
+  /// No description provided for @permissionsAllowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow all'**
+  String get permissionsAllowAll;
+
+  /// No description provided for @permissionsNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get permissionsNotNow;
+
+  /// No description provided for @permissionsTurnOnInSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone won\'t ask again. Turn it on in Settings.'**
+  String get permissionsTurnOnInSettings;
+
+  /// No description provided for @permissionsFixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn On Permissions'**
+  String get permissionsFixTitle;
+
+  /// No description provided for @permissionsFixSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice capture and reminders can\'t work until these are allowed.'**
+  String get permissionsFixSubtitle;
+
   /// No description provided for @permissionsPrivacyNote.
   ///
   /// In en, this message translates to:
@@ -303,72 +345,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not allowed'**
   String get permissionsDenied;
-
-  /// No description provided for @modelSetupTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing your AI'**
-  String get modelSetupTitle;
-
-  /// No description provided for @modelSetupSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Tasuke AI is downloading its language model. This happens once, and only needs {size}.'**
-  String modelSetupSubtitle(String size);
-
-  /// No description provided for @modelSetupWifiHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Best over Wi-Fi. You can keep using the app while it downloads.'**
-  String get modelSetupWifiHint;
-
-  /// No description provided for @modelSetupProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'{percent}% downloaded'**
-  String modelSetupProgress(int percent);
-
-  /// No description provided for @modelSetupDownload.
-  ///
-  /// In en, this message translates to:
-  /// **'Download now'**
-  String get modelSetupDownload;
-
-  /// No description provided for @modelSetupLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Not now'**
-  String get modelSetupLater;
-
-  /// No description provided for @modelSetupReady.
-  ///
-  /// In en, this message translates to:
-  /// **'Your AI is ready'**
-  String get modelSetupReady;
-
-  /// No description provided for @modelSetupFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'The download didn\'t finish'**
-  String get modelSetupFailed;
-
-  /// No description provided for @modelSetupChecksumFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'The downloaded file was incomplete and has been removed.'**
-  String get modelSetupChecksumFailed;
-
-  /// No description provided for @modelSetupNoSpace.
-  ///
-  /// In en, this message translates to:
-  /// **'There isn\'t enough free space for the model.'**
-  String get modelSetupNoSpace;
-
-  /// No description provided for @modelSetupPreparing.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing AI — {percent}%'**
-  String modelSetupPreparing(int percent);
 
   /// No description provided for @homeGreetingMorning.
   ///
@@ -496,11 +472,35 @@ abstract class AppLocalizations {
   /// **'Recording...'**
   String get recordingTitle;
 
+  /// No description provided for @recordingStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting ready...'**
+  String get recordingStarting;
+
+  /// No description provided for @recordingFinishing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing up...'**
+  String get recordingFinishing;
+
+  /// No description provided for @recordingFinishingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing down what you said.'**
+  String get recordingFinishingHint;
+
   /// No description provided for @recordingHint.
   ///
   /// In en, this message translates to:
   /// **'Speak naturally.\nYou can say multiple tasks at once.'**
   String get recordingHint;
+
+  /// No description provided for @recordingWaitingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing your last recording first.'**
+  String get recordingWaitingHint;
 
   /// No description provided for @recordingTooShort.
   ///
@@ -585,6 +585,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard'**
   String get confirmDiscardConfirm;
+
+  /// Confirm screen intro when every draft was typed by hand ("Type a task instead"), so nothing was found.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Type your task, then save it.} other{Type your tasks, then save them.}}'**
+  String confirmManualTasks(int count);
 
   /// No description provided for @confirmTitleRequired.
   ///
@@ -862,30 +868,6 @@ abstract class AppLocalizations {
   /// **'Unlimited'**
   String get settingsUsageUnlimited;
 
-  /// No description provided for @settingsAiModel.
-  ///
-  /// In en, this message translates to:
-  /// **'AI model'**
-  String get settingsAiModel;
-
-  /// No description provided for @settingsAiModelReady.
-  ///
-  /// In en, this message translates to:
-  /// **'Ready'**
-  String get settingsAiModelReady;
-
-  /// No description provided for @settingsAiModelMissing.
-  ///
-  /// In en, this message translates to:
-  /// **'Not downloaded'**
-  String get settingsAiModelMissing;
-
-  /// No description provided for @settingsAiModelDownloading.
-  ///
-  /// In en, this message translates to:
-  /// **'Downloading…'**
-  String get settingsAiModelDownloading;
-
   /// No description provided for @settingsAllDayReminder.
   ///
   /// In en, this message translates to:
@@ -967,7 +949,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutOnDeviceBody.
   ///
   /// In en, this message translates to:
-  /// **'Speech recognition and task extraction both happen on this phone. The only thing Tasuke AI ever downloads is its own language model.'**
+  /// **'Speech recognition and task extraction both happen on this phone, and Tasuke AI downloads nothing after you install it.'**
   String get aboutOnDeviceBody;
 
   /// No description provided for @aboutLicenses.
@@ -988,29 +970,11 @@ abstract class AppLocalizations {
   /// **'Unlock your full potential'**
   String get paywallSubtitle;
 
-  /// No description provided for @paywallBenefitUnlimited.
+  /// The one thing Pro unlocks: the free tier's daily capture limit, which counts spoken and typed tasks alike. Every paywall benefit must be true, and true only for Pro.
   ///
   /// In en, this message translates to:
-  /// **'Unlimited voice processing'**
+  /// **'Unlimited captures, spoken or typed'**
   String get paywallBenefitUnlimited;
-
-  /// No description provided for @paywallBenefitMultiple.
-  ///
-  /// In en, this message translates to:
-  /// **'Multiple tasks from one voice input'**
-  String get paywallBenefitMultiple;
-
-  /// No description provided for @paywallBenefitAdvanced.
-  ///
-  /// In en, this message translates to:
-  /// **'Advanced AI processing'**
-  String get paywallBenefitAdvanced;
-
-  /// No description provided for @paywallBenefitPriority.
-  ///
-  /// In en, this message translates to:
-  /// **'Priority updates'**
-  String get paywallBenefitPriority;
 
   /// No description provided for @paywallBenefitSupport.
   ///
@@ -1093,7 +1057,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallFreeTierNote.
   ///
   /// In en, this message translates to:
-  /// **'Free: {limit} voice captures a day, unlimited manual tasks and reminders.'**
+  /// **'{limit, plural, =1{Free: 1 capture a day, spoken or typed. Reminders, search and history stay unlimited.} other{Free: {limit} captures a day, spoken or typed. Reminders, search and history stay unlimited.}}'**
   String paywallFreeTierNote(int limit);
 
   /// No description provided for @paywallLegal.
@@ -1147,7 +1111,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallQuotaHeader.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve used {used} of {limit} voice captures today.'**
+  /// **'{limit, plural, =1{You\'ve used today\'s free capture.} other{You\'ve used {used} of {limit} captures today.}}'**
   String paywallQuotaHeader(int used, int limit);
 
   /// No description provided for @errorGenericTitle.
@@ -1192,6 +1156,18 @@ abstract class AppLocalizations {
   /// **'Another app or a call is using it. Try again in a moment.'**
   String get errorMicBusyBody;
 
+  /// No description provided for @errorStillClosingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing your last recording'**
+  String get errorStillClosingTitle;
+
+  /// No description provided for @errorStillClosingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again in a moment.'**
+  String get errorStillClosingBody;
+
   /// No description provided for @errorNoSpeechTitle.
   ///
   /// In en, this message translates to:
@@ -1215,18 +1191,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tasuke AI couldn\'t load its speech model. You can still type a task.'**
   String get errorModelMissingBody;
-
-  /// No description provided for @errorExtractorNotReadyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'The AI is still downloading'**
-  String get errorExtractorNotReadyTitle;
-
-  /// No description provided for @errorExtractorNotReadyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice capture unlocks once the model finishes. You can add tasks by hand in the meantime.'**
-  String get errorExtractorNotReadyBody;
 
   /// No description provided for @errorTypeInstead.
   ///
@@ -1252,6 +1216,12 @@ abstract class AppLocalizations {
   /// **'Reset app data'**
   String get errorResetData;
 
+  /// No description provided for @errorResetFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reset the app data. Restart Tasuke AI and try again.'**
+  String get errorResetFailed;
+
   /// No description provided for @errorDiskFull.
   ///
   /// In en, this message translates to:
@@ -1261,14 +1231,26 @@ abstract class AppLocalizations {
   /// No description provided for @bannerNotificationsOff.
   ///
   /// In en, this message translates to:
-  /// **'Reminders are off. Turn on notifications to be reminded.'**
+  /// **'Notifications are off, so reminders won\'t ring. Tap to turn them on.'**
   String get bannerNotificationsOff;
 
   /// No description provided for @bannerExactAlarmOff.
   ///
   /// In en, this message translates to:
-  /// **'Reminders may arrive a few minutes late on this device.'**
+  /// **'Reminders may arrive up to an hour late. Tap to fix.'**
   String get bannerExactAlarmOff;
+
+  /// No description provided for @bannerMicrophoneOff.
+  ///
+  /// In en, this message translates to:
+  /// **'The microphone is off, so voice capture won\'t work. Tap to allow it.'**
+  String get bannerMicrophoneOff;
+
+  /// No description provided for @bannerPermissionsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Some permissions are off, so voice capture or reminders won\'t work. Tap to fix.'**
+  String get bannerPermissionsMissing;
 
   /// No description provided for @bannerBatteryOptimisation.
   ///
@@ -1293,18 +1275,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap to open this task.'**
   String get notificationReminderBody;
-
-  /// No description provided for @quotaExhaustedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'You\'ve used today\'s voice captures'**
-  String get quotaExhaustedTitle;
-
-  /// No description provided for @quotaExhaustedBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Free includes {limit} a day. Tasuke Pro is unlimited.'**
-  String quotaExhaustedBody(int limit);
 
   /// No description provided for @quotaSeeProPlans.
   ///
@@ -1339,7 +1309,7 @@ abstract class AppLocalizations {
   /// No description provided for @helpOfflineBody.
   ///
   /// In en, this message translates to:
-  /// **'Yes. Once the language model has downloaded, everything works with no connection at all.'**
+  /// **'Yes. Everything runs on your phone, so it works with no connection at all.'**
   String get helpOfflineBody;
 
   /// No description provided for @helpRemindersTitle.
@@ -1351,7 +1321,7 @@ abstract class AppLocalizations {
   /// No description provided for @helpRemindersBody.
   ///
   /// In en, this message translates to:
-  /// **'Some devices delay alarms to save battery. Allowing exact alarms, and excluding Tasuke AI from battery optimisation, fixes it.'**
+  /// **'Some devices delay alarms to save battery. Allow exact alarms (Settings → Apps → Tasuke AI → Alarms & reminders) and exclude Tasuke AI from battery optimisation. On Xiaomi, Redmi and POCO phones, also turn on Autostart for Tasuke AI, or reminders can stop after a restart until you open the app.'**
   String get helpRemindersBody;
 
   /// No description provided for @helpContact.
@@ -1359,6 +1329,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Contact support'**
   String get helpContact;
+
+  /// The support inbox. Not translated; must match store/REVIEW_NOTES.md, store/store-listing.txt and both legal documents.
+  ///
+  /// In en, this message translates to:
+  /// **'info@digital-group.uz'**
+  String get helpContactEmail;
 
   /// No description provided for @legalPrivacyTitle.
   ///

@@ -10,13 +10,17 @@ import 'package:tasuke_ai/app/widgets/widgets.dart';
 import 'package:tasuke_ai/core/clock/clock.dart';
 import 'package:tasuke_ai/core/error/failure.dart';
 import 'package:tasuke_ai/core/permissions/app_permission.dart';
+import 'package:tasuke_ai/core/purchases/purchase_gateway.dart';
+import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/features/capture/domain/capture_phase.dart';
 import 'package:tasuke_ai/features/capture/presentation/recording_screen.dart';
 import 'package:tasuke_ai/features/extraction/data/extraction_providers.dart';
+import 'package:tasuke_ai/features/extraction/domain/extraction_defaults.dart';
 import 'package:tasuke_ai/features/pipeline/presentation/capture_controller.dart';
 import 'package:tasuke_ai/features/tasks/domain/task.dart';
 import 'package:tasuke_ai/features/tasks/domain/task_draft.dart';
 import 'package:tasuke_ai/features/usage/data/usage_providers.dart';
+import 'package:tasuke_ai/features/usage/domain/daily_usage.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
@@ -48,6 +52,8 @@ void main() {
   Future<GoRouter> pumpRecording(
     WidgetTester tester, {
     CaptureState? seed,
+    FakePurchaseGateway? purchases,
+    UsageRepository? usageRepository,
   }) async {
     await tester.binding.setSurfaceSize(DeviceFrame.iPhoneNotch.size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -58,6 +64,12 @@ void main() {
         GoRoute(
           path: '/home',
           builder: (_, _) => const Scaffold(body: Text('home screen')),
+        ),
+        GoRoute(
+          path: '/paywall',
+          builder: (_, GoRouterState state) => Scaffold(
+            body: Text('paywall ${state.uri.queryParameters['reason']}'),
+          ),
         ),
         GoRoute(
           path: '/capture',
@@ -81,11 +93,12 @@ void main() {
             recorder: recorder,
             recognizer: recognizer,
             permissions: permissions,
+            purchases: purchases,
           ),
           // ⚠️ The pipeline reads the usage repository the moment the
           // controller touches it, and the real one opens a drift database —
           // which deadlocks inside `testWidgets`' FakeAsync.
-          usageRepositoryProvider.overrideWithValue(usage),
+          usageRepositoryProvider.overrideWithValue(usageRepository ?? usage),
           primaryTaskExtractorProvider.overrideWithValue(FakeTaskExtractor()),
           fallbackTaskExtractorProvider.overrideWithValue(FakeTaskExtractor()),
           if (seed != null)
@@ -158,20 +171,67 @@ void main() {
       );
       await shutdown(tester);
 
-      // Stop has already been pressed and the pipeline is transcribing: a
-      // second press has nothing to stop, and the controller would drop it.
+      // ⚠️ Stop has been pressed and the pipeline is finalising. The controls
+      // are REPLACED by a spinner, not greyed out. Two dead buttons under a
+      // title that still said "Recording..." over a timer that kept counting
+      // is exactly what got reported as "stop doesn't work" — the app looked
+      // hung during the one wait it actually has.
       await pumpRecording(
         tester,
         seed: const CaptureState(phase: CapturePhase.transcribing),
       );
+      expect(find.byType(DangerButton), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Finishing up...'), findsWidgets);
       expect(
-        tester.getSemantics(find.byType(DangerButton)),
-        isSemantics(label: 'Stop', isButton: true, isEnabled: false),
+        find.text('Recording...'),
+        findsNothing,
+        reason: 'the microphone is closed; saying otherwise is a lie',
       );
 
       handle.dispose();
       await shutdown(tester);
     });
+
+    for (final CapturePhase phase in <CapturePhase>[
+      CapturePhase.checkingQuota,
+      CapturePhase.requestingPermission,
+    ]) {
+      testWidgets(
+        'before the mic opens (${phase.name}) the way out stays open',
+        (WidgetTester tester) async {
+          // ⚠️ This used to render as finalising: "Finishing up..." over a
+          // spinner, back disabled, and PopScope eating the iOS swipe. A new
+          // capture can wait seconds here for the last one to free the mic.
+          final SemanticsHandle handle = tester.ensureSemantics();
+          await pumpRecording(tester, seed: CaptureState(phase: phase));
+
+          expect(find.text('Getting ready...'), findsOneWidget);
+          expect(find.text('Finishing up...'), findsNothing);
+          expect(find.text('Recording...'), findsNothing);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+          expect(
+            tester.getSemantics(find.byType(SecondaryButton)),
+            isSemantics(label: 'Cancel', isButton: true, isEnabled: true),
+          );
+          expect(
+            tester.getSemantics(find.byType(DangerButton)),
+            isSemantics(label: 'Stop', isButton: true, isEnabled: false),
+          );
+
+          await tester.tap(find.byType(IconButton));
+          await pumpSettled(tester);
+
+          final int homes = find.text('home screen').evaluate().length;
+          final CapturePhase after = stateOf(tester).phase;
+          handle.dispose();
+          await shutdown(tester);
+
+          expect(homes, 1);
+          expect(after, CapturePhase.idle);
+        },
+      );
+    }
 
     testWidgets('a live partial transcript replaces the hint', (
       WidgetTester tester,
@@ -298,6 +358,37 @@ void main() {
 
       await shutdown(tester);
     });
+
+    testWidgets('a user who will not grant it can still close and go Home', (
+      WidgetTester tester,
+    ) async {
+      // ⚠️ iOS turns the back swipe off under `PopScope(canPop: false)`, and
+      // this view's only button was "Open Settings" — a user who refused the
+      // microphone had no way back to their tasks short of killing the app.
+      permissions.set(
+        AppPermission.microphone,
+        PermissionState.permanentlyDenied,
+      );
+      await pumpRecording(
+        tester,
+        seed: const CaptureState(
+          phase: CapturePhase.failed,
+          failure: PermissionFailure('denied', permanentlyDenied: true),
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Close'));
+      await pumpSettled(tester);
+
+      final int homes = find.text('home screen').evaluate().length;
+      final CapturePhase phase = stateOf(tester).phase;
+      await shutdown(tester);
+
+      expect(homes, 1);
+      expect(phase, CapturePhase.idle);
+      expect(permissions.requested, isEmpty);
+      expect(permissions.settingsOpened, 0);
+    });
   });
 
   group('every other failure', () {
@@ -340,16 +431,6 @@ void main() {
             'Try again a little closer to the microphone.',
           ),
           (
-            'an extractor that is still downloading',
-            const ExtractionFailure(
-              'not installed',
-              kind: ExtractionFailureKind.modelNotInstalled,
-            ),
-            'The AI is still downloading',
-            'Voice capture unlocks once the model finishes. You can add tasks '
-                'by hand in the meantime.',
-          ),
-          (
             'anything the screen has no copy for',
             const StorageFailure('write failed'),
             'Something went wrong',
@@ -373,6 +454,8 @@ void main() {
         // ⚠️ Every arm, without exception. A user who just spoke and was told
         // "no" must never be left with nothing to do but say it again.
         expect(find.text('Type a task instead'), findsOneWidget);
+        // Nor with no way out but a retry.
+        expect(find.byTooltip('Close'), findsOneWidget);
 
         await shutdown(tester);
       });
@@ -431,4 +514,169 @@ void main() {
       await shutdown(tester);
     });
   });
+  // ⚠️ A typed task is a capture too (a product decision, 2026-09-23). The
+  // "Type a task instead" escape on a failure, offered to a user who had
+  // already used the day's capture, saved a second one: 2 of 1 on the Usage
+  // screen. `begin` now checks the quota before anything can fail; this is
+  // the screen's own backstop.
+  group("once today's capture is spent", () {
+    /// Wednesday 2026-03-11, the day [clock] is pinned to.
+    const LocalDate today = LocalDate(2026, 3, 11);
+
+    const CaptureState stillClosing = CaptureState(
+      phase: CapturePhase.failed,
+      failure: RecordingFailure(
+        'The last capture is still closing',
+        kind: RecordingFailureKind.stillClosing,
+      ),
+    );
+
+    Future<void> spendToday() async {
+      for (int i = 0; i < ExtractionDefaults.freeDailyCaptures; i++) {
+        await usage.recordCapture(today, taskCount: 1);
+      }
+    }
+
+    for (final (String, CaptureState) arm in <(String, CaptureState)>[
+      ('still closing', stillClosing),
+      (
+        'no speech',
+        const CaptureState(
+          phase: CapturePhase.failed,
+          failure: TranscriptionFailure(
+            'silence',
+            kind: TranscriptionFailureKind.noSpeech,
+          ),
+        ),
+      ),
+    ]) {
+      testWidgets('a free user is not offered a typed task (${arm.$1})', (
+        WidgetTester tester,
+      ) async {
+        await spendToday();
+        await pumpRecording(tester, seed: arm.$2);
+
+        final int escapes = find.text('Type a task instead').evaluate().length;
+        final int retries = find.text('Try again').evaluate().length;
+        await shutdown(tester);
+
+        expect(escapes, 0);
+        expect(retries, 1, reason: 'a way on is still there');
+      });
+    }
+
+    testWidgets('Try again takes them to the paywall, which says why', (
+      WidgetTester tester,
+    ) async {
+      await spendToday();
+      // Answering a frame later, as the database does on a phone: the error
+      // view is gone by the time `begin` returns, and a navigation that
+      // waited on its context was dropped — the user landed on Home, told
+      // nothing.
+      await pumpRecording(
+        tester,
+        seed: stillClosing,
+        usageRepository: _SlowUsage(usage),
+      );
+
+      await tester.tap(find.text('Try again'));
+      // ⚠️ One frame before the quota answers. `pumpSettled` alone runs the
+      // clock out first and draws after, so `begin` returned while the error
+      // view was still mounted, and this test passed with the bug in place.
+      await tester.pump();
+      final int errorViews = find.text('Try again').evaluate().length;
+      await pumpSettled(tester);
+
+      final int paywalls = find.text('paywall quota').evaluate().length;
+      final bool opened = recorder.started;
+      await shutdown(tester);
+
+      expect(errorViews, 0, reason: 'the frame that took the context away');
+      expect(paywalls, 1);
+      expect(opened, isFalse);
+    });
+
+    testWidgets('Allow on a refused microphone takes them there too', (
+      WidgetTester tester,
+    ) async {
+      // Rare, as the quota is checked before the prompt, but a subscription
+      // that lapsed while the prompt sat refused lands here, and Allow
+      // re-runs `begin` the same way Try again does.
+      await spendToday();
+      await pumpRecording(
+        tester,
+        seed: const CaptureState(
+          phase: CapturePhase.failed,
+          failure: PermissionFailure('denied', permanentlyDenied: false),
+        ),
+        usageRepository: _SlowUsage(usage),
+      );
+
+      await tester.tap(find.text('Allow'));
+      await tester.pump();
+      final int deniedViews = find.text('Allow').evaluate().length;
+      await pumpSettled(tester);
+
+      final int paywalls = find.text('paywall quota').evaluate().length;
+      final List<AppPermission> asked = permissions.requested;
+      await shutdown(tester);
+
+      expect(deniedViews, 0, reason: 'the frame that took the context away');
+      expect(paywalls, 1);
+      expect(asked, isEmpty, reason: 'no prompt for a capture it cannot make');
+    });
+
+    testWidgets('with the capture still unused, the escape is there', (
+      WidgetTester tester,
+    ) async {
+      await pumpRecording(tester, seed: stillClosing);
+
+      final int escapes = find.text('Type a task instead').evaluate().length;
+      await shutdown(tester);
+
+      expect(escapes, 1);
+    });
+
+    testWidgets('a Pro subscriber past the free allowance keeps it', (
+      WidgetTester tester,
+    ) async {
+      final FakePurchaseGateway pro = FakePurchaseGateway(
+        initial: const Entitlement(status: EntitlementStatus.proActive),
+      );
+      addTearDown(pro.dispose);
+      await spendToday();
+      await pumpRecording(tester, seed: stillClosing, purchases: pro);
+
+      final int escapes = find.text('Type a task instead').evaluate().length;
+      await shutdown(tester);
+
+      expect(escapes, 1);
+    });
+  });
+}
+
+/// [FakeUsageRepository], answering its reads a moment later — long enough
+/// for a frame to be drawn while `begin` waits on the quota, as it is on a
+/// device.
+final class _SlowUsage implements UsageRepository {
+  _SlowUsage(this._inner);
+
+  final FakeUsageRepository _inner;
+
+  @override
+  Future<DailyUsage> read(LocalDate day) async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return _inner.read(day);
+  }
+
+  @override
+  Stream<DailyUsage> watchToday(LocalDate today) => _inner.watchToday(today);
+
+  @override
+  Future<void> recordCapture(LocalDate day, {required int taskCount}) =>
+      _inner.recordCapture(day, taskCount: taskCount);
+
+  @override
+  Future<void> prune(LocalDate today, {int keepDays = 90}) =>
+      _inner.prune(today, keepDays: keepDays);
 }

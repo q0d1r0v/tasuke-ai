@@ -1,0 +1,33 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="blue" x1="110" y1="90" x2="400" y2="420" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#43B7FF"/>
+    <stop offset="1" stop-color="#1268F3"/>
+  </linearGradient>
+  <radialGradient id="halo">
+    <stop stop-color="#2F8BFF" stop-opacity=".22"/>
+    <stop offset="1" stop-color="#2F8BFF" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+
+<!-- Voice onboarding icon -->
+<circle cx="256" cy="256" r="220" fill="url(#halo)"/>
+<circle cx="256" cy="256" r="174" fill="#2F8BFF" fill-opacity=".07"/>
+<circle cx="256" cy="256" r="137" fill="#2F8BFF" fill-opacity=".10"/>
+<circle cx="256" cy="256" r="102" fill="url(#blue)"/>
+
+<!-- microphone -->
+<rect x="231" y="190" width="50" height="92" rx="25" fill="white"/>
+<path d="M211 258V267C211 292 231 312 256 312C281 312 301 292 301 267V258"
+      stroke="white" stroke-width="13" stroke-linecap="round"/>
+<path d="M256 312V337M230 337H282"
+      stroke="white" stroke-width="13" stroke-linecap="round"/>
+
+<!-- left waveform -->
+<path d="M91 245V267M119 226V286M147 239V273M175 218V294"
+      stroke="#3297FA" stroke-width="12" stroke-linecap="round"/>
+
+<!-- right waveform -->
+<path d="M337 218V294M365 239V273M393 226V286M421 245V267"
+      stroke="#3297FA" stroke-width="12" stroke-linecap="round"/>
+</svg>

@@ -35,6 +35,7 @@ String? captureLocationFor(CapturePhase phase) => switch (phase) {
   CapturePhase.recording => '/capture',
   CapturePhase.transcribing || CapturePhase.extracting => '/capture/processing',
   CapturePhase.confirming || CapturePhase.saving => '/capture/confirm',
-  // A failure stays wherever it happened; the screen renders ErrorState.
+  // A failure stays wherever it happened; the screen renders ErrorState. The
+  // guard's one exception is Processing, which it sends back to Recording.
   CapturePhase.failed => null,
 };

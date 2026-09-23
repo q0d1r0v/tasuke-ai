@@ -130,8 +130,9 @@ final class Task {
   });
 
   /// The longest title the UI lays out without becoming a paragraph. Enforced
-  /// by [TaskTitle.normalise] rather than by an assert, because the input is a
-  /// language model and a throw there is a crash the user caused by speaking.
+  /// by [TaskTitle.normalise] rather than by an assert, because the input is
+  /// whatever was made of a transcript, and a throw there is a crash the user
+  /// caused by speaking.
   static const int maxTitleLength = 200;
 
   final String id;

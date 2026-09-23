@@ -1,0 +1,497 @@
+{
+ "_about": "Correctly typed notes that the whisper-tolerance rules once damaged (amounts read as clock times, 'and a 6 pack', titles like 'Get Out' split in two, 'before 2nd lesson', 'by three', past tense turned into to-dos, Title Case lowered, unrelated statements merged). Found by the 2026-09-23 adversarial review. Every case must stay exact.",
+ "_labels": "Relabelled to the extraction conventions (ExtractionDefaults): tonight = 20:00, this evening = 18:00, in the morning = 09:00 (tomorrow once 09:00 has passed), a bare hour already past today rolls to tomorrow ('call Jasur at 8' said at 15:00 is 08:00 tomorrow). What each case guards is kept: '150 tonight' is not 01:50, 'Get Out' and 'Book Now' are not split, 'before 2nd lesson' is no date, 'by three'/'by four' is no time, names keep their capitals, an unrelated statement is not merged, 'and a 6 pack' is not split. Past-tense narration of done things ('Called the bank', 'Ordered the new phone') may stay a card, titled in the past tense as said, never rewritten into an order: whisper writes 'call the bank' as 'called the bank', and an extra card costs less than a lost task. A done thing on a day already gone ('Fixed the sink yesterday', 'Sent the contract this morning' said at 15:00) is no card.",
+ "now": "2026-09-23T15:00",
+ "cases": [
+  {
+   "note": "Buy chips and a 6 pack for the party on Saturday.",
+   "tasks": [
+    {
+     "title": "Buy chips and a 6 pack for the party",
+     "date": "2026-09-26",
+     "time": null
+    }
+   ],
+   "id": "p01"
+  },
+  {
+   "note": "Watch the movie Get Out with Zarina tonight.",
+   "tasks": [
+    {
+     "title": "Watch the movie Get Out with Zarina",
+     "date": "2026-09-23",
+     "time": "20:00"
+    }
+   ],
+   "id": "p02"
+  },
+  {
+   "note": "Watch the movie \"Get Out\" with Zarina tonight.",
+   "tasks": [
+    {
+     "title": "Watch the movie Get Out with Zarina",
+     "date": "2026-09-23",
+     "time": "20:00"
+    }
+   ],
+   "id": "p03"
+  },
+  {
+   "note": "Meet Sardor near Fix Price at 5 tomorrow.",
+   "tasks": [
+    {
+     "title": "Meet Sardor near Fix Price",
+     "date": "2026-09-24",
+     "time": "17:00"
+    }
+   ],
+   "id": "p04"
+  },
+  {
+   "note": "Deliver the documents to Anna on 3rd floor tomorrow.",
+   "tasks": [
+    {
+     "title": "Deliver the documents to Anna on 3rd floor",
+     "date": "2026-09-24",
+     "time": null
+    }
+   ],
+   "id": "p05"
+  },
+  {
+   "note": "Print the handouts before 2nd lesson tomorrow.",
+   "tasks": [
+    {
+     "title": "Print the handouts before 2nd lesson",
+     "date": "2026-09-24",
+     "time": null
+    }
+   ],
+   "id": "p06"
+  },
+  {
+   "note": "Pay the plumber 150 tonight.",
+   "tasks": [
+    {
+     "title": "Pay the plumber 150",
+     "date": "2026-09-23",
+     "time": "20:00"
+    }
+   ],
+   "id": "p07"
+  },
+  {
+   "note": "Transfer 300 this evening to Bobur.",
+   "tasks": [
+    {
+     "title": "Transfer 300 to Bobur",
+     "date": "2026-09-23",
+     "time": "18:00"
+    }
+   ],
+   "id": "p08"
+  },
+  {
+   "note": "Finished the report, sent it to Anna. Tomorrow call the bank.",
+   "tasks": [
+    {
+     "title": "Finished the report, sent it to Anna",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Call the bank",
+     "date": "2026-09-24",
+     "time": null
+    }
+   ],
+   "id": "p09"
+  },
+  {
+   "note": "Booked the flight for Friday, now pack the bags.",
+   "tasks": [
+    {
+     "title": "Booked the flight",
+     "date": "2026-09-25",
+     "time": null
+    },
+    {
+     "title": "Pack the bags",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p10"
+  },
+  {
+   "note": "Sent the contract to the lawyer this morning, now wait for his reply.",
+   "tasks": [
+    {
+     "title": "Wait for his reply",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p11"
+  },
+  {
+   "note": "Checked in at the hotel, then call Jasur at 8.",
+   "tasks": [
+    {
+     "title": "Checked in at the hotel",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Call Jasur",
+     "date": "2026-09-24",
+     "time": "08:00"
+    }
+   ],
+   "id": "p12"
+  },
+  {
+   "note": "Read the Harry Potter book with Umid tonight.",
+   "tasks": [
+    {
+     "title": "Read the Harry Potter book with Umid",
+     "date": "2026-09-23",
+     "time": "20:00"
+    }
+   ],
+   "id": "p13"
+  },
+  {
+   "note": "Visit the Amir Timur Museum on Sunday.",
+   "tasks": [
+    {
+     "title": "Visit the Amir Timur Museum",
+     "date": "2026-09-27",
+     "time": null
+    }
+   ],
+   "id": "p14"
+  },
+  {
+   "note": "Split the taxi cost by three with Aziz.",
+   "tasks": [
+    {
+     "title": "Split the taxi cost by three with Aziz",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p15"
+  },
+  {
+   "note": "Call Anna. The meeting is at 5 tomorrow.",
+   "tasks": [
+    {
+     "title": "Call Anna",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Meeting",
+     "date": "2026-09-24",
+     "time": "17:00"
+    }
+   ],
+   "id": "p16"
+  },
+  {
+   "note": "Email the slides to Bobur. The presentation is at 10 on Friday.",
+   "tasks": [
+    {
+     "title": "Email the slides to Bobur",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Presentation",
+     "date": "2026-09-25",
+     "time": "10:00"
+    }
+   ],
+   "id": "p17"
+  },
+  {
+   "note": "Call Anna at 9am. Buy milk at 5pm.",
+   "tasks": [
+    {
+     "title": "Call Anna",
+     "date": "2026-09-24",
+     "time": "09:00"
+    },
+    {
+     "title": "Buy milk",
+     "date": "2026-09-23",
+     "time": "17:00"
+    }
+   ],
+   "id": "p18"
+  },
+  {
+   "note": "I'm close to the mall, buy milk.",
+   "tasks": [
+    {
+     "title": "Buy milk",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p19"
+  },
+  {
+   "note": "Buy tickets for the Imagine Dragons concert on Saturday.",
+   "tasks": [
+    {
+     "title": "Buy tickets for the Imagine Dragons concert",
+     "date": "2026-09-26",
+     "time": null
+    }
+   ],
+   "id": "p20"
+  },
+  {
+   "note": "Called the bank, the card is ready. Pick it up tomorrow at 10.",
+   "tasks": [
+    {
+     "title": "Called the bank",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Pick it up",
+     "date": "2026-09-24",
+     "time": "10:00"
+    }
+   ],
+   "id": "p21"
+  },
+  {
+   "note": "Ordered the new phone, it's arriving on Friday.",
+   "tasks": [
+    {
+     "title": "Ordered the new phone",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p22"
+  },
+  {
+   "note": "Mom called and asked me to buy bread.",
+   "tasks": [
+    {
+     "title": "Buy bread",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p23"
+  },
+  {
+   "note": "Fixed the sink yesterday, so today paint the bathroom.",
+   "tasks": [
+    {
+     "title": "Paint the bathroom",
+     "date": "2026-09-23",
+     "time": null
+    }
+   ],
+   "id": "p24"
+  },
+  {
+   "note": "Then a 12 pack of eggs and a 6 pack.",
+   "tasks": [
+    {
+     "title": "Buy a 12 pack of eggs and a 6 pack",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p25"
+  },
+  {
+   "note": "Give Aziz 200 in the morning.",
+   "tasks": [
+    {
+     "title": "Give Aziz 200",
+     "date": "2026-09-24",
+     "time": "09:00"
+    }
+   ],
+   "id": "p26"
+  },
+  {
+   "note": "Stand by the door at 5 and wait for the courier.",
+   "tasks": [
+    {
+     "title": "Stand by the door and wait for the courier",
+     "date": "2026-09-23",
+     "time": "17:00"
+    }
+   ],
+   "id": "p27"
+  },
+  {
+   "note": "Pick up the documents by the bank on Friday.",
+   "tasks": [
+    {
+     "title": "Pick up the documents by the bank",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ],
+   "id": "p28"
+  },
+  {
+   "note": "I'm free tomorrow, clean the garage.",
+   "tasks": [
+    {
+     "title": "Clean the garage",
+     "date": "2026-09-24",
+     "time": null
+    }
+   ],
+   "id": "p29"
+  },
+  {
+   "note": "I'm set for Friday, so today buy the gift.",
+   "tasks": [
+    {
+     "title": "Buy the gift",
+     "date": "2026-09-23",
+     "time": null
+    }
+   ],
+   "id": "p30"
+  },
+  {
+   "note": "The kids and their friends are coming on Saturday, bake a cake.",
+   "tasks": [
+    {
+     "title": "Bake a cake",
+     "date": "2026-09-26",
+     "time": null
+    }
+   ],
+   "id": "p31"
+  },
+  {
+   "note": "Talk to the Head Of Sales about the bonus.",
+   "tasks": [
+    {
+     "title": "Talk to the Head of Sales about the bonus",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p32"
+  },
+  {
+   "note": "Ask the landlord about the heater. It's broken again.",
+   "tasks": [
+    {
+     "title": "Ask the landlord about the heater",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p33"
+  },
+  {
+   "note": "Wake up at 6am. Go running with Timur.",
+   "tasks": [
+    {
+     "title": "Wake up",
+     "date": "2026-09-24",
+     "time": "06:00"
+    },
+    {
+     "title": "Go running with Timur",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p34"
+  },
+  {
+   "note": "Tell mom she is coming with us at 7pm he is driving.",
+   "tasks": [
+    {
+     "title": "Tell mom she is coming with us",
+     "date": "2026-09-23",
+     "time": "19:00"
+    }
+   ],
+   "id": "p35"
+  },
+  {
+   "note": "Then by the pharmacy pick up the vitamins.",
+   "tasks": [
+    {
+     "title": "Pick up the vitamins",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p36"
+  },
+  {
+   "note": "Download the app Book Now and reserve a table.",
+   "tasks": [
+    {
+     "title": "Download the app Book Now and reserve a table",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p37"
+  },
+  {
+   "note": "Divide the cake into pieces by four and serve it.",
+   "tasks": [
+    {
+     "title": "Divide the cake into pieces by four and serve it",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p38"
+  },
+  {
+   "note": "Cancelled the gym for good, find a cheaper one.",
+   "tasks": [
+    {
+     "title": "Cancelled the gym for good",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Find a cheaper one",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p39"
+  },
+  {
+   "note": "Texted Madina the photos, now call Otabek.",
+   "tasks": [
+    {
+     "title": "Texted Madina the photos",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Call Otabek",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "p40"
+  }
+ ]
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backup and transfer rules for Android 12+ (android:dataExtractionRules).
+     Android 11 and below read backup_rules.xml instead. Keep the two in step;
+     the reasons are written there.
+
+     ⚠️ <exclude> only, never <include>: one <include> makes a section an
+     allow-list, and the task database and shared_prefs drop out of it.
+
+     The models are left out of device-to-device transfer too. That transfer
+     has no quota, but the whisper copy is rebuilt from the APK, so it is not
+     worth moving. It also matches what Android 11 and below do. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="models"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="models"/>
+    </device-transfer>
+</data-extraction-rules>

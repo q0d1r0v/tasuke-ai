@@ -63,7 +63,8 @@ enum Confidence {
   /// The deterministic parser matched a phrase it fully understands.
   high,
 
-  /// The parser matched partially, or the date came from the model and only
-  /// passed range validation. The Confirm card flags these.
+  /// The parser matched a when that names no single day ("next week", "in
+  /// October", "this weekend"), or two words that disagree ("Thursday, October
+  /// 16th" when the 16th is a Friday). The Confirm card flags these.
   low,
 }

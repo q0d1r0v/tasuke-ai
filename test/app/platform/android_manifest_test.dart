@@ -132,6 +132,26 @@ void main() {
     });
   });
 
+  group('privacy', () {
+    test("removes Play Billing's telemetry uploader", () {
+      // ⚠️ Play Billing pulls in Google's datatransport, which uploaded
+      // billing-client logs to firebaselogging.googleapis.com from the first
+      // cold start. The privacy policy says the app itself sends nothing
+      // anywhere; this removal is what keeps that true.
+      expect(
+        manifest,
+        contains('xmlns:tools="http://schemas.android.com/tools"'),
+      );
+      expect(
+        manifest,
+        contains(
+          '<service android:name="com.google.android.datatransport.runtime'
+          '.backends.TransportBackendDiscovery" tools:node="remove"/>',
+        ),
+      );
+    });
+  });
+
   group('application', () {
     test('is labelled Tasuke AI, and strings.xml agrees', () {
       expect(manifest, contains('android:label="Tasuke AI"'));
@@ -144,6 +164,29 @@ void main() {
 
     test('is portrait-only', () {
       expect(manifest, contains('android:screenOrientation="portrait"'));
+    });
+  });
+
+  group('backup', () {
+    // ⚠️ The task database has no other copy, and with no rules the model
+    // files put the app over Google's 25 MB cloud-backup quota, which skips
+    // the whole app. backup_rules_test.dart checks what the rules say.
+    test('stays on', () {
+      expect(manifest, contains('android:allowBackup="true"'));
+    });
+
+    test('uses the rules for Android 11 and below', () {
+      expect(
+        manifest,
+        contains('android:fullBackupContent="@xml/backup_rules"'),
+      );
+    });
+
+    test('uses the rules for Android 12 and up', () {
+      expect(
+        manifest,
+        contains('android:dataExtractionRules="@xml/data_extraction_rules"'),
+      );
     });
   });
 }

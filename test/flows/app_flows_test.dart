@@ -14,7 +14,6 @@ import 'package:tasuke_ai/features/home/presentation/home_screen.dart';
 import 'package:tasuke_ai/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:tasuke_ai/features/permissions/presentation/permissions_screen.dart';
 import 'package:tasuke_ai/features/pipeline/presentation/capture_controller.dart';
-import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
 import 'package:tasuke_ai/features/splash/presentation/splash_screen.dart';
 import 'package:tasuke_ai/features/tasks/data/task_providers.dart';
 import 'package:tasuke_ai/features/tasks/domain/task.dart';
@@ -81,6 +80,7 @@ void main() {
       ProviderScope(
         overrides: <Override>[
           ...defaultOverrides(
+            settings: settings,
             clock: clock,
             notifier: notifier,
             permissions: permissions,
@@ -91,7 +91,6 @@ void main() {
           // see databaseHealthProvider's doc comment.
           databaseHealthProvider.overrideWith((Ref ref) async {}),
           taskRepositoryProvider.overrideWithValue(tasks),
-          settingsRepositoryProvider.overrideWithValue(settings),
           usageRepositoryProvider.overrideWithValue(usage),
         ],
         child: const TasukeApp(),

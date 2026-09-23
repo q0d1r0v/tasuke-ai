@@ -1,0 +1,49 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="blue" x1="130" y1="100" x2="390" y2="420" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#43B7FF"/>
+    <stop offset="1" stop-color="#1268F3"/>
+  </linearGradient>
+  <radialGradient id="halo">
+    <stop stop-color="#2F8BFF" stop-opacity=".18"/>
+    <stop offset="1" stop-color="#2F8BFF" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+
+<circle cx="256" cy="256" r="220" fill="url(#halo)"/>
+
+<!-- task cards.
+     ⚠️ No <filter>: flutter_svg drops feDropShadow silently, so the source art's
+     soft shadow never rendered on device. The 3pt #DCEBFF stroke is what
+     separates each card from the halo behind it, and it is doing that job
+     alone — do not thin it. -->
+<g>
+  <rect x="112" y="126" width="288" height="82" rx="24" fill="white" stroke="#DCEBFF" stroke-width="3"/>
+  <rect x="126" y="216" width="288" height="82" rx="24" fill="white" stroke="#DCEBFF" stroke-width="3"/>
+  <rect x="100" y="306" width="288" height="82" rx="24" fill="white" stroke="#DCEBFF" stroke-width="3"/>
+</g>
+
+<!-- checks -->
+<circle cx="158" cy="167" r="24" fill="url(#blue)"/>
+<path d="M147 167L155 175L171 157" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+<circle cx="172" cy="257" r="24" fill="url(#blue)"/>
+<path d="M161 257L169 265L185 247" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+<circle cx="146" cy="347" r="24" fill="url(#blue)"/>
+<path d="M135 347L143 355L159 337" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+<!-- task lines -->
+<rect x="202" y="151" width="126" height="12" rx="6" fill="#BFD7F7"/>
+<rect x="202" y="174" width="88" height="10" rx="5" fill="#D7E7FA"/>
+
+<rect x="216" y="241" width="126" height="12" rx="6" fill="#BFD7F7"/>
+<rect x="216" y="264" width="88" height="10" rx="5" fill="#D7E7FA"/>
+
+<rect x="190" y="331" width="126" height="12" rx="6" fill="#BFD7F7"/>
+<rect x="190" y="354" width="88" height="10" rx="5" fill="#D7E7FA"/>
+
+<!-- sparkles -->
+<path d="M394 102L401 121L420 128L401 135L394 154L387 135L368 128L387 121L394 102Z" fill="#2388FF"/>
+<path d="M438 155L442 166L453 170L442 174L438 185L434 174L423 170L434 166L438 155Z" fill="#5AB3FF"/>
+</svg>

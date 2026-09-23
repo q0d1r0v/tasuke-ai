@@ -10,17 +10,13 @@ import 'package:tasuke_ai/app/app.dart';
 import 'package:tasuke_ai/app/l10n/app_localizations.dart';
 import 'package:tasuke_ai/core/clock/clock.dart';
 import 'package:tasuke_ai/core/clock/clock_provider.dart';
-import 'package:tasuke_ai/core/models/model_installer.dart';
-import 'package:tasuke_ai/core/models/model_providers.dart';
 import 'package:tasuke_ai/core/speech/speech_providers.dart';
 import 'package:tasuke_ai/core/speech/speech_recognizer.dart';
 import 'package:tasuke_ai/core/storage/pref_keys.dart';
 import 'package:tasuke_ai/core/storage/prefs.dart';
 import 'package:tasuke_ai/core/time/local_date_time.dart';
-import 'package:tasuke_ai/features/extraction/data/extraction_providers.dart';
 import 'package:tasuke_ai/features/extraction/domain/extracted_task.dart';
 import 'package:tasuke_ai/features/extraction/domain/rule_based_task_extractor.dart';
-import 'package:tasuke_ai/features/extraction/domain/task_extractor.dart';
 import 'package:tasuke_ai/features/home/presentation/home_screen.dart';
 import 'package:tasuke_ai/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:tasuke_ai/features/pipeline/presentation/capture_controller.dart';
@@ -33,9 +29,9 @@ import 'package:tasuke_ai/features/tasks/domain/task_repository.dart';
 ///
 /// Everything below runs against the **real** Drift database on the device's
 /// own filesystem, the real notification plugin and the real extractor — the
-/// parts a host-side widget test cannot touch. Only the microphone and the
-/// language-model download are faked, because an emulator has no usable
-/// microphone and a 219 MB download has no place in a test.
+/// parts a host-side widget test cannot touch. Only the microphone and whisper
+/// are faked, because an emulator has no usable microphone;
+/// `real_pipeline_test.dart` runs whisper on its own.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -80,7 +76,7 @@ void main() {
 
     // The transcript a real recording of the spec's example sentence produces.
     // The microphone and whisper are stubbed; everything downstream — the
-    // grammar, the validator, Drift, the reminder resolution — is real.
+    // rule-based extractor, Drift, the reminder resolution — is real.
     const String transcript =
         'Tomorrow at 3 PM send the build to James and Friday check App Store';
 
@@ -92,13 +88,6 @@ void main() {
           speechRecognizerProvider.overrideWithValue(
             const _ScriptedRecognizer(transcript),
           ),
-          // The language model is not downloaded in a test, so the pipeline
-          // uses the deterministic extractor — which is exactly what it does on
-          // a real device before the download finishes.
-          primaryTaskExtractorProvider.overrideWithValue(
-            const _NeverReadyExtractor(),
-          ),
-          modelInstallerProvider.overrideWithValue(const _NoModelInstaller()),
         ],
         child: const TasukeApp(),
       ),
@@ -207,6 +196,9 @@ IconData _iconFor(String label) => switch (label) {
 };
 
 final class _ScriptedRecognizer implements SpeechRecognizer {
+  @override
+  Future<void> prepare() async {}
+
   const _ScriptedRecognizer(this.transcript);
 
   final String transcript;
@@ -228,42 +220,4 @@ final class _ScriptedRecognizer implements SpeechRecognizer {
 
   @override
   Future<void> release() async {}
-}
-
-final class _NeverReadyExtractor implements TaskExtractor {
-  const _NeverReadyExtractor();
-
-  @override
-  Future<bool> isReady() async => false;
-
-  @override
-  Future<List<ExtractedTask>> extract(
-    String transcript, {
-    required LocalDateTime now,
-  }) async => const <ExtractedTask>[];
-}
-
-final class _NoModelInstaller implements ModelInstaller {
-  const _NoModelInstaller();
-
-  @override
-  Stream<ModelState> watch(ModelSpec spec) => const Stream<ModelState>.empty();
-
-  @override
-  ModelState stateOf(ModelSpec spec) => const ModelNotInstalled();
-
-  @override
-  Future<bool> isInstalled(ModelSpec spec) async => false;
-
-  @override
-  Future<String?> pathOf(ModelSpec spec) async => null;
-
-  @override
-  Future<void> install(ModelSpec spec) async {}
-
-  @override
-  Future<void> cancel(ModelSpec spec) async {}
-
-  @override
-  Future<void> remove(ModelSpec spec) async {}
 }

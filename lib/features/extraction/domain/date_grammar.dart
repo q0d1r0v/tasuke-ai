@@ -1,5 +1,6 @@
 import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/core/time/local_date_time.dart';
+import 'package:tasuke_ai/core/time/local_time_of_day.dart';
 
 import 'clause_splitter.dart';
 import 'extracted_task.dart';
@@ -14,6 +15,9 @@ final class DateMatch {
     required this.end,
     this.impliedMinute,
     this.confidence = Confidence.high,
+    this.namesMonth = false,
+    this.weekday,
+    this.dayOfMonth,
   });
 
   final LocalDate date;
@@ -26,6 +30,18 @@ final class DateMatch {
   final int? impliedMinute;
 
   final Confidence confidence;
+
+  /// Whether the phrase pinned down a day of a named month — "5 December",
+  /// "12/5", "2026-12-05" — the most specific thing a date phrase can say.
+  final bool namesMonth;
+
+  /// The weekday the phrase named ("Thursday", "next Friday"), if it named one.
+  final int? weekday;
+
+  /// The day of the month a phrase gave without its month ("the 5th", "on the
+  /// fifth"). [date] is only the next such day; a weekday said with it can
+  /// say which month is meant.
+  final int? dayOfMonth;
 
   int get length => end - start;
 
@@ -70,9 +86,108 @@ abstract final class DateGrammar {
     return found;
   }
 
+  /// The date [phrase] is about: the best of [allMatches], unless a date that
+  /// names its month, or a day of the month after a weekday, is part of the
+  /// same phrase.
+  ///
+  /// ⚠️ Leftmost-wins alone let the vaguer reading take the phrase. "on the
+  /// 5th of December" also reads "on the 5th", which starts one word earlier,
+  /// and "Thursday, October 15th" starts with a weekday — so the reminder
+  /// landed on the next 5th, or on tomorrow, with the month left in the title.
+  /// The merged match spans the whole phrase so none of it stays behind.
   static DateMatch? firstMatch(String phrase, {required LocalDateTime now}) {
-    final List<DateMatch> all = allMatches(phrase, now: now);
-    return all.isEmpty ? null : all.first;
+    final String text = foldTemporalCase(phrase);
+    final List<DateMatch> all = allMatches(text, now: now);
+    if (all.isEmpty) return null;
+    final DateMatch first = all.first;
+    if (first.namesMonth) return first;
+    for (final DateMatch named in all.skip(1)) {
+      if (!named.namesMonth) continue;
+      final bool overlaps = named.start < first.end;
+      final bool followsWeekday =
+          first.weekday != null &&
+          !overlaps &&
+          _onlySeparators(text, first, named);
+      if (!overlaps && !followsWeekday) continue;
+      final bool clash =
+          first.weekday != null && first.weekday != named.date.weekday;
+      return DateMatch(
+        date: named.date,
+        start: first.start,
+        end: named.end > first.end ? named.end : first.end,
+        impliedMinute: first.impliedMinute ?? named.impliedMinute,
+        // "Thursday, October 16th" when the 16th is a Friday: one of the two
+        // is wrong. Keep the date, and let the Confirm card ask.
+        confidence: clash ? Confidence.low : named.confidence,
+        namesMonth: true,
+        weekday: first.weekday,
+      );
+    }
+    // ⚠️ "Monday the 5th", "Thursday the 1st" name no month, and the weekday
+    // alone used to win: the coming Monday, one to three weeks early, with
+    // "the 5th" left in the title. Together they say which 5th is meant.
+    // Not after "last Monday": the day of the month only ever looks ahead.
+    if (first.weekday != null && !first.date.isBefore(now.date)) {
+      for (final DateMatch day in all.skip(1)) {
+        if (day.dayOfMonth == null) continue;
+        if (day.start >= first.end && !_onlySeparators(text, first, day)) {
+          continue;
+        }
+        final LocalDate? agreed = _dayOnWeekday(
+          day.date,
+          day.dayOfMonth!,
+          first.weekday!,
+        );
+        return DateMatch(
+          date: agreed ?? day.date,
+          start: first.start,
+          end: day.end > first.end ? day.end : first.end,
+          impliedMinute: first.impliedMinute ?? day.impliedMinute,
+          // "Tuesday the 5th" when no 5th soon is a Tuesday: as with a named
+          // month, keep the date and let the Confirm card ask.
+          confidence: agreed == null ? Confidence.low : day.confidence,
+          weekday: first.weekday,
+          dayOfMonth: day.dayOfMonth,
+        );
+      }
+    }
+    return first;
+  }
+
+  /// Where the date phrases in [phrase] are, for a caller that needs to know
+  /// where a when is but not which day it names — the clause splitter, which
+  /// has no `now`.
+  ///
+  /// ⚠️ Resolved against a fixed moment, so only the offsets mean anything.
+  /// No rule's span depends on the day it is resolved on; only its date does.
+  static List<(int, int)> spans(String phrase) => <(int, int)>[
+    for (final DateMatch m in allMatches(phrase, now: _anyMoment))
+      (m.start, m.end),
+  ];
+
+  static const LocalDateTime _anyMoment = LocalDateTime(
+    LocalDate(2026, 1, 1),
+    LocalTimeOfDay(12 * 60),
+  );
+
+  /// Whether only spaces and commas stand between [a] and [b], so they are one
+  /// phrase: "Thursday, October 15th", not "Friday and December 5".
+  static bool _onlySeparators(String text, DateMatch a, DateMatch b) =>
+      RegExp(r'^[\s,]*$').hasMatch(text.substring(a.end, b.start));
+
+  /// The first of the next two [day]-of-the-months, from [next] on, that falls
+  /// on [weekday]; null when neither does.
+  ///
+  /// ⚠️ Two, not "until one fits": every day up to the 28th falls on every
+  /// weekday within a year, so an unbounded search turned a slip of the tongue
+  /// ("Tuesday the 5th" meaning Monday's) into a confident date months away.
+  static LocalDate? _dayOnWeekday(LocalDate next, int day, int weekday) {
+    if (next.weekday == weekday) return next;
+    final LocalDate? after = dayOfMonthOnOrAfter(
+      LocalDate(next.year, next.month, 1).addMonths(1),
+      day,
+    );
+    return after != null && after.weekday == weekday ? after : null;
   }
 
   // ── Calendar arithmetic ────────────────────────────────────────────────────
@@ -245,6 +360,30 @@ abstract final class DateGrammar {
       impliedMinute: match[3] == null
           ? null
           : TimeGrammar.dayPartMinute(match[3]!),
+      weekday: target,
+    );
+  }
+
+  /// "next week on Tuesday", "Tuesday next week" — the weekday of the
+  /// following calendar week, like "next Tuesday".
+  ///
+  /// ⚠️ Without it "next week" matched on its own, leftmost: the Monday of next
+  /// week, with "on Tuesday" left in the title — a day early, every time.
+  static DateMatch? _weekdayOfNextWeek(
+    RegExpMatch match,
+    LocalDateTime now,
+    String text,
+  ) {
+    final int target = _weekdays[match[1] ?? match[3]!]!;
+    final String? dayPart = match[2] ?? match[4];
+    return DateMatch(
+      date: nextWeekWeekday(now.date, target),
+      start: match.start,
+      end: match.end,
+      impliedMinute: dayPart == null
+          ? null
+          : TimeGrammar.dayPartMinute(dayPart),
+      weekday: target,
     );
   }
 
@@ -306,13 +445,10 @@ abstract final class DateGrammar {
       case 'min':
       case 'hour':
       case 'hr':
-        final int minutes = unit.startsWith('h') ? amount * 60 : amount;
-        final LocalDateTime at = now.addMinutes(minutes);
-        return DateMatch(
-          date: at.date,
-          start: match.start,
-          end: match.end,
-          impliedMinute: at.time.minuteOfDay,
+        return _inMinutes(
+          match,
+          now,
+          unit.startsWith('h') ? amount * 60 : amount,
         );
       case 'day':
         return DateMatch(
@@ -343,6 +479,44 @@ abstract final class DateGrammar {
     return null;
   }
 
+  static DateMatch _inMinutes(
+    RegExpMatch match,
+    LocalDateTime now,
+    int minutes,
+  ) {
+    final LocalDateTime at = now.addMinutes(minutes);
+    return DateMatch(
+      date: at.date,
+      start: match.start,
+      end: match.end,
+      impliedMinute: at.time.minuteOfDay,
+    );
+  }
+
+  static DateMatch? _inHalfHour(RegExpMatch m, LocalDateTime now, String t) =>
+      _inMinutes(m, now, 30);
+
+  static DateMatch? _inHoursAndAHalf(
+    RegExpMatch m,
+    LocalDateTime now,
+    String t,
+  ) {
+    final int? hours = _amount(m[1]!);
+    if (hours == null || hours < 1) return null;
+    return _inMinutes(m, now, (hours * 60) + 30);
+  }
+
+  static DateMatch? _inDecimalHours(
+    RegExpMatch m,
+    LocalDateTime now,
+    String t,
+  ) {
+    // Hundredths of an hour: ".5" and ".50" are both thirty minutes.
+    final int fraction = int.parse(m[2]!.padRight(2, '0'));
+    final int minutes = (int.parse(m[1]!) * 60) + (fraction * 60 / 100).round();
+    return minutes < 1 ? null : _inMinutes(m, now, minutes);
+  }
+
   static DateMatch? _iso(RegExpMatch match, LocalDateTime now, String text) {
     final LocalDate? date = _exactDate(
       int.parse(match[1]!),
@@ -351,7 +525,12 @@ abstract final class DateGrammar {
     );
     return date == null
         ? null
-        : DateMatch(date: date, start: match.start, end: match.end);
+        : DateMatch(
+            date: date,
+            start: match.start,
+            end: match.end,
+            namesMonth: true,
+          );
   }
 
   static DateMatch? _slash(RegExpMatch match, LocalDateTime now, String text) {
@@ -364,7 +543,12 @@ abstract final class DateGrammar {
         : _exactDate(_fullYear(match[3]!), month, day);
     return date == null
         ? null
-        : DateMatch(date: date, start: match.start, end: match.end);
+        : DateMatch(
+            date: date,
+            start: match.start,
+            end: match.end,
+            namesMonth: true,
+          );
   }
 
   static DateMatch? _monthDay(
@@ -388,14 +572,23 @@ abstract final class DateGrammar {
     required int yearGroup,
   }) {
     final int month = _months[match[monthGroup]!]!;
-    final int day = int.parse(match[dayGroup]!);
+    final String dayText = match[dayGroup]!;
+    final int? day =
+        int.tryParse(dayText) ??
+        _ordinalWords[dayText.replaceAll(RegExp(r'[\s-]+'), ' ')];
+    if (day == null) return null;
     final String? year = match[yearGroup];
     final LocalDate? date = year == null
         ? _yearlessDate(now.date, month, day)
         : _exactDate(_fullYear(year), month, day);
     return date == null
         ? null
-        : DateMatch(date: date, start: match.start, end: match.end);
+        : DateMatch(
+            date: date,
+            start: match.start,
+            end: match.end,
+            namesMonth: true,
+          );
   }
 
   static DateMatch? _ordinalDay(
@@ -404,10 +597,56 @@ abstract final class DateGrammar {
     String text,
   ) {
     if (_notADate.contains(wordAfter(text, match.end))) return null;
-    final LocalDate? date = dayOfMonthOnOrAfter(now.date, int.parse(match[1]!));
+    final int day = int.parse(match[1]!);
+    final LocalDate? date = dayOfMonthOnOrAfter(now.date, day);
     return date == null
         ? null
-        : DateMatch(date: date, start: match.start, end: match.end);
+        : DateMatch(
+            date: date,
+            start: match.start,
+            end: match.end,
+            dayOfMonth: day,
+          );
+  }
+
+  static DateMatch? _ordinalWordDay(
+    RegExpMatch match,
+    LocalDateTime now,
+    String text,
+  ) {
+    if (_notADate.contains(wordAfter(text, match.end))) return null;
+    final int? day =
+        _ordinalWords[match[1]!.replaceAll(RegExp(r'[\s-]+'), ' ')];
+    if (day == null) return null;
+    final LocalDate? date = dayOfMonthOnOrAfter(now.date, day);
+    return date == null
+        ? null
+        : DateMatch(
+            date: date,
+            start: match.start,
+            end: match.end,
+            dayOfMonth: day,
+          );
+  }
+
+  /// "Monday the fifth" — a spelled ordinal with a weekday in front of it.
+  ///
+  /// ⚠️ Only where the date phrase ends: "Monday the second meeting" and "Friday
+  /// the first thing" are counts, and the weekday is the date.
+  static DateMatch? _ordinalWordAfterWeekday(
+    RegExpMatch match,
+    LocalDateTime now,
+    String text,
+  ) {
+    final String next = wordAfter(text, match.end);
+    final bool endsPhrase =
+        next.isEmpty ||
+        RegExp(r'^\s*[.,;:!?]').hasMatch(text.substring(match.end));
+    if (!endsPhrase && !_afterDayPhrase.contains(next)) return null;
+    // "Monday the second I land" is "the moment I land": the idiom, not the
+    // 2nd, which was November's Monday, five weeks late.
+    if (match[1] == 'second' && (next == 'i' || next == 'we')) return null;
+    return _ordinalWordDay(match, now, text);
   }
 
   static DateMatch? _bareMonth(
@@ -597,9 +836,102 @@ abstract final class DateGrammar {
     'item',
     'anniversary',
     'person',
+    'lesson',
+    'lessons',
+    'class',
+    'period',
+    'lecture',
+    'grade',
+    'year',
+    'week',
+    'day',
+    'round',
+    'stage',
+    'level',
+    'street',
+    'avenue',
+    'lane',
+    'entrance',
+    'gate',
+    'door',
+    'block',
+    'building',
+    'house',
+    'shift',
+    'term',
+    'semester',
+    'course',
+    'episode',
+    'season',
+    'part',
+    'step',
+    'draft',
+    'question',
+    'task',
+  };
+
+  /// What may follow "Monday the fifth" for the fifth to be a date: a time,
+  /// a joining word, or the speaker going on ("…the fifth I have a call").
+  static const Set<String> _afterDayPhrase = <String>{
+    'at',
+    'in',
+    'by',
+    'from',
+    'around',
+    'about',
+    'before',
+    'after',
+    'and',
+    'or',
+    'then',
+    'i',
+    'we',
   };
 
   // ── Patterns ───────────────────────────────────────────────────────────────
+
+  static const Map<String, int> _ordinalWords = <String, int>{
+    'first': 1,
+    'second': 2,
+    'third': 3,
+    'fourth': 4,
+    'fifth': 5,
+    'sixth': 6,
+    'seventh': 7,
+    'eighth': 8,
+    'ninth': 9,
+    'tenth': 10,
+    'eleventh': 11,
+    'twelfth': 12,
+    'thirteenth': 13,
+    'fourteenth': 14,
+    'fifteenth': 15,
+    'sixteenth': 16,
+    'seventeenth': 17,
+    'eighteenth': 18,
+    'nineteenth': 19,
+    'twentieth': 20,
+    'twenty first': 21,
+    'twenty second': 22,
+    'twenty third': 23,
+    'twenty fourth': 24,
+    'twenty fifth': 25,
+    'twenty sixth': 26,
+    'twenty seventh': 27,
+    'twenty eighth': 28,
+    'twenty ninth': 29,
+    'thirtieth': 30,
+    'thirty first': 31,
+  };
+
+  /// [_ordinalWords] as an alternation, longest first so "twenty first" is
+  /// never read as "twenty" + something.
+  static const String _ordinalWordPattern =
+      r'(?:twenty|thirty)[-\s](?:first|second|third|fourth|fifth|sixth'
+      r'|seventh|eighth|ninth)'
+      r'|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth'
+      r'|nineteenth|twentieth|thirtieth|eleventh|twelfth|first|second|third'
+      r'|fourth|fifth|sixth|seventh|eighth|ninth|tenth';
 
   static const String _monthWords =
       r'january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul'
@@ -609,7 +941,20 @@ abstract final class DateGrammar {
       r'monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu'
       r'|friday|fri|saturday|sat|sunday|sun';
 
+  /// Weekdays that cannot be anything else — no "sat", no "sun" — for the
+  /// rules that take a weekday where a preposition would stand.
+  static const String _fullWeekdayWords =
+      r'monday|tuesday|wednesday|thursday|friday|saturday|sunday';
+
   static const String _dayParts = r'morning|afternoon|evening|night';
+
+  /// "in an hour's time", "in two hours' time", "in two hours time" — the
+  /// idiom's tail belongs to the phrase. ⚠️ Without it the match stopped at
+  /// "hour" and the title came out as "Call Anna 's time".
+  static const String _timeTail = r"(?:(?:'s|')?\s+time\b)?";
+
+  static const String _hourCountWords =
+      r'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve';
 
   static final List<_DateRule> _rules = <_DateRule>[
     _DateRule(
@@ -637,6 +982,17 @@ abstract final class DateGrammar {
       RegExp(r'\b(?:on\s+)?(this\s+coming|this|next|the|coming)\s+weekend\b'),
       _weekend,
     ),
+    // Full weekday names only: "next week sat" is not how anyone says it, and
+    // "sun" and "sat" are words.
+    _DateRule(
+      RegExp(
+        '\\bnext\\s+week,?\\s+(?:on\\s+)?($_fullWeekdayWords)\\b'
+        '(?:\\s+($_dayParts))?'
+        '|\\b(?:on\\s+)?($_fullWeekdayWords)(?:\\s+($_dayParts))?'
+        '\\s+(?:of\\s+)?next\\s+week\\b',
+      ),
+      _weekdayOfNextWeek,
+    ),
     _DateRule(RegExp(r'\bnext\s+week\b'), _nextWeek),
     _DateRule(
       RegExp(
@@ -650,26 +1006,101 @@ abstract final class DateGrammar {
       RegExp(
         r'\bin\s+(a\s+couple\s+of|a\s+few|an?|\d{1,4}|one|two|three|four|five'
         r'|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty)'
-        r'\s+(minutes?|mins?|hours?|hrs?|days?|weeks?|months?|years?)\b',
+        r'\s+(minutes?|mins?|hours?|hrs?|days?|weeks?|months?|years?)\b'
+        '$_timeTail',
       ),
       _inDuration,
     ),
-    _DateRule(RegExp(r'\b(\d{4})-(\d{1,2})-(\d{1,2})\b'), _iso),
-    _DateRule(RegExp(r'\b(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?\b'), _slash),
+    // "in half an hour", "in an hour and a half", "in 1.5 hours". Without
+    // these the first was no reminder at all, and the second matched "in an
+    // hour": thirty minutes early, with "and a half" left in the title.
+    //
+    // ⚠️ Hours only, and as whole phrases rather than an optional "and a half"
+    // on the rule above, which would swallow "in a day and a half" whole. A
+    // hyphen counts as a space: "a half-hour", "two-and-a-half hours".
     _DateRule(
       RegExp(
-        '\\b($_monthWords)\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?'
+        r'\bin\s+(?:a\s+)?half[\s-]+(?:an?[\s-]+)?hour\b'
+        '$_timeTail',
+      ),
+      _inHalfHour,
+    ),
+    _DateRule(
+      RegExp(
+        '\\bin\\s+(an?|$_hourCountWords|\\d{1,2})\\s+(?:hours?|hrs?)'
+        r'[\s-]+and[\s-]+a[\s-]+half\b'
+        '$_timeTail',
+      ),
+      _inHoursAndAHalf,
+    ),
+    _DateRule(
+      RegExp(
+        '\\bin\\s+($_hourCountWords|\\d{1,2})[\\s-]+and[\\s-]+a[\\s-]+half'
+        r'[\s-]+(?:hours?|hrs?)\b'
+        '$_timeTail',
+      ),
+      _inHoursAndAHalf,
+    ),
+    // "in 1.5 hours", "in 2.25 hours" — decimal hours, not the clock "2.25".
+    _DateRule(
+      RegExp(
+        r'\bin\s+(\d{1,2})[.,](\d{1,2})\s+(?:hours?|hrs?)\b'
+        '$_timeTail',
+      ),
+      _inDecimalHours,
+    ),
+    _DateRule(RegExp(r'\b(\d{4})-(\d{1,2})-(\d{1,2})\b'), _iso),
+    _DateRule(RegExp(r'\b(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?\b'), _slash),
+    // "October 1st", "October the 1st" — the "the" only before an ordinal.
+    // ⚠️ The "on" in front is part of the phrase: cut without it, "on October
+    // 7th at 9 I have an interview" left "On I have an interview".
+    _DateRule(
+      RegExp(
+        '\\b(?:on\\s+)?($_monthWords)\\.?\\s+'
+        r'(?:the\s+(?=\d{1,2}(?:st|nd|rd|th)\b))?'
+        r'(\d{1,2})(?:st|nd|rd|th)?'
         r'(?:,?\s+(\d{4}))?\b',
       ),
       _monthDay,
     ),
     _DateRule(
       RegExp(
-        r'\b(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?'
+        r'\b(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?'
         '($_monthWords)\\.?'
         r'(?:,?\s+(\d{4}))?\b',
       ),
       _dayMonth,
+    ),
+    // "the first of October", "on October first" — ordinals spelled out.
+    //
+    // ⚠️ Only in the two shapes that cannot be anything else: "<ordinal> of
+    // <month>", and "<month> <ordinal>" behind a preposition. A bare "May
+    // first" also reads "I may first call him".
+    _DateRule(
+      RegExp(
+        '\\b(?:the\\s+)?($_ordinalWordPattern)\\s+of\\s+($_monthWords)\\.?'
+        r'(?:,?\s+(\d{4}))?\b',
+      ),
+      _dayMonth,
+    ),
+    _DateRule(
+      RegExp(
+        '\\b(?:on|by|due|before|until|till|for)\\s+($_monthWords)\\.?\\s+'
+        '(?:the\\s+)?($_ordinalWordPattern)'
+        r'(?:,?\s+(\d{4}))?\b',
+      ),
+      _monthDay,
+    ),
+    // "Monday, October fifth", "Thursday morning, October fifteenth" — a
+    // weekday stands where the preposition would.
+    _DateRule(
+      RegExp(
+        '(?<=\\b(?:$_fullWeekdayWords)(?:\\s+(?:$_dayParts))?,?\\s+)'
+        '($_monthWords)\\.?\\s+'
+        '(?:the\\s+)?($_ordinalWordPattern)'
+        r'(?:,?\s+(\d{4}))?\b',
+      ),
+      _monthDay,
     ),
     _DateRule(
       RegExp(
@@ -677,6 +1108,30 @@ abstract final class DateGrammar {
         r'(\d{1,2})(?:st|nd|rd|th)\b',
       ),
       _ordinalDay,
+    ),
+    // "on 25th", "by 3rd" — the "the" whisper leaves out, or the speaker
+    // does. ⚠️ Only behind the preposition: a bare "5th" is "the 5th floor"
+    // as often as a day.
+    _DateRule(
+      RegExp(r'\b(?:on|by|due|before|until|till)\s+(\d{1,2})(?:st|nd|rd|th)\b'),
+      _ordinalDay,
+    ),
+    // "Monday the fifth" — see [_ordinalWordAfterWeekday].
+    _DateRule(
+      RegExp(
+        '(?<=\\b(?:$_fullWeekdayWords),?\\s+)the\\s+'
+        '($_ordinalWordPattern)\\b',
+      ),
+      _ordinalWordAfterWeekday,
+    ),
+    // "on the fifth", "by the fifteenth" — only behind a preposition: a bare
+    // "the second" is far more often "the second thing".
+    _DateRule(
+      RegExp(
+        '\\b(?:on|by|due|before|until|till|for)\\s+the\\s+'
+        '($_ordinalWordPattern)\\b',
+      ),
+      _ordinalWordDay,
     ),
     _DateRule(
       RegExp(

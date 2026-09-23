@@ -13,10 +13,11 @@ import 'package:tasuke_ai/app/app.dart';
 import 'package:tasuke_ai/app/bootstrap/app_bootstrap.dart';
 import 'package:tasuke_ai/app/router/app_router.dart';
 import 'package:tasuke_ai/app/router/routes.dart';
+import 'package:tasuke_ai/app/widgets/widgets.dart';
 import 'package:tasuke_ai/core/audio/audio_providers.dart';
 import 'package:tasuke_ai/core/clock/clock.dart';
 import 'package:tasuke_ai/core/clock/clock_provider.dart';
-import 'package:tasuke_ai/core/models/model_installer.dart';
+import 'package:tasuke_ai/core/error/failure.dart';
 import 'package:tasuke_ai/core/models/model_providers.dart';
 import 'package:tasuke_ai/core/notifications/notification_providers.dart';
 import 'package:tasuke_ai/core/permissions/app_permission.dart';
@@ -31,15 +32,16 @@ import 'package:tasuke_ai/features/capture/domain/capture_phase.dart';
 import 'package:tasuke_ai/features/capture/presentation/recording_screen.dart';
 import 'package:tasuke_ai/features/confirm/presentation/confirm_tasks_screen.dart';
 import 'package:tasuke_ai/features/extraction/data/extraction_providers.dart';
+import 'package:tasuke_ai/features/extraction/domain/extraction_defaults.dart';
 import 'package:tasuke_ai/features/extraction/domain/task_extractor.dart';
 import 'package:tasuke_ai/features/home/presentation/home_screen.dart';
-import 'package:tasuke_ai/features/model_setup/presentation/model_setup_screen.dart';
 import 'package:tasuke_ai/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:tasuke_ai/features/permissions/presentation/permissions_screen.dart';
 import 'package:tasuke_ai/features/pipeline/presentation/capture_controller.dart';
 import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
 import 'package:tasuke_ai/features/settings/domain/app_settings.dart';
 import 'package:tasuke_ai/features/splash/presentation/splash_screen.dart';
+import 'package:tasuke_ai/features/subscription/presentation/paywall_screen.dart';
 import 'package:tasuke_ai/features/tasks/data/task_providers.dart';
 import 'package:tasuke_ai/features/usage/data/usage_providers.dart';
 import 'package:tasuke_ai/features/usage/domain/daily_usage.dart';
@@ -47,17 +49,21 @@ import 'package:tasuke_ai/features/usage/domain/daily_usage.dart';
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
 
-/// A latch a test never opens.
+/// A latch a test almost never opens.
 ///
 /// ⚠️ Three capture phases exist only while something asynchronous is in
 /// flight. The only way to stand in one and read the router is to hold the port
 /// that phase is waiting on — and to hold it for good: letting the pipeline
 /// through would open the microphone, and closing a microphone stream is the
-/// one thing a test body may not await (see the note in group 5).
+/// one thing a test body may not await (see the note in group 4).
 final class Gate {
   final Completer<void> _completer = Completer<void>();
 
   Future<void> get opened => _completer.future;
+
+  /// Only where what waits behind it ends before any microphone: a quota
+  /// check with the day's capture spent, which ends at the paywall.
+  void open() => _completer.complete();
 }
 
 /// Holds `checkQuota`, the first thing the mic button does.
@@ -170,7 +176,6 @@ void main() {
     bool onboardingSeen = true,
     bool primerSeen = true,
     bool bootstrapPending = false,
-    ModelState model = const ModelNotInstalled(),
     UsageRepository? usageRepository,
     PermissionService? permissions,
     SpeechRecognizer? recognizer,
@@ -188,8 +193,6 @@ void main() {
     await tester.binding.setSurfaceSize(DeviceFrame.iPhoneNotch.size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final FakeModelInstaller installer = FakeModelInstaller(initial: model);
-    addTearDown(installer.dispose);
     final FakePurchaseGateway purchases = FakePurchaseGateway();
     addTearDown(purchases.dispose);
 
@@ -205,10 +208,11 @@ void main() {
           ),
           localNotifierProvider.overrideWithValue(notifier),
           purchaseGatewayProvider.overrideWithValue(purchases),
-          modelInstallerProvider.overrideWithValue(installer),
           // ⚠️ The bootstrap opens the real database to surface a corrupt file
           // on the splash. In a widget test that is a deadlock, not a check.
           databaseHealthProvider.overrideWith((Ref ref) async {}),
+          // The boot's retired-model sweep: see `defaultOverrides`.
+          supportDirPathProvider.overrideWithValue(neverResolvedDirPath),
           if (bootstrapPending)
             appBootstrapProvider.overrideWith(
               (Ref ref) => Completer<BootstrapResult>().future,
@@ -346,46 +350,7 @@ void main() {
     });
   });
 
-  group('4. model setup', () {
-    testWidgets('is offered while the model is missing', (
-      WidgetTester tester,
-    ) async {
-      // Not a gate: the app is fully usable — manual tasks, reminders, every
-      // screen — while the 219 MB download runs.
-      final GoRouter router = await bootApp(tester);
-
-      router.go(AppRoute.modelSetup.path);
-      await pumpSettled(tester);
-
-      expect(locationOf(router), AppRoute.modelSetup.path);
-      expect(find.byType(ModelSetupScreen), findsOneWidget);
-      await shutdown(tester);
-    });
-
-    testWidgets('stays reachable once the model is ready', (
-      WidgetTester tester,
-    ) async {
-      // ⚠️ The guard deliberately does NOT bounce a ready model off this
-      // screen. `/model-setup` is shown once during first run and reached
-      // from Settings → AI model at any time afterwards; bouncing would mean a
-      // user who tapped "Not now" could never enable voice capture at all,
-      // and the review notes promise that row works. The screen itself decides
-      // what to render for the current state.
-      final GoRouter router = await bootApp(
-        tester,
-        model: const ModelReady('/tmp/extractor.gguf'),
-      );
-
-      router.go(AppRoute.modelSetup.path);
-      await pumpSettled(tester);
-
-      expect(locationOf(router), AppRoute.modelSetup.path);
-      expect(find.byType(ModelSetupScreen), findsOneWidget);
-      await shutdown(tester);
-    });
-  });
-
-  group('5. the capture family', () {
+  group('4. the capture family', () {
     // ⚠️ This group deliberately tests the phase→location TABLE directly, and
     // drives the router only for the one case that needs no suspended
     // pipeline.
@@ -569,18 +534,54 @@ void main() {
         await shutdown(tester);
       },
     );
+
+    testWidgets('a failure after Stop leaves Processing for the error screen', (
+      WidgetTester tester,
+    ) async {
+      // ⚠️ Processing has no error UI. A clip too short, silence or a dead
+      // recogniser left the user under a spinner that never finished, with no
+      // way out on iOS. The phases are seeded rather than driven, for the
+      // FakeAsync reason at the top of this group.
+      final GoRouter router = await bootApp(tester);
+      final CaptureController controller = controllerOf(tester);
+
+      controller.state = const CaptureState(phase: CapturePhase.transcribing);
+      router.go(AppRoute.capture.path);
+      await pumpSettled(tester);
+      expect(locationOf(router), AppRoute.captureProcessing.path);
+
+      controller.state = const CaptureState(
+        phase: CapturePhase.failed,
+        failure: RecordingFailure(
+          'too short',
+          kind: RecordingFailureKind.tooShort,
+        ),
+      );
+      await pumpSettled(tester);
+
+      // Read, then unmount, then assert: a failure here would otherwise leave
+      // the tree for the framework to tear down, which hangs under FakeAsync.
+      final String location = locationOf(router);
+      final int recordingScreens = find
+          .byType(RecordingScreen)
+          .evaluate()
+          .length;
+      final int ways = find.text('Type a task instead').evaluate().length;
+      await shutdown(tester);
+
+      expect(location, AppRoute.capture.path);
+      expect(recordingScreens, 1);
+      expect(ways, 1);
+    });
   });
 
-  group('6. the transient screens', () {
+  group('5. the transient screens', () {
     testWidgets('bounce a configured user straight to Home', (
       WidgetTester tester,
     ) async {
       final GoRouter router = await bootApp(tester);
 
       for (final String path in kTransientPaths) {
-        // `/model-setup` has its own rule above; the other three are pure
-        // "nobody who is set up belongs here".
-        if (path == AppRoute.modelSetup.path) continue;
         router.go(path);
         await pumpSettled(tester);
         expect(
@@ -602,6 +603,142 @@ void main() {
 
       expect(locationOf(router), AppRoute.settings.path);
       await shutdown(tester);
+    });
+  });
+
+  // ⚠️ Through `routerProvider` and the real PaywallScreen. Every other test
+  // that reads `?reason=` builds its own GoRouter, so the builder in
+  // app_router.dart could drop the reason (`const PaywallScreen()`) with the
+  // whole suite still green.
+  group('6. the paywall, and why it is up', () {
+    const String quotaLine = "You've used today's free capture.";
+
+    /// Uses up the free captures of the day [clock] is set to.
+    Future<void> spendToday() async {
+      for (int i = 0; i < ExtractionDefaults.freeDailyCaptures; i++) {
+        await usage.recordCapture(LocalDate.today(testNow), taskCount: 1);
+      }
+    }
+
+    /// Where the user is, and what the paywall on screen says, read before
+    /// the tree is unmounted.
+    ({String location, int paywalls, int lines}) paywallOf(
+      WidgetTester tester,
+      GoRouter router,
+    ) => (
+      location: locationOf(router),
+      paywalls: find.byType(PaywallScreen).evaluate().length,
+      lines: find
+          .descendant(
+            of: find.byType(PaywallScreen),
+            matching: find.text(quotaLine),
+          )
+          .evaluate()
+          .length,
+    );
+
+    testWidgets("the mic, with the day's capture spent, opens it saying why", (
+      WidgetTester tester,
+    ) async {
+      await spendToday();
+      final GoRouter router = await bootApp(tester);
+
+      await tester.tap(find.byType(MicFab));
+      await pumpSettled(tester);
+
+      final String? reason = router.state.uri.queryParameters['reason'];
+      final ({String location, int paywalls, int lines}) seen = paywallOf(
+        tester,
+        router,
+      );
+      await shutdown(tester);
+
+      expect(seen.location, AppRoute.paywall.path);
+      expect(reason, PaywallReason.quota.name);
+      expect(seen.paywalls, 1);
+      expect(seen.lines, 1);
+    });
+
+    testWidgets('Settings → Subscription opens it with no such line', (
+      WidgetTester tester,
+    ) async {
+      // The same free user, out of captures: only the way in differs.
+      await spendToday();
+      final GoRouter router = await bootApp(tester);
+      router.go(AppRoute.settings.path);
+      await pumpSettled(tester);
+
+      await tester.tap(find.text('Subscription'));
+      await pumpSettled(tester);
+
+      final ({String location, int paywalls, int lines}) seen = paywallOf(
+        tester,
+        router,
+      );
+      await shutdown(tester);
+
+      expect(seen.location, AppRoute.paywall.path);
+      expect(seen.paywalls, 1);
+      expect(seen.lines, 0);
+    });
+
+    testWidgets('a link that claims the quota is not believed while the '
+        "day's capture is unused", (WidgetTester tester) async {
+      // iOS hands `tasuke:///paywall?reason=quota` to go_router
+      // (FlutterDeepLinkingEnabled); anyone can send one.
+      final GoRouter router = await bootApp(tester);
+
+      router.go(PaywallReason.quota.location);
+      await pumpSettled(tester);
+
+      final ({String location, int paywalls, int lines}) seen = paywallOf(
+        tester,
+        router,
+      );
+      await shutdown(tester);
+
+      expect(seen.location, AppRoute.paywall.path);
+      expect(seen.paywalls, 1);
+      expect(seen.lines, 0);
+    });
+
+    testWidgets('Try again on a failure, with the capture spent, ends on it', (
+      WidgetTester tester,
+    ) async {
+      // ⚠️ `reset` clears the failure, so the frame after the tap swaps the
+      // error view for "Getting ready". The quota answering after that frame,
+      // as a database does on a phone, found the view's context gone; the
+      // paywall was skipped and the redirect took an idle capture Home.
+      await spendToday();
+      final GatedUsage gated = GatedUsage(usage);
+      final GoRouter router = await bootApp(tester, usageRepository: gated);
+      controllerOf(tester).state = const CaptureState(
+        phase: CapturePhase.failed,
+        failure: RecordingFailure(
+          'The last capture is still closing',
+          kind: RecordingFailureKind.stillClosing,
+        ),
+      );
+      router.go(AppRoute.capture.path);
+      await pumpSettled(tester);
+      gated.armed = true;
+
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+      final int errorViews = find.text('Try again').evaluate().length;
+      gated.gate.open();
+      await pumpSettled(tester);
+
+      final ({String location, int paywalls, int lines}) seen = paywallOf(
+        tester,
+        router,
+      );
+      await shutdown(tester);
+
+      expect(errorViews, 0, reason: 'the frame that took the context away');
+      expect(seen.location, AppRoute.paywall.path);
+      expect(seen.paywalls, 1);
+      expect(seen.lines, 1);
     });
   });
 }

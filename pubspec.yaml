@@ -48,14 +48,13 @@ dependencies:
   # README for why upstream whisper_ggml could not be used as-is (it hard-depends
   # on ffmpeg_kit, which is LGPL-3.0, ~20 MB per ABI of dead weight here, and
   # whose upstream was retired in April 2025).
+  #
+  # Task extraction needs no package: it is the rule-based extractor in
+  # lib/features/extraction/domain/. The on-device language model that used to
+  # sit here (llamadart) lost to the rules on accuracy and was removed with its
+  # native libraries — see `primaryTaskExtractorProvider` before adding one back.
   whisper_ggml:
     path: packages/whisper_ggml
-
-  # llama.cpp for GGUF, with GBNF grammar-constrained decoding — which is what
-  # guarantees the extractor can only emit syntactically valid JSON.
-  # The companion package is pinned in lockstep with the core: 0.0.18 pairs with
-  # 0.8.23 and the Apple build verifies the pin before native symbol lookup.
-  llamadart: ^0.8.23
 
   # ── Audio ───────────────────────────────────────────────────────────────────
   # PCM16 / 16 kHz / mono streaming, which is exactly whisper.cpp's input format.
@@ -75,6 +74,10 @@ dependencies:
   # First-party, StoreKit 2 by default. NOT RevenueCat: that is a backend, and
   # this app is specified to have none.
   in_app_purchase: ^3.3.1
+  # Direct only so the gateway can read Play's own purchase state: its restore
+  # labels an unpaid (pending) purchase `restored`. Already in the lockfile via
+  # in_app_purchase; imported by store_purchase_gateway.dart alone.
+  in_app_purchase_android: ^0.5.3
 
   # ── Platform ────────────────────────────────────────────────────────────────
   permission_handler: ^13.0.2
@@ -88,10 +91,21 @@ dependencies:
   json_annotation: ^4.9.0
   intl: ^0.20.3
   uuid: ^4.5.1
-  http: ^1.6.0
-  crypto: ^3.0.6
   collection: ^1.19.1
   cupertino_icons: ^1.0.8
+
+  # The onboarding art and the breathing blob ship as SVG rather than as three
+  # density buckets of PNG: the blob alone is an 8-frame loop, and at 3x that
+  # would be 24 bitmaps for one decoration.
+  #
+  # ⚠️ Pure Dart — no platform channel and no native code, so it is NOT subject
+  # to the single-plugin-importer guard and it adds nothing to the .so payload.
+  #
+  # ⚠️ `<filter>` (feDropShadow, feGaussianBlur) is NOT supported and is
+  # silently dropped, so no asset in assets/images/ may depend on one for
+  # legibility. Where the source art had a drop shadow, the shadow is drawn in
+  # Dart by the widget that hosts the picture — see `SvgIllustration`.
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -118,41 +132,25 @@ dev_dependencies:
   # NativeDatabase.memory() under flutter_test needs a host sqlite3.
   sqlite3: ^3.0.0
 
+  # Only art_test.dart uses it, to hash the bundled art and catch a duplicated
+  # frame. Nothing in lib/ does, so it stays out of the app's dependencies.
+  crypto: ^3.0.6
+
   flutter_launcher_icons: ^0.14.4
   flutter_native_splash: ^2.4.7
-
-# Native build-hook configuration for llamadart.
-#
-# ⚠️ Without this the release APK is 200 MB, and roughly 90 MB of that is
-# runtime the app can never reach:
-#   * LiteRT-LM (~50 MB across libLiteRtLm and five accelerators) only ever
-#     runs `.litertlm` models. Tasuke ships a GGUF, so it is dead weight.
-#   * The llama.cpp Vulkan backend (~35 MB) targets GPU offload. A 350M model
-#     runs comfortably on CPU, Android Vulkan drivers vary wildly by OEM, and
-#     ggml's backend registry falls back to CPU when the module is absent —
-#     so this costs nothing but the megabytes it saves.
-#
-# The CPU variants (armv8.0 … armv9.2) are deliberately KEPT. They are ~1.5 MB
-# each and ggml picks the best one at runtime; dropping them would make
-# inference measurably slower on exactly the newer phones this feature needs.
-hooks:
-  user_defines:
-    llamadart:
-      llamadart_native_runtimes: llama_cpp
-      # ⚠️ Backends are scoped by platform and a bare `cpu` is silently ignored
-      # — the build succeeds and libggml-vulkan.so ships anyway. The only way to
-      # know it took is to look inside the APK.
-      llamadart_native_backends:
-        platforms:
-          android: [cpu]
-          ios: [cpu]
 
 flutter:
   uses-material-design: true
   generate: true
 
   assets:
+    # ⚠️ Directory entries are NOT recursive — `assets/images/` does not pick up
+    # `assets/images/blob/`. The blob frames are listed separately for exactly
+    # that reason; dropping the second line makes the breathing orb throw
+    # "Unable to load asset" at runtime while every test that stubs the bundle
+    # still passes.
     - assets/images/
+    - assets/images/blob/
     - assets/models/
     - assets/legal/
 

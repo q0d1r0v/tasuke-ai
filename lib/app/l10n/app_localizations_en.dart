@@ -111,6 +111,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'To remind you about your tasks';
 
   @override
+  String get permissionsExactAlarmTitle => 'Alarms & reminders';
+
+  @override
+  String get permissionsExactAlarmSubtitle =>
+      'So reminders ring on the exact minute';
+
+  @override
+  String get permissionsAllowAll => 'Allow all';
+
+  @override
+  String get permissionsNotNow => 'Not now';
+
+  @override
+  String get permissionsTurnOnInSettings =>
+      'Your phone won\'t ask again. Turn it on in Settings.';
+
+  @override
+  String get permissionsFixTitle => 'Turn On Permissions';
+
+  @override
+  String get permissionsFixSubtitle =>
+      'Voice capture and reminders can\'t work until these are allowed.';
+
+  @override
   String get permissionsPrivacyNote =>
       'We respect your privacy. Everything works on your device.';
 
@@ -119,48 +143,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionsDenied => 'Not allowed';
-
-  @override
-  String get modelSetupTitle => 'Preparing your AI';
-
-  @override
-  String modelSetupSubtitle(String size) {
-    return 'Tasuke AI is downloading its language model. This happens once, and only needs $size.';
-  }
-
-  @override
-  String get modelSetupWifiHint =>
-      'Best over Wi-Fi. You can keep using the app while it downloads.';
-
-  @override
-  String modelSetupProgress(int percent) {
-    return '$percent% downloaded';
-  }
-
-  @override
-  String get modelSetupDownload => 'Download now';
-
-  @override
-  String get modelSetupLater => 'Not now';
-
-  @override
-  String get modelSetupReady => 'Your AI is ready';
-
-  @override
-  String get modelSetupFailed => 'The download didn\'t finish';
-
-  @override
-  String get modelSetupChecksumFailed =>
-      'The downloaded file was incomplete and has been removed.';
-
-  @override
-  String get modelSetupNoSpace =>
-      'There isn\'t enough free space for the model.';
-
-  @override
-  String modelSetupPreparing(int percent) {
-    return 'Preparing AI — $percent%';
-  }
 
   @override
   String get homeGreetingMorning => 'Good morning,';
@@ -231,8 +213,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordingTitle => 'Recording...';
 
   @override
+  String get recordingStarting => 'Getting ready...';
+
+  @override
+  String get recordingFinishing => 'Finishing up...';
+
+  @override
+  String get recordingFinishingHint => 'Writing down what you said.';
+
+  @override
   String get recordingHint =>
       'Speak naturally.\nYou can say multiple tasks at once.';
+
+  @override
+  String get recordingWaitingHint => 'Finishing your last recording first.';
 
   @override
   String get recordingTooShort => 'Hold on — say a bit more.';
@@ -285,6 +279,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get confirmDiscardConfirm => 'Discard';
+
+  @override
+  String confirmManualTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Type your tasks, then save them.',
+      one: 'Type your task, then save it.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get confirmTitleRequired => 'Give every task a title first.';
@@ -446,18 +451,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsUsageUnlimited => 'Unlimited';
 
   @override
-  String get settingsAiModel => 'AI model';
-
-  @override
-  String get settingsAiModelReady => 'Ready';
-
-  @override
-  String get settingsAiModelMissing => 'Not downloaded';
-
-  @override
-  String get settingsAiModelDownloading => 'Downloading…';
-
-  @override
   String get settingsAllDayReminder => 'All-day reminder time';
 
   @override
@@ -501,7 +494,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutOnDeviceBody =>
-      'Speech recognition and task extraction both happen on this phone. The only thing Tasuke AI ever downloads is its own language model.';
+      'Speech recognition and task extraction both happen on this phone, and Tasuke AI downloads nothing after you install it.';
 
   @override
   String get aboutLicenses => 'Open source licenses';
@@ -513,16 +506,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallSubtitle => 'Unlock your full potential';
 
   @override
-  String get paywallBenefitUnlimited => 'Unlimited voice processing';
-
-  @override
-  String get paywallBenefitMultiple => 'Multiple tasks from one voice input';
-
-  @override
-  String get paywallBenefitAdvanced => 'Advanced AI processing';
-
-  @override
-  String get paywallBenefitPriority => 'Priority updates';
+  String get paywallBenefitUnlimited => 'Unlimited captures, spoken or typed';
 
   @override
   String get paywallBenefitSupport => 'Support the development';
@@ -570,7 +554,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String paywallFreeTierNote(int limit) {
-    return 'Free: $limit voice captures a day, unlimited manual tasks and reminders.';
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other:
+          'Free: $limit captures a day, spoken or typed. Reminders, search and history stay unlimited.',
+      one: 'Free: 1 capture a day, spoken or typed. Reminders, search and history stay unlimited.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -601,7 +592,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String paywallQuotaHeader(int used, int limit) {
-    return 'You\'ve used $used of $limit voice captures today.';
+    String _temp0 = intl.Intl.pluralLogic(
+      limit,
+      locale: localeName,
+      other: 'You\'ve used $used of $limit captures today.',
+      one: 'You\'ve used today\'s free capture.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -629,6 +626,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Another app or a call is using it. Try again in a moment.';
 
   @override
+  String get errorStillClosingTitle => 'Finishing your last recording';
+
+  @override
+  String get errorStillClosingBody => 'Try again in a moment.';
+
+  @override
   String get errorNoSpeechTitle => 'We didn\'t catch that';
 
   @override
@@ -641,13 +644,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorModelMissingBody =>
       'Tasuke AI couldn\'t load its speech model. You can still type a task.';
-
-  @override
-  String get errorExtractorNotReadyTitle => 'The AI is still downloading';
-
-  @override
-  String get errorExtractorNotReadyBody =>
-      'Voice capture unlocks once the model finishes. You can add tasks by hand in the meantime.';
 
   @override
   String get errorTypeInstead => 'Type a task instead';
@@ -663,16 +659,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorResetData => 'Reset app data';
 
   @override
+  String get errorResetFailed =>
+      'Couldn\'t reset the app data. Restart Tasuke AI and try again.';
+
+  @override
   String get errorDiskFull =>
       'There isn\'t enough space to save. Free some up and try again.';
 
   @override
   String get bannerNotificationsOff =>
-      'Reminders are off. Turn on notifications to be reminded.';
+      'Notifications are off, so reminders won\'t ring. Tap to turn them on.';
 
   @override
   String get bannerExactAlarmOff =>
-      'Reminders may arrive a few minutes late on this device.';
+      'Reminders may arrive up to an hour late. Tap to fix.';
+
+  @override
+  String get bannerMicrophoneOff =>
+      'The microphone is off, so voice capture won\'t work. Tap to allow it.';
+
+  @override
+  String get bannerPermissionsMissing =>
+      'Some permissions are off, so voice capture or reminders won\'t work. Tap to fix.';
 
   @override
   String get bannerBatteryOptimisation =>
@@ -687,14 +695,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationReminderBody => 'Tap to open this task.';
-
-  @override
-  String get quotaExhaustedTitle => 'You\'ve used today\'s voice captures';
-
-  @override
-  String quotaExhaustedBody(int limit) {
-    return 'Free includes $limit a day. Tasuke Pro is unlimited.';
-  }
 
   @override
   String get quotaSeeProPlans => 'See Pro plans';
@@ -714,17 +714,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpOfflineBody =>
-      'Yes. Once the language model has downloaded, everything works with no connection at all.';
+      'Yes. Everything runs on your phone, so it works with no connection at all.';
 
   @override
   String get helpRemindersTitle => 'My reminders are late';
 
   @override
   String get helpRemindersBody =>
-      'Some devices delay alarms to save battery. Allowing exact alarms, and excluding Tasuke AI from battery optimisation, fixes it.';
+      'Some devices delay alarms to save battery. Allow exact alarms (Settings → Apps → Tasuke AI → Alarms & reminders) and exclude Tasuke AI from battery optimisation. On Xiaomi, Redmi and POCO phones, also turn on Autostart for Tasuke AI, or reminders can stop after a restart until you open the app.';
 
   @override
   String get helpContact => 'Contact support';
+
+  @override
+  String get helpContactEmail => 'info@digital-group.uz';
 
   @override
   String get legalPrivacyTitle => 'Privacy Policy';

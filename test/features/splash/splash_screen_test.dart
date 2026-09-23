@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,8 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tasuke_ai/app/bootstrap/app_bootstrap.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
-import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
+import 'package:tasuke_ai/core/database/app_database.dart';
+import 'package:tasuke_ai/core/database/database_provider.dart';
 import 'package:tasuke_ai/features/splash/presentation/splash_screen.dart';
 import 'package:tasuke_ai/features/tasks/data/task_providers.dart';
 import 'package:tasuke_ai/features/tasks/domain/task.dart';
@@ -41,16 +43,53 @@ void main() {
     notifier.dispose();
   });
 
+  /// How many times a database instance was built.
+  late int databasesBuilt;
+
+  /// What the fatal reset's file deletion saw, in order.
+  late List<String> events;
+
+  /// Replaces the real file deletion; set to throw to model a failed one.
+  late Future<void> Function() deleteFiles;
+
+  setUp(() {
+    databasesBuilt = 0;
+    events = <String>[];
+    deleteFiles = () async {
+      events.add(notifier.cancelledAll ? 'delete after cancel' : 'delete');
+    };
+  });
+
   /// The fakes the reset path writes through. The reset itself is deliberately
   /// NOT stubbed: what is worth proving is that the button on this screen
-  /// really reaches the notifier and the repositories.
+  /// really reaches the notifier and the file.
+  ///
+  /// ⚠️ The database is a provider that throws, never a real drift instance:
+  /// one opened inside `testWidgets` deadlocks (see README). A throwing build
+  /// is also exactly what the fatal screen is for.
   List<Override> overridesWith(Override bootstrap) => <Override>[
-    ...defaultOverrides(notifier: notifier),
+    ...defaultOverrides(settings: settings, notifier: notifier),
     bootstrap,
     taskRepositoryProvider.overrideWithValue(tasks),
-    settingsRepositoryProvider.overrideWithValue(settings),
     usageRepositoryProvider.overrideWithValue(usage),
+    appDatabaseProvider.overrideWith((Ref ref) {
+      databasesBuilt++;
+      throw StateError('database is not a database');
+    }),
+    databaseFileDeleterProvider.overrideWithValue(() => deleteFiles()),
   ];
+
+  /// A boot that fails the way a broken database does: through the instance.
+  ///
+  /// ⚠️ `read`, not `watch`, like the real boot's `databaseHealthProvider`
+  /// read. A watch re-runs the boot when the reset invalidates the database,
+  /// which hides a screen that never retries it.
+  Override brokenBoot(void Function() onAttempt) =>
+      appBootstrapProvider.overrideWith((Ref ref) async {
+        onAttempt();
+        ref.read<AppDatabase>(appDatabaseProvider);
+        return const BootstrapResult();
+      });
 
   testWidgets('holds the brand, and nothing else, while the boot runs', (
     WidgetTester tester,
@@ -136,6 +175,28 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('Try again builds a fresh database, not the poisoned one', (
+    WidgetTester tester,
+  ) async {
+    // ⚠️ drift caches a failed open on the instance and rethrows it on every
+    // later query, so a retry against the same instance could never succeed.
+    int attempts = 0;
+    await pumpScreen(
+      tester,
+      const SplashScreen(),
+      overrides: overridesWith(brokenBoot(() => attempts++)),
+    );
+    expect(databasesBuilt, 1);
+
+    await tester.tap(find.text('Try again'));
+    await pumpSettled(tester);
+
+    expect(attempts, 2);
+    expect(databasesBuilt, 2);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('cancelling the reset leaves every task on the device', (
     WidgetTester tester,
   ) async {
@@ -166,20 +227,15 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('confirming the reset clears the alarms, then the data, then '
-      'retries the boot', (WidgetTester tester) async {
+  testWidgets('confirming the reset deletes the file, then the alarms, then '
+      'retries the boot on a fresh database', (WidgetTester tester) async {
     int attempts = 0;
     tasks.seed(<Task>[_task('task-1', 'Send the build to James')]);
 
     await pumpScreen(
       tester,
       const SplashScreen(),
-      overrides: overridesWith(
-        appBootstrapProvider.overrideWith((Ref ref) async {
-          attempts++;
-          throw StateError('still broken');
-        }),
-      ),
+      overrides: overridesWith(brokenBoot(() => attempts++)),
     );
 
     await tester.tap(find.text('Reset app data'));
@@ -187,11 +243,90 @@ void main() {
     await tester.tap(find.text('Delete'));
     await pumpSettled(tester);
 
-    expect(tasks.all, isEmpty);
-    // ⚠️ The alarms go first. A task row deleted while its alarm is still
-    // scheduled leaves a notification that opens a task that no longer exists.
+    // ⚠️ The file, not the rows: the rows are behind the connection that
+    // would not open, so a reset through the repositories threw and did
+    // nothing — after it had already cancelled every reminder.
+    expect(events, <String>['delete']);
+    expect(tasks.all, hasLength(1), reason: 'nothing ran through the database');
     expect(notifier.cancelledAll, isTrue);
     expect(attempts, 2, reason: 'the boot is retried against the fresh file');
+    expect(databasesBuilt, 2);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a reset that cannot delete the file says so and keeps the '
+      'reminders', (WidgetTester tester) async {
+    int attempts = 0;
+    deleteFiles = () async => throw const FileSystemException('read-only');
+
+    await pumpScreen(
+      tester,
+      const SplashScreen(),
+      overrides: overridesWith(brokenBoot(() => attempts++)),
+    );
+
+    await tester.tap(find.text('Reset app data'));
+    await pumpSettled(tester);
+    await tester.tap(find.text('Delete'));
+    await pumpSettled(tester);
+
+    expect(
+      find.text(
+        "Couldn't reset the app data. Restart Tasuke AI and try again.",
+      ),
+      findsOneWidget,
+    );
+    expect(notifier.cancelledAll, isFalse);
+    expect(attempts, 1);
+    expect(find.text('Reset app data'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a reset that ends after a retry already recovered does not '
+      'touch the gone screen', (WidgetTester tester) async {
+    // ⚠️ The fatal screen stays up while a retry boot runs, so a reset can
+    // start on it and end after it is gone. `ref` on an unmounted widget
+    // throws, and inside the unawaited reset that is an uncaught error.
+    int attempts = 0;
+    final Completer<BootstrapResult> retry = Completer<BootstrapResult>();
+    final Completer<void> deleting = Completer<void>();
+    deleteFiles = () => deleting.future;
+
+    await pumpScreen(
+      tester,
+      const SplashScreen(),
+      overrides: overridesWith(
+        appBootstrapProvider.overrideWith((Ref ref) async {
+          attempts++;
+          if (attempts == 1) throw StateError('database is locked');
+          return retry.future;
+        }),
+      ),
+    );
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    expect(find.text('Reset app data'), findsOneWidget);
+
+    await tester.tap(find.text('Reset app data'));
+    await pumpSettled(tester);
+    await tester.tap(find.text('Delete'));
+    await pumpSettled(tester);
+
+    // The retry lands while the file is still being deleted.
+    retry.complete(const BootstrapResult());
+    await pumpSettled(tester);
+    expect(find.text('Reset app data'), findsNothing);
+
+    deleting.complete();
+    await pumpSettled(tester);
+
+    expect(tester.takeException(), isNull);
+    expect(notifier.cancelledAll, isTrue);
+    expect(attempts, 2, reason: 'the boot already resolved; nothing to retry');
+    expect(find.text('Speak. Plan. Done.'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

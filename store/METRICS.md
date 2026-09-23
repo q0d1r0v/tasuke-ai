@@ -21,10 +21,10 @@ flutter test --coverage && dart run tool/check_coverage.dart --min 85
 
 | Artefact | Size |
 |---|---|
-| `app-arm64-v8a-release.apk` | **101.4 MB** |
-| `app-x86_64-release.apk` | 94.6 MB |
-| `app-armeabi-v7a-release.apk` | 78.1 MB |
-| `app-release.aab` (all ABIs, what Play receives) | 146.2 MB |
+| `app-arm64-v8a-release.apk` | **107.5 MB** |
+| `app-x86_64-release.apk` | 100.4 MB |
+| `app-armeabi-v7a-release.apk` | 83.0 MB |
+| `app-release.aab` (all ABIs, what Play receives) | 159.9 MB |
 
 Where the arm64 APK goes:
 
@@ -32,9 +32,19 @@ Where the arm64 APK goes:
 |---|---|---|
 | `ggml-base.en-q5_1.bin` | 57.0 MB | the bundled speech model; the app must transcribe offline from first launch |
 | native libraries | 45.3 MB | llama.cpp + ggml CPU variants + whisper.cpp + sqlite3 + Flutter |
-| Dart, resources, fonts | ~4 MB | Inter is 0.9 MB; the icon fonts tree-shake to under 10 KB |
+| Dart, resources, fonts | ~5 MB | Inter is 0.9 MB; the icon fonts tree-shake to under 10 KB |
+
+The vector art (three onboarding illustrations, eight blob frames) is **23 KB of SVG**, and the
+`flutter_svg` runtime that draws it costs about **1 MB** of AOT code. The same art as PNG at three
+densities would have been roughly 3 MB for a worse result at 2× — a blob frame is nothing but
+gradients, which is the one thing SVG stores for free and a bitmap stores worst.
 
 ### ⚠️ Size decisions that are load-bearing
+
+> **Superseded since this was measured.** llamadart — and with it llama.cpp, its ggml CPU
+> variants and the LiteRT-LM runtime — has been removed from the app, so the
+> `hooks.user_defines.llamadart` block below no longer exists. The native-library figure above
+> still includes llama.cpp; the next release has to re-measure rather than reuse it.
 
 The first release build was **200.6 MB**. Roughly 95 MB of that was runtime the app can never
 reach, and both exclusions live in `pubspec.yaml` under `hooks.user_defines.llamadart`:
@@ -55,7 +65,7 @@ newer phones that make this feature usable.
 
 ### 16 KB page support
 
-`tool/check_16k.sh` on the arm64 release APK: **19/19 libraries at 0x4000 or better, zipalign
+`tool/check_16k.sh` on the release APKs: **25/25 64-bit libraries at 0x4000 or better, zipalign
 verification successful.** Required by Play for apps targeting Android 15+; the risk is always the
 third-party prebuilt `.so` files, not our own code.
 

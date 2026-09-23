@@ -21,6 +21,29 @@ void main() {
       expect(parser.parse('sunday', now: monday).date?.toIso(), '2026-09-27');
     });
 
+    test('"next week on Tuesday" is the Tuesday of next week', () {
+      // ⚠️ "next week" alone matched first: its Monday, with "on Tuesday"
+      // left in the title.
+      final LocalDateTime wednesday = LocalDateTime.parseIso(
+        '2026-09-23T03:40',
+      );
+      for (final String phrase in <String>[
+        'next week on tuesday',
+        'next week tuesday',
+        'on tuesday next week',
+        'tuesday next week',
+      ]) {
+        final ParsedWhen when = parser.parse(phrase, now: wednesday);
+        expect(when.date?.toIso(), '2026-09-29', reason: phrase);
+        expect(when.matchEnd, phrase.length, reason: phrase);
+      }
+      expect(
+        parser.parse('next week', now: wednesday).date?.toIso(),
+        '2026-09-28',
+        reason: 'a bare "next week" is still its Monday',
+      );
+    });
+
     test('Friday said on a Friday is the NEXT Friday, never today', () {
       expect(parser.parse('friday', now: friday).date?.toIso(), '2026-10-02');
     });

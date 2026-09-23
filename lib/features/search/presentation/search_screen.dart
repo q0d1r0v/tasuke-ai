@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tasuke_ai/app/l10n/l10n_context.dart';
+import 'package:tasuke_ai/app/router/routes.dart';
 import 'package:tasuke_ai/app/theme/tasuke_spacing.dart';
 import 'package:tasuke_ai/app/theme/tasuke_typography.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
@@ -11,7 +12,7 @@ import 'package:tasuke_ai/core/clock/clock_provider.dart';
 import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/features/home/presentation/date_labels.dart';
 import 'package:tasuke_ai/features/search/presentation/search_providers.dart';
-import 'package:tasuke_ai/features/tasks/data/task_providers.dart';
+import 'package:tasuke_ai/features/tasks/data/task_actions.dart';
 import 'package:tasuke_ai/features/tasks/domain/task.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -80,6 +81,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   : IconButton(
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () {
+                        // ⚠️ `clear()` fires no onChanged, so a keystroke's
+                        // pending debounce would otherwise land after this and
+                        // put the cleared query back under an empty field.
+                        _debounce?.cancel();
                         _controller.clear();
                         ref.read(searchQueryProvider.notifier).set('');
                       },
@@ -128,13 +133,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     task.due!.date,
                                     today,
                                   ),
-                            timeLabel: task.due?.time == null
-                                ? context.l10n.taskAllDay
-                                : DateLabels.time(context, task.due!.time!),
-                            onToggle: (bool value) => ref
-                                .read(taskRepositoryProvider)
-                                .setCompleted(task.id, completed: value),
-                            onTap: () => context.push('/task/${task.id}'),
+                            timeLabel: DateLabels.tileTime(context, task),
+                            onToggle: (bool value) => unawaited(
+                              ref
+                                  .read(taskActionsProvider)
+                                  .setCompleted(task.id, completed: value),
+                            ),
+                            onTap: () =>
+                                context.push(taskDetailLocation(task.id)),
                           );
                         },
                       );

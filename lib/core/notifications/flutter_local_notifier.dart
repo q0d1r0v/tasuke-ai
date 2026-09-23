@@ -86,6 +86,18 @@ abstract interface class NotificationHost {
   Future<String?> launchPayload();
 }
 
+/// One reminder exactly as it was last handed to the OS.
+typedef _Armed = ({
+  int instant,
+  String zone,
+  bool exact,
+  String title,
+  String body,
+  String payload,
+  String channelName,
+  String channelDescription,
+});
+
 /// The local-notification port.
 final class FlutterLocalNotifier implements LocalNotifier {
   FlutterLocalNotifier({
@@ -100,6 +112,18 @@ final class FlutterLocalNotifier implements LocalNotifier {
   final NotificationStrings _strings;
 
   final StreamController<String> _taps = StreamController<String>.broadcast();
+
+  /// What this process has armed, by id, so a sweep can leave an unchanged
+  /// alarm alone instead of cancelling and re-creating it.
+  ///
+  /// ⚠️ In memory only, and never filled from [pendingIds]: the plugin's list
+  /// is its own SharedPreferences cache, not AlarmManager. An entry is written
+  /// only after `zonedSchedule` succeeds, and dropped on cancel, cancelAll, any
+  /// failure, and as soon as the plugin stops listing the id (it fired). Every
+  /// way Android drops alarms wholesale — force stop, reboot, app update, a
+  /// permission or exact-alarm revocation — also ends the process, and with it
+  /// this map.
+  final Map<int, _Armed> _armed = <int, _Armed>{};
 
   bool _initialised = false;
   bool _launchPayloadConsumed = false;
@@ -143,6 +167,28 @@ final class FlutterLocalNotifier implements LocalNotifier {
     final tz.TZDateTime at = _tz.resolveLocal(reminder.atLocal);
 
     final bool exact = await _host.canScheduleExact();
+    final ScheduleResult result = ScheduleResult(
+      exact ? SchedulePrecision.exact : SchedulePrecision.inexact,
+    );
+
+    final _Armed armed = (
+      instant: at.millisecondsSinceEpoch,
+      zone: at.location.name,
+      exact: exact,
+      title: reminder.title,
+      body: reminder.body,
+      payload: reminder.payload,
+      channelName: _strings.channelName,
+      channelDescription: _strings.channelDescription,
+    );
+    // Every sweep re-arms the whole window, and on Android each re-arm is a
+    // cancel plus a schedule that each rewrite the plugin's whole JSON cache on
+    // the UI thread. An alarm this process already set identically is skipped.
+    if (_armed[reminder.id] == armed) return result;
+
+    // Dropped before the OS is touched, so a cancel or a schedule that throws
+    // leaves nothing claimed and the next sweep tries again.
+    _armed.remove(reminder.id);
 
     // ⚠️ Cancel first, always, even though both platforms document "replace by
     // id". Android's AlarmManager does not replace an *exact* alarm with an
@@ -165,19 +211,31 @@ final class FlutterLocalNotifier implements LocalNotifier {
       throw SchedulingFailure('Could not schedule reminder ${reminder.id}');
     }
 
-    return ScheduleResult(
-      exact ? SchedulePrecision.exact : SchedulePrecision.inexact,
-    );
+    _armed[reminder.id] = armed;
+    return result;
   }
 
   @override
-  Future<void> cancel(int id) => _host.cancel(id);
+  Future<void> cancel(int id) {
+    _armed.remove(id);
+    return _host.cancel(id);
+  }
 
   @override
-  Future<void> cancelAll() => _host.cancelAll();
+  Future<void> cancelAll() {
+    _armed.clear();
+    return _host.cancelAll();
+  }
 
   @override
-  Future<List<int>> pendingIds() => _host.pendingIds();
+  Future<List<int>> pendingIds() async {
+    final List<int> ids = await _host.pendingIds();
+    // Only ever narrows [_armed]: an id the plugin stopped listing has fired or
+    // been lost, and has to be re-armed rather than skipped.
+    final Set<int> listed = ids.toSet();
+    _armed.removeWhere((int id, _Armed _) => !listed.contains(id));
+    return ids;
+  }
 
   /// Consumed on read.
   ///
@@ -208,6 +266,17 @@ final class PluginNotificationHost implements NotificationHost {
   /// id and cannot migrate them.
   static const String channelId = 'tasuke_task_reminders';
 
+  /// The status-bar icon: `android/app/src/main/res/drawable/ic_notification.xml`.
+  ///
+  /// ⚠️ Looked up by name when a reminder fires, and the release resource
+  /// shrinker cannot see a name that lives in Dart — `res/raw/keep.xml` is what
+  /// keeps the drawable in the APK. This used to be `@mipmap/ic_launcher`, which
+  /// the shrinker deleted: the plugin never stored a default icon, and its
+  /// receiver crashed in `setSmallIcon` at the minute of every reminder, so the
+  /// release build never showed one. `notification_icon_test.dart` pins all
+  /// three pieces together.
+  static const String smallIcon = 'ic_notification';
+
   final FlutterLocalNotificationsPlugin _plugin;
 
   @override
@@ -216,12 +285,7 @@ final class PluginNotificationHost implements NotificationHost {
   }) async {
     await _plugin.initialize(
       settings: const InitializationSettings(
-        // ⚠️ Android keeps only the ALPHA channel of a small icon. `ic_launcher`
-        // is fully opaque, so it renders in the status bar as a plain white
-        // square. A transparent `@drawable/ic_notification` silhouette is the
-        // fix, and until android/app/src/main/res carries one this is knowingly
-        // the wrong asset rather than a missing-resource crash at startup.
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings(smallIcon),
         iOS: DarwinInitializationSettings(
           // Permission is asked for on the Permissions screen, where the user
           // can see why. A prompt on first launch has no context and is the
@@ -272,11 +336,21 @@ final class PluginNotificationHost implements NotificationHost {
           channelId,
           strings.channelName,
           channelDescription: strings.channelDescription,
+          // Also set per notification, not only as the plugin default: the
+          // default lives in the plugin's own preferences, written by
+          // `initialize`, and a notification that carries its icon does not
+          // depend on that write having happened in some earlier process.
+          icon: smallIcon,
           // A reminder the user asked for at a specific minute earns a heads-up
           // notification; anything quieter and it is indistinguishable from not
           // having fired.
           importance: Importance.high,
           priority: Priority.high,
+          // What Do Not Disturb's "Allow reminders" exception matches on;
+          // without it a reminder is silenced like any other notification.
+          // Per notification, so the channel and its settings are untouched.
+          // Not `alarm`: that breaks through DND for users who never allowed it.
+          category: AndroidNotificationCategory.reminder,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

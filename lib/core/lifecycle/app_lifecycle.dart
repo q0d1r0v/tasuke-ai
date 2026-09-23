@@ -12,12 +12,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Something has to re-ask, and "when the user looks at the app again" is the
 /// only moment that is both cheap and timely.
 ///
-/// A `StreamProvider<void>` rather than a listener each caller installs: one
+/// A `StreamProvider<int>` rather than a listener each caller installs: one
 /// [AppLifecycleListener] for the app, many watchers.
-final StreamProvider<void> appResumedProvider = StreamProvider<void>((Ref ref) {
-  final StreamController<void> resumes = StreamController<void>.broadcast();
+///
+/// ⚠️ `int`, and the value is a counter nobody reads. It must NOT be
+/// `StreamProvider<void>`.
+///
+/// riverpod gates every listener behind `previous != next`, and
+/// `AsyncValue`'s equality compares a structural record of (value, kind,
+/// source). Two `AsyncData<void>(null)` values are equal, so a void stream
+/// notifies on the FIRST resume and never again — the app would rescue its
+/// stale day and its stale permissions exactly once per process and then go
+/// quiet, which is indistinguishable from working.
+final StreamProvider<int> appResumedProvider = StreamProvider<int>((Ref ref) {
+  final StreamController<int> resumes = StreamController<int>.broadcast();
+  int count = 0;
   final AppLifecycleListener listener = AppLifecycleListener(
-    onResume: () => resumes.add(null),
+    onResume: () => resumes.add(++count),
   );
   ref.onDispose(() {
     listener.dispose();

@@ -209,6 +209,52 @@ void main() {
       expect(plan.toCancel, <int>[7]);
       expect(plan.toSchedule, isEmpty);
     });
+
+    test('never cancels an alarm the OS may still be about to deliver', () {
+      // 09:40 has passed, but an inexact alarm can arrive up to an hour late.
+      // Cancelling it as an orphan here meant the reminder never came at all
+      // when the user happened to open the app in that gap.
+      final ReminderPlan plan = planFor(
+        <Task>[
+          taskWithReminder(id: 't-1', at: civil(11, 9, 40), notificationId: 7),
+        ],
+        held: <int>{7},
+      );
+
+      expect(plan.toCancel, isEmpty);
+      expect(
+        plan.toSchedule,
+        isEmpty,
+        reason: 'a passed minute is not re-fired',
+      );
+    });
+
+    test('does cancel one that is more than an hour overdue', () {
+      final ReminderPlan plan = planFor(
+        <Task>[
+          taskWithReminder(id: 't-1', at: civil(11, 8, 59), notificationId: 7),
+        ],
+        held: <int>{7},
+      );
+
+      expect(plan.toCancel, <int>[7]);
+    });
+
+    test('an in-flight alarm on a completed task is still cancelled', () {
+      final ReminderPlan plan = planFor(
+        <Task>[
+          taskWithReminder(
+            id: 't-1',
+            at: civil(11, 9, 40),
+            notificationId: 7,
+            completed: true,
+          ),
+        ],
+        held: <int>{7},
+      );
+
+      expect(plan.toCancel, <int>[7]);
+    });
   });
 
   group('the notifications kill switch', () {

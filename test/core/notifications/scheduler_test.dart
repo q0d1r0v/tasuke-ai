@@ -31,6 +31,12 @@ final class RecordingHost implements NotificationHost {
   String? launch;
   void Function(String payload)? _onTap;
 
+  /// Ids the plugin's cache no longer lists, the way a fired alarm drops out.
+  final Set<int> forgotten = <int>{};
+
+  /// The next `zonedSchedule` throws, as an OEM build past its quota does.
+  bool failNextSchedule = false;
+
   void tap(String payload) => _onTap?.call(payload);
 
   @override
@@ -52,6 +58,10 @@ final class RecordingHost implements NotificationHost {
     required NotificationStrings strings,
   }) async {
     calls.add('schedule:$id');
+    if (failNextSchedule) {
+      failNextSchedule = false;
+      throw StateError('maximum number of alarms exceeded');
+    }
     scheduled.add(
       ScheduledCall(id: id, at: at, exact: exact, payload: payload),
     );
@@ -64,8 +74,10 @@ final class RecordingHost implements NotificationHost {
   Future<void> cancelAll() async => calls.add('cancelAll');
 
   @override
-  Future<List<int>> pendingIds() async =>
-      scheduled.map((ScheduledCall call) => call.id).toList();
+  Future<List<int>> pendingIds() async => scheduled
+      .map((ScheduledCall call) => call.id)
+      .where((int id) => !forgotten.contains(id))
+      .toList();
 
   @override
   Future<bool> areNotificationsEnabled() async => true;
@@ -100,14 +112,17 @@ Future<({FlutterLocalNotifier notifier, RecordingHost host})> notifierIn(
 LocalDateTime civil(int y, int m, int d, int hour, int minute) =>
     LocalDateTime(LocalDate(y, m, d), LocalTimeOfDay.hm(hour, minute));
 
-ScheduledReminder reminder({int id = 1, required LocalDateTime at}) =>
-    ScheduledReminder(
-      id: id,
-      title: 'Send the build',
-      body: 'Tap to open this task.',
-      atLocal: at,
-      payload: '{"taskId":"t-1"}',
-    );
+ScheduledReminder reminder({
+  int id = 1,
+  required LocalDateTime at,
+  String title = 'Send the build',
+}) => ScheduledReminder(
+  id: id,
+  title: title,
+  body: 'Tap to open this task.',
+  atLocal: at,
+  payload: '{"taskId":"t-1"}',
+);
 
 void main() {
   group('a civil reminder becomes an instant at scheduling time', () {
@@ -244,6 +259,155 @@ void main() {
       ]);
       expect(setup.host.scheduled.last.at.hour, 18);
       await setup.notifier.dispose();
+    });
+  });
+
+  group('a re-arm this process already made identically', () {
+    // Every sweep re-arms the whole window. On Android each re-arm is a cancel
+    // and a schedule that both rewrite the plugin's whole JSON cache on the UI
+    // thread, so an unchanged alarm is left alone. ⚠️ The memo is in memory
+    // only and is never seeded from `pendingIds()`: that list is the plugin's
+    // SharedPreferences cache, not what AlarmManager holds.
+    List<String> osCalls(RecordingHost host) =>
+        host.calls.where((String call) => call != 'initialise').toList();
+
+    test('is skipped', () async {
+      final ({FlutterLocalNotifier notifier, RecordingHost host}) setup =
+          await notifierIn('Asia/Tashkent');
+
+      final ScheduleResult first = await setup.notifier.schedule(
+        reminder(id: 7, at: civil(2026, 9, 21, 9, 0)),
+      );
+      final ScheduleResult second = await setup.notifier.schedule(
+        reminder(id: 7, at: civil(2026, 9, 21, 9, 0)),
+      );
+
+      expect(osCalls(setup.host), <String>['cancel:7', 'schedule:7']);
+      expect(first.precision, SchedulePrecision.exact);
+      expect(second.precision, SchedulePrecision.exact);
+      await setup.notifier.dispose();
+    });
+
+    test('still happens when the time, title or precision changed', () async {
+      final ({FlutterLocalNotifier notifier, RecordingHost host}) setup =
+          await notifierIn('Asia/Tashkent');
+
+      await setup.notifier.schedule(
+        reminder(id: 7, at: civil(2026, 9, 21, 9, 0)),
+      );
+      await setup.notifier.schedule(
+        reminder(id: 7, at: civil(2026, 9, 21, 10, 0)),
+      );
+      await setup.notifier.schedule(
+        reminder(id: 7, at: civil(2026, 9, 21, 10, 0), title: 'Call James'),
+      );
+      setup.host.exactAllowed = false;
+      final ScheduleResult inexact = await setup.notifier.schedule(
+        reminder(id: 7, at: civil(2026, 9, 21, 10, 0), title: 'Call James'),
+      );
+
+      expect(
+        setup.host.calls.where((String c) => c == 'schedule:7'),
+        hasLength(4),
+      );
+      expect(inexact.precision, SchedulePrecision.inexact);
+      expect(setup.host.scheduled.last.exact, isFalse);
+      await setup.notifier.dispose();
+    });
+
+    test('still happens after a cancel or a cancelAll', () async {
+      final ({FlutterLocalNotifier notifier, RecordingHost host}) setup =
+          await notifierIn('Asia/Tashkent');
+      final ScheduledReminder same = reminder(
+        id: 7,
+        at: civil(2026, 9, 21, 9, 0),
+      );
+
+      await setup.notifier.schedule(same);
+      await setup.notifier.cancel(7);
+      await setup.notifier.schedule(same);
+      await setup.notifier.cancelAll();
+      await setup.notifier.schedule(same);
+
+      expect(osCalls(setup.host), <String>[
+        'cancel:7',
+        'schedule:7',
+        'cancel:7',
+        'cancel:7',
+        'schedule:7',
+        'cancelAll',
+        'cancel:7',
+        'schedule:7',
+      ]);
+      await setup.notifier.dispose();
+    });
+
+    test('still happens once the plugin stops listing the id', () async {
+      // It fired, or the plugin's cache was lost: absence is trusted, presence
+      // never is.
+      final ({FlutterLocalNotifier notifier, RecordingHost host}) setup =
+          await notifierIn('Asia/Tashkent');
+      final ScheduledReminder same = reminder(
+        id: 7,
+        at: civil(2026, 9, 21, 9, 0),
+      );
+      await setup.notifier.schedule(same);
+
+      setup.host.forgotten.add(7);
+      expect(await setup.notifier.pendingIds(), isEmpty);
+      await setup.notifier.schedule(same);
+
+      expect(
+        setup.host.calls.where((String c) => c == 'schedule:7'),
+        hasLength(2),
+      );
+      await setup.notifier.dispose();
+    });
+
+    test('still happens after a schedule that failed', () async {
+      final ({FlutterLocalNotifier notifier, RecordingHost host}) setup =
+          await notifierIn('Asia/Tashkent');
+      final ScheduledReminder same = reminder(
+        id: 7,
+        at: civil(2026, 9, 21, 9, 0),
+      );
+      await setup.notifier.schedule(same);
+
+      // A move that the OS refuses leaves the old claim dropped as well.
+      setup.host.failNextSchedule = true;
+      await expectLater(
+        setup.notifier.schedule(reminder(id: 7, at: civil(2026, 9, 21, 10, 0))),
+        throwsA(isA<Object>()),
+      );
+      await setup.notifier.schedule(same);
+
+      expect(
+        setup.host.calls.where((String c) => c == 'schedule:7'),
+        hasLength(3),
+      );
+      await setup.notifier.dispose();
+    });
+
+    test('is forgotten by a new notifier, as by a new process', () async {
+      final ({FlutterLocalNotifier notifier, RecordingHost host}) first =
+          await notifierIn('Asia/Tashkent');
+      await first.notifier.schedule(
+        reminder(id: 7, at: civil(2026, 9, 21, 9, 0)),
+      );
+      await first.notifier.dispose();
+
+      final FlutterLocalNotifier second = FlutterLocalNotifier(
+        host: first.host,
+        tz: TzService(lookup: () async => 'Asia/Tashkent'),
+      );
+      await second.initialise();
+      await second.schedule(reminder(id: 7, at: civil(2026, 9, 21, 9, 0)));
+
+      expect(
+        first.host.calls.where((String c) => c == 'schedule:7'),
+        hasLength(2),
+      );
+      await second.dispose();
     });
   });
 

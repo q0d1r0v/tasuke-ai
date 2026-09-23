@@ -1,0 +1,47 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!--
+  Private by Design — onboarding page 3.
+
+  Drawn to match the shield-and-padlock mark supplied alongside guide_voice.svg
+  and guide_tasks.svg, in the same language as those two: a soft radial halo,
+  a gradient subject, and no <filter> (flutter_svg drops filters silently, so
+  nothing here may depend on one to be legible).
+-->
+<defs>
+  <linearGradient id="lock" x1="200" y1="180" x2="320" y2="370" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#43B7FF"/>
+    <stop offset="1" stop-color="#1268F3"/>
+  </linearGradient>
+  <linearGradient id="plate" x1="140" y1="70" x2="380" y2="446" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#F4FAFF"/>
+    <stop offset=".52" stop-color="#D8EBFF"/>
+    <stop offset="1" stop-color="#A9D2FF"/>
+  </linearGradient>
+  <radialGradient id="halo">
+    <stop stop-color="#2F8BFF" stop-opacity=".20"/>
+    <stop offset="1" stop-color="#2F8BFF" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+
+<circle cx="256" cy="256" r="220" fill="url(#halo)"/>
+<circle cx="256" cy="256" r="174" fill="#2F8BFF" fill-opacity=".06"/>
+
+<!-- shield -->
+<path d="M256 62L404 120V262C404 350 340 414 256 450C172 414 108 350 108 262V120L256 62Z" fill="url(#plate)"/>
+<path d="M256 62L404 120V262C404 350 340 414 256 450C172 414 108 350 108 262V120L256 62Z" stroke="white" stroke-opacity=".9" stroke-width="10" stroke-linejoin="round"/>
+<path d="M256 106L366 149V264C366 331 318 384 256 413C194 384 146 331 146 264V149L256 106Z" stroke="white" stroke-opacity=".55" stroke-width="6" stroke-linejoin="round"/>
+
+<!-- orbit, in front of the shield and behind the padlock -->
+<ellipse cx="256" cy="272" rx="203" ry="84" transform="rotate(-17 256 272)" stroke="white" stroke-opacity=".75" stroke-width="7"/>
+
+<!-- padlock -->
+<path d="M207 262V235A49 49 0 0 1 305 235V262H271V235A15 15 0 0 0 241 235V262Z" fill="url(#lock)"/>
+<rect x="190" y="256" width="132" height="108" rx="28" fill="url(#lock)"/>
+<circle cx="256" cy="300" r="17" fill="#EDF6FF"/>
+<rect x="248" y="306" width="16" height="32" rx="8" fill="#EDF6FF"/>
+
+<!-- particles -->
+<circle cx="406" cy="110" r="26" fill="#CFE6FF"/>
+<circle cx="126" cy="128" r="13" fill="#CFE6FF"/>
+<circle cx="110" cy="384" r="16" fill="#CFE6FF"/>
+</svg>

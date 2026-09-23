@@ -21,7 +21,6 @@ import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/core/time/local_date_time.dart';
 import 'package:tasuke_ai/core/time/local_time_of_day.dart';
 import 'package:tasuke_ai/features/reminders/data/local_reminder_scheduler.dart';
-import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
 import 'package:tasuke_ai/features/settings/domain/app_settings.dart';
 import 'package:tasuke_ai/features/settings/presentation/settings_screen.dart';
 import 'package:tasuke_ai/features/tasks/data/task_providers.dart';
@@ -104,11 +103,11 @@ void main() {
       ProviderScope(
         overrides: <Override>[
           ...defaultOverrides(
+            settings: settings,
             clock: clock,
             notifier: notifier,
             purchases: store,
           ),
-          settingsRepositoryProvider.overrideWithValue(settings),
           taskRepositoryProvider.overrideWithValue(tasks),
           usageRepositoryProvider.overrideWithValue(usage),
           // A real version string, so the About row cannot pass on the
@@ -178,13 +177,10 @@ void main() {
   testWidgets('a free account reads its plan and what is left of today', (
     WidgetTester tester,
   ) async {
-    await usage.recordCapture(today, taskCount: 2);
-    await usage.recordCapture(today, taskCount: 1);
-
     await pumpSettings(tester);
 
     expect(find.text('Free Plan'), findsOneWidget);
-    expect(find.text('2 / 5 today'), findsOneWidget);
+    expect(find.text('0 / 1 today'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -205,7 +201,7 @@ void main() {
     expect(find.text('Unlimited'), findsOneWidget);
     // Counting captures at a subscriber is the kind of detail that reads as a
     // broken purchase.
-    expect(find.textContaining('/ 5 today'), findsNothing);
+    expect(find.textContaining('/ 1 today'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -278,6 +274,44 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('a restore that finds the subscription says so', (
+    WidgetTester tester,
+  ) async {
+    // What the store's answer leaves behind: a subscriber.
+    store.emit(
+      const Entitlement(
+        status: EntitlementStatus.proActive,
+        productId: 'pro.monthly',
+      ),
+    );
+    await pumpSettings(tester);
+
+    await tester.tap(find.text('Restore Purchases'));
+    await pumpSettled(tester);
+
+    expect(find.text('Your subscription is active again'), findsOneWidget);
+    expect(find.text('No previous purchase found'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a restore the store cannot answer says so, not "nothing '
+      'found"', (WidgetTester tester) async {
+    store.restoreFailure = StateError('billing unavailable');
+    await pumpSettings(tester);
+
+    await tester.tap(find.text('Restore Purchases'));
+    await pumpSettled(tester);
+
+    expect(
+      find.text('Check your connection and store account, then try again.'),
+      findsOneWidget,
+    );
+    expect(find.text('No previous purchase found'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('Delete all data asks before it erases anything', (
     WidgetTester tester,
   ) async {
@@ -315,6 +349,7 @@ void main() {
     await settings.write(
       AppSettings.defaults.copyWith(notificationsEnabled: false),
     );
+    await usage.recordCapture(today.addDays(-1), taskCount: 2);
     await usage.recordCapture(today, taskCount: 3);
 
     await pumpSettings(tester);
@@ -329,7 +364,10 @@ void main() {
     expect(notifier.cancelledAll, isTrue);
     expect(tasks.all, isEmpty);
     expect(await settings.read(), AppSettings.defaults);
-    expect((await usage.read(today)).captureCount, 0);
+    // History goes; today's count stays, or deleting all data would hand
+    // out another free capture.
+    expect((await usage.read(today.addDays(-1))).captureCount, 0);
+    expect((await usage.read(today)).captureCount, 1);
     expect(find.text('All data deleted'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());

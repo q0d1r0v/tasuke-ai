@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tasuke_ai/app/l10n/l10n_context.dart';
 import 'package:tasuke_ai/app/theme/tasuke_colors.dart';
 import 'package:tasuke_ai/app/theme/tasuke_spacing.dart';
@@ -44,11 +45,11 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen>
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? _) async {
         if (didPop) return;
-        // Captured before the await: after it, `context` may be gone, and the
-        // lint cannot prove the State's `mounted` refers to this one.
-        final NavigatorState navigator = Navigator.of(context);
         await ref.read(captureControllerProvider.notifier).cancel();
-        if (navigator.mounted) navigator.pop();
+        // ⚠️ `go`, not `pop`. `cancel()` goes idle before it awaits anything,
+        // so the guard has usually taken the user Home by now — and a pop
+        // landing after that would pop Home itself off the root navigator.
+        if (context.mounted) context.go('/home');
       },
       child: Scaffold(
         backgroundColor: TasukeColors.canvas,
@@ -66,7 +67,7 @@ class _ProcessingScreenState extends ConsumerState<ProcessingScreen>
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: TasukeSpacing.huge),
-                const GradientOrb(size: 180),
+                const BlobOrb(size: 190),
                 const SizedBox(height: TasukeSpacing.huge),
                 AnimatedBuilder(
                   animation: _dwell,

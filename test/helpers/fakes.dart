@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:tasuke_ai/core/audio/audio_recorder.dart';
-import 'package:tasuke_ai/core/models/model_installer.dart';
 import 'package:tasuke_ai/core/notifications/local_notifier.dart';
 import 'package:tasuke_ai/core/permissions/app_permission.dart';
 import 'package:tasuke_ai/core/purchases/purchase_gateway.dart';
+import 'package:tasuke_ai/core/purchases/store_page_opener.dart';
 import 'package:tasuke_ai/core/speech/speech_recognizer.dart';
 import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/core/time/local_date_time.dart';
@@ -77,6 +77,16 @@ final class FakeAudioRecorder implements AudioRecorder {
 }
 
 final class FakeSpeechRecognizer implements SpeechRecognizer {
+  /// How many times the pipeline asked for the model to be put in place.
+  ///
+  /// ⚠️ Asserted on by `pipeline` tests. The real recogniser's model install
+  /// had no caller at all and nothing noticed, because every test swapped this
+  /// fake in and fakes need no model. Counting the call is the cheapest thing
+  /// that would have failed.
+  int prepareCalls = 0;
+
+  @override
+  Future<void> prepare() async => prepareCalls++;
   FakeSpeechRecognizer({
     this.transcript = '',
     this.partials = const <String>[],
@@ -162,14 +172,18 @@ final class FakeTaskExtractor implements TaskExtractor {
 }
 
 final class FakePermissionService implements PermissionService {
-  FakePermissionService({Map<AppPermission, PermissionState>? states})
-    : _states =
-          states ??
-          <AppPermission, PermissionState>{
-            AppPermission.microphone: PermissionState.granted,
-            AppPermission.notifications: PermissionState.granted,
-            AppPermission.exactAlarm: PermissionState.granted,
-          };
+  FakePermissionService({
+    Map<AppPermission, PermissionState>? states,
+    this.grantOnRequest = false,
+    Map<AppPermission, PermissionState>? answers,
+  }) : _answers = answers ?? <AppPermission, PermissionState>{},
+       _states =
+           states ??
+           <AppPermission, PermissionState>{
+             AppPermission.microphone: PermissionState.granted,
+             AppPermission.notifications: PermissionState.granted,
+             AppPermission.exactAlarm: PermissionState.granted,
+           };
 
   final Map<AppPermission, PermissionState> _states;
 
@@ -183,9 +197,25 @@ final class FakePermissionService implements PermissionService {
   Future<PermissionState> status(AppPermission permission) async =>
       _states[permission] ?? PermissionState.notDetermined;
 
+  /// When true, a request the OS could answer is answered "yes" and the new
+  /// state sticks — a user tapping Allow on every prompt. Off by default, so a
+  /// request that is expected to change nothing does not.
+  final bool grantOnRequest;
+
+  /// What a request answers, and what the status then stays at. Models
+  /// Android, where `status` says `denied` until a request reveals that the OS
+  /// will not ask again.
+  final Map<AppPermission, PermissionState> _answers;
+
   @override
   Future<PermissionState> request(AppPermission permission) async {
     requested.add(permission);
+    final PermissionState? answer = _answers[permission];
+    if (answer != null) return _states[permission] = answer;
+    final PermissionState? current = _states[permission];
+    if (grantOnRequest && !(current?.needsSettings ?? false)) {
+      _states[permission] = PermissionState.granted;
+    }
     return _states[permission] ?? PermissionState.granted;
   }
 
@@ -226,7 +256,11 @@ final class FakeLocalNotifier implements LocalNotifier {
 
   @override
   Future<ScheduleResult> schedule(ScheduledReminder reminder) async {
-    scheduled.add(reminder);
+    // Replaces by id, the way the real notifier does (it cancels first): the
+    // same id scheduled twice is one alarm on a phone, never two.
+    scheduled
+      ..removeWhere((ScheduledReminder r) => r.id == reminder.id)
+      ..add(reminder);
     return ScheduleResult(
       exact ? SchedulePrecision.exact : SchedulePrecision.inexact,
     );
@@ -265,6 +299,16 @@ final class FakeLocalNotifier implements LocalNotifier {
 }
 
 final class FakePurchaseGateway implements PurchaseGateway {
+  /// Whether the bootstrap actually subscribed to the store.
+  ///
+  /// ⚠️ Asserted on by `test/app/bootstrap/app_bootstrap_test.dart`. The real
+  /// `initialise()` had zero callers and two doc comments claiming the
+  /// bootstrap awaited it; a purchase therefore never activated and Google
+  /// Play refunded it three days later. A boolean is all it takes to notice.
+  bool initialised = false;
+
+  @override
+  Future<void> initialise() async => initialised = true;
   FakePurchaseGateway({
     this.available = true,
     this.plans = const <SubscriptionPlan>[],
@@ -294,7 +338,14 @@ final class FakePurchaseGateway implements PurchaseGateway {
   }
 
   @override
-  Future<void> restore() async => restoreCount++;
+  Future<void> restore() async {
+    restoreCount++;
+    final Object? failure = restoreFailure;
+    if (failure != null) throw failure;
+  }
+
+  /// Thrown by [restore], the way a store that could not answer throws.
+  Object? restoreFailure;
 
   @override
   Stream<Entitlement> get entitlements => _controller.stream;
@@ -311,44 +362,18 @@ final class FakePurchaseGateway implements PurchaseGateway {
   Future<void> dispose() async => _controller.close();
 }
 
-final class FakeModelInstaller implements ModelInstaller {
-  FakeModelInstaller({ModelState initial = const ModelNotInstalled()})
-    : _state = initial;
+/// Records the store pages the app asked to open, instead of leaving it.
+final class FakeStorePageOpener implements StorePageOpener {
+  final List<Uri> opened = <Uri>[];
 
-  ModelState _state;
-  String path = '/tmp/fake-model.gguf';
-
-  final StreamController<ModelState> _controller =
-      StreamController<ModelState>.broadcast();
+  /// False plays a device where nothing can open the page.
+  bool opens = true;
 
   @override
-  Stream<ModelState> watch(ModelSpec spec) => _controller.stream;
-
-  @override
-  ModelState stateOf(ModelSpec spec) => _state;
-
-  @override
-  Future<bool> isInstalled(ModelSpec spec) async => _state is ModelReady;
-
-  @override
-  Future<String?> pathOf(ModelSpec spec) async =>
-      _state is ModelReady ? path : null;
-
-  @override
-  Future<void> install(ModelSpec spec) async => emit(ModelReady(path));
-
-  @override
-  Future<void> cancel(ModelSpec spec) async => emit(const ModelNotInstalled());
-
-  @override
-  Future<void> remove(ModelSpec spec) async => emit(const ModelNotInstalled());
-
-  void emit(ModelState state) {
-    _state = state;
-    _controller.add(state);
+  Future<bool> open(Uri page) async {
+    opened.add(page);
+    return opens;
   }
-
-  void dispose() => _controller.close();
 }
 
 /// An in-memory task store.
@@ -639,7 +664,11 @@ final class FakeUsageRepository implements UsageRepository {
 
   @override
   Future<void> prune(LocalDate today, {int keepDays = 90}) async {
-    if (keepDays == 0) _days.clear();
+    // The real repository deletes days strictly BEFORE the cutoff, so today
+    // survives even `keepDays: 0` — which is what stops "Delete all data"
+    // from handing out a fresh free capture.
+    final String cutoff = today.addDays(-keepDays).toIso();
+    _days.removeWhere((String day, DailyUsage _) => day.compareTo(cutoff) < 0);
     if (!_changes.isClosed) _changes.add(null);
   }
 

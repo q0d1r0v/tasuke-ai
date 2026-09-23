@@ -43,21 +43,17 @@ void main() {
 
   tearDown(() => usage.dispose());
 
-  /// Boots the Processing screen.
-  ///
-  /// [overHome] pushes it on top of Home instead of making it the first route,
-  /// which is what the back test needs: this screen's pop handler really does
-  /// pop, and a route with nothing under it has nowhere to go.
+  /// Boots the Processing screen over the Recording screen, which is where
+  /// the app has it too.
   Future<GoRouter> pumpProcessing(
     WidgetTester tester, {
     required CaptureState seed,
-    bool overHome = false,
   }) async {
     await tester.binding.setSurfaceSize(DeviceFrame.iPhoneNotch.size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final GoRouter router = GoRouter(
-      initialLocation: overHome ? '/home' : '/capture/processing',
+      initialLocation: '/capture/processing',
       routes: <RouteBase>[
         GoRoute(
           path: '/home',
@@ -107,11 +103,6 @@ void main() {
     // A single frame, so a dwell assertion is measured from zero rather than
     // from however long a settle happened to take.
     await tester.pump();
-
-    if (overHome) {
-      unawaited(router.push<void>('/capture/processing'));
-      await pumpSettled(tester);
-    }
     return router;
   }
 
@@ -215,13 +206,15 @@ void main() {
   testWidgets('back cancels the session rather than popping a live page', (
     WidgetTester tester,
   ) async {
+    // ⚠️ Home, not the page underneath. `cancel()` goes idle before it awaits
+    // anything, so in the app the guard is already taking the user Home; a
+    // pop landing after that popped Home itself.
     await pumpProcessing(
       tester,
       seed: const CaptureState(
         phase: CapturePhase.extracting,
         transcript: 'call the dentist tomorrow',
       ),
-      overHome: true,
     );
     expect(find.byType(ProcessingScreen), findsOneWidget);
 
@@ -230,11 +223,13 @@ void main() {
     );
     await pumpSettled(tester);
 
-    expect(find.text('home screen'), findsOneWidget);
+    final int homes = find.text('home screen').evaluate().length;
+    final CapturePhase phase = stateOf(tester).phase;
+    await shutdown(tester);
+
+    expect(homes, 1);
     expect(recorder.cancelled, isTrue);
     expect(recognizer.cancelled, isTrue);
-    expect(stateOf(tester).phase, CapturePhase.idle);
-
-    await shutdown(tester);
+    expect(phase, CapturePhase.idle);
   });
 }

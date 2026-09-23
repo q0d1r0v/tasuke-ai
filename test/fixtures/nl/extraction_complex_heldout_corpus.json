@@ -1,0 +1,535 @@
+{
+ "_about": "COMPLEX held-out set, same provenance as the complex dev set but NEVER used to tune the rules. Reference moment Wednesday 2026-09-23T15:00 local.",
+ "now": "2026-09-23T15:00",
+ "cases": [
+  {
+   "note": "Call the notary at 10 a.m. about the apartment papers, also buy a birthday cake for Laylo, plus remind me tonight at 9 to charge the power bank.",
+   "tasks": [
+    {
+     "title": "Call the notary about the apartment papers",
+     "date": "2026-09-24",
+     "time": "10:00"
+    },
+    {
+     "title": "Buy a birthday cake for Laylo",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Charge the power bank",
+     "date": "2026-09-23",
+     "time": "21:00"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "Top up the metro card, then call grandma, and at half past five meet Timur near Chorsu metro.",
+   "tasks": [
+    {
+     "title": "Top up the metro card",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Call grandma",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Meet Timur near Chorsu metro",
+     "date": "2026-09-23",
+     "time": "17:30"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "Pick up passport from migration office on Monday, feed the cat before I leave, and at 7 p.m. call landlord about the water heater.",
+   "tasks": [
+    {
+     "title": "Pick up passport from the migration office",
+     "date": "2026-09-28",
+     "time": null
+    },
+    {
+     "title": "Feed the cat",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Call the landlord about the water heater",
+     "date": "2026-09-23",
+     "time": "19:00"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "Remind me take my pressure pills at 8 tonight, and tomorrow morning go jogging with Behruz, then at 11 the call with the bank.",
+   "tasks": [
+    {
+     "title": "Take my pressure pills",
+     "date": "2026-09-23",
+     "time": "20:00"
+    },
+    {
+     "title": "Go jogging with Behruz",
+     "date": "2026-09-24",
+     "time": "09:00"
+    },
+    {
+     "title": "Call with the bank",
+     "date": "2026-09-24",
+     "time": "11:00"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "Buy potatoes, onions and carrots for the soup, and remind me in 40 minutes to turn off the washing machine.",
+   "tasks": [
+    {
+     "title": "Buy potatoes, onions and carrots for the soup",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Turn off the washing machine",
+     "date": "2026-09-23",
+     "time": "15:40"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "In twenty minutes call the courier, oh and at some point answer the emails from the supplier, and in the evening take my son to the barber.",
+   "tasks": [
+    {
+     "title": "Call the courier",
+     "date": "2026-09-23",
+     "time": "15:20"
+    },
+    {
+     "title": "Answer the emails from the supplier",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Take my son to the barber",
+     "date": "2026-09-23",
+     "time": "18:00"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "Remind me in three days to pay the kindergarten fee, then next Wednesday at 2 p.m. the meeting with the architect, plus order a new mattress.",
+   "tasks": [
+    {
+     "title": "Pay the kindergarten fee",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Meeting with the architect",
+     "date": "2026-09-30",
+     "time": "14:00"
+    },
+    {
+     "title": "Order a new mattress",
+     "date": null,
+     "time": null
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "At 5 p.m. collect the parcel from the Uzum pickup point, the online English lesson is at 7 p.m., and tonight at 10 set the alarm for the early train.",
+   "tasks": [
+    {
+     "title": "Collect the parcel from the Uzum pickup point",
+     "date": "2026-09-23",
+     "time": "17:00"
+    },
+    {
+     "title": "Online English lesson",
+     "date": "2026-09-23",
+     "time": "19:00"
+    },
+    {
+     "title": "Set the alarm for the early train",
+     "date": "2026-09-23",
+     "time": "22:00"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "This evening I have two jobs, clean the oven and defrost the meat, and tomorrow at 1 p.m. lunch with the Karimov family.",
+   "tasks": [
+    {
+     "title": "Clean the oven",
+     "date": "2026-09-23",
+     "time": "18:00"
+    },
+    {
+     "title": "Defrost the meat",
+     "date": "2026-09-23",
+     "time": "18:00"
+    },
+    {
+     "title": "Lunch with the Karimov family",
+     "date": "2026-09-24",
+     "time": "13:00"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "Okay, the weather is terrible today. Anyway, on Saturday fix the bike for Islom and change the lamp in the hallway, then on Sunday at 10 football with the neighbours.",
+   "tasks": [
+    {
+     "title": "Fix the bike for Islom",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Change the lamp in the hallway",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Football with the neighbours",
+     "date": "2026-09-27",
+     "time": "10:00"
+    }
+   ],
+   "profile": "multi"
+  },
+  {
+   "note": "The day after tomorrow at 10 a.m. my daughter has a dentist appointment, and tonight I need to update my CV.",
+   "tasks": [
+    {
+     "title": "Dentist appointment for my daughter",
+     "date": "2026-09-25",
+     "time": "10:00"
+    },
+    {
+     "title": "Update my CV",
+     "date": "2026-09-23",
+     "time": "20:00"
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "Pay the gas bill by Friday, and in two hours call the courier about my parcel.",
+   "tasks": [
+    {
+     "title": "Pay the gas bill",
+     "date": "2026-09-25",
+     "time": null
+    },
+    {
+     "title": "Call the courier about my parcel",
+     "date": "2026-09-23",
+     "time": "17:00"
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "Next Monday at 8:15 in the morning I take the car for technical inspection, and on the 30th pay the car loan.",
+   "tasks": [
+    {
+     "title": "Take the car for technical inspection",
+     "date": "2026-09-28",
+     "time": "08:15"
+    },
+    {
+     "title": "Pay the car loan",
+     "date": "2026-09-30",
+     "time": null
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "Tomorrow afternoon take grandpa to the eye clinic, tomorrow evening help Bobur move his furniture, and the day after tomorrow give the drill back to our neighbor Rustam.",
+   "tasks": [
+    {
+     "title": "Take grandpa to the eye clinic",
+     "date": "2026-09-24",
+     "time": "14:00"
+    },
+    {
+     "title": "Help Bobur move his furniture",
+     "date": "2026-09-24",
+     "time": "18:00"
+    },
+    {
+     "title": "Give the drill back to Rustam",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "The plumber is coming on October 9th at 2 p.m. to fix the boiler, and on the 12th of October I have my annual checkup at the polyclinic.",
+   "tasks": [
+    {
+     "title": "Plumber coming to fix the boiler",
+     "date": "2026-10-09",
+     "time": "14:00"
+    },
+    {
+     "title": "Annual checkup at the polyclinic",
+     "date": "2026-10-12",
+     "time": null
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "In half an hour go to the gym, and at 8 in the evening cook dinner for the guests.",
+   "tasks": [
+    {
+     "title": "Go to the gym",
+     "date": "2026-09-23",
+     "time": "15:30"
+    },
+    {
+     "title": "Cook dinner for the guests",
+     "date": "2026-09-23",
+     "time": "20:00"
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "Tomorrow morning book a table at the restaurant for our anniversary, and on the 28th pick up the flowers from the flower shop.",
+   "tasks": [
+    {
+     "title": "Book a table at the restaurant for our anniversary",
+     "date": "2026-09-24",
+     "time": "09:00"
+    },
+    {
+     "title": "Pick up the flowers from the flower shop",
+     "date": "2026-09-28",
+     "time": null
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "Uh, on Wednesday take documents to the notary, and on Saturday at 11 a.m. I play football with my son.",
+   "tasks": [
+    {
+     "title": "Take the documents to the notary",
+     "date": "2026-09-30",
+     "time": null
+    },
+    {
+     "title": "Play football with my son",
+     "date": "2026-09-26",
+     "time": "11:00"
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "I must pay the university contract by the 20th of October, and tomorrow evening call to Gulnora and ask her lecture notes.",
+   "tasks": [
+    {
+     "title": "Pay the university contract",
+     "date": "2026-10-20",
+     "time": null
+    },
+    {
+     "title": "Call Gulnora and ask for her lecture notes",
+     "date": "2026-09-24",
+     "time": "18:00"
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "Next week on Monday start the English course at the learning center, and by Friday pay the course fee.",
+   "tasks": [
+    {
+     "title": "Start the English course at the learning center",
+     "date": "2026-09-28",
+     "time": null
+    },
+    {
+     "title": "Pay the course fee",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ],
+   "profile": "temporal"
+  },
+  {
+   "note": "Hello, hello, is it recording? Okay, good. I'm sitting in the taxi now and the traffic near Tashkent City is terrible.",
+   "tasks": [],
+   "profile": "spoken"
+  },
+  {
+   "note": "So yeah, I need go to Magic City with the kids this weekend, they are asking every day. Also buy a present for Jasur's son by Sunday, his birthday is soon.",
+   "tasks": [
+    {
+     "title": "Go to Magic City with the kids",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Buy a present for Jasur's son",
+     "date": "2026-09-27",
+     "time": null
+    }
+   ],
+   "profile": "spoken"
+  },
+  {
+   "note": "I have to take my grandmother to the polyclinic tomorrow at 9 in the morning. And her medicine for blood pressure is finished, so buy it today, from the pharmacy near the house.",
+   "tasks": [
+    {
+     "title": "Take grandmother to the polyclinic",
+     "date": "2026-09-24",
+     "time": "09:00"
+    },
+    {
+     "title": "Buy blood pressure medicine for grandmother",
+     "date": "2026-09-23",
+     "time": null
+    }
+   ],
+   "profile": "spoken"
+  },
+  {
+   "note": "Next Friday is our wedding anniversary, so, uh, dinner with my wife in Tashkent City at 8 p.m. And tomorrow I need to book the table and order the flowers.",
+   "tasks": [
+    {
+     "title": "Anniversary dinner with my wife in Tashkent City",
+     "date": "2026-10-02",
+     "time": "20:00"
+    },
+    {
+     "title": "Book the table",
+     "date": "2026-09-24",
+     "time": null
+    },
+    {
+     "title": "Order the flowers",
+     "date": "2026-09-24",
+     "time": null
+    }
+   ],
+   "profile": "spoken"
+  },
+  {
+   "note": "Saturday I'm free finally, so I want to wash the car and fix the shelf in the kitchen, and at 2 we go to Otabek's house for his son's sunnat party.",
+   "tasks": [
+    {
+     "title": "Wash the car",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Fix the kitchen shelf",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Go to Otabek's house for his son's sunnat party",
+     "date": "2026-09-26",
+     "time": "14:00"
+    }
+   ],
+   "profile": "spoken"
+  },
+  {
+   "note": "So, um, on Wednesday there is parents meeting in my son's school at 5.30. Also transfer the money for the class fund to the teacher's card.",
+   "tasks": [
+    {
+     "title": "Parents meeting at my son's school",
+     "date": "2026-09-30",
+     "time": "17:30"
+    },
+    {
+     "title": "Transfer the class fund money to the teacher",
+     "date": null,
+     "time": null
+    }
+   ],
+   "profile": "spoken"
+  },
+  {
+   "note": "Um, so yeah, the landlord wrote me today, the rent must be paid until the 1st. And the washing machine is broken again, call the repair guy, Jasur's friend.",
+   "tasks": [
+    {
+     "title": "Pay the rent",
+     "date": "2026-10-01",
+     "time": null
+    },
+    {
+     "title": "Call the repair guy about the washing machine",
+     "date": null,
+     "time": null
+    }
+   ],
+   "profile": "spoken"
+  },
+  {
+   "note": "Uh, one more thing. My driving license is expiring on October 10th, so next week I need go to the traffic police and renew it.",
+   "tasks": [
+    {
+     "title": "Renew the driving license at the traffic police",
+     "date": "2026-09-28",
+     "time": null
+    }
+   ],
+   "profile": "spoken"
+  },
+  {
+   "note": "Madina's parents invited us for dinner on Sunday at 6, so on Saturday buy some sweets and fruits for them. And, uh, iron my white shirt.",
+   "tasks": [
+    {
+     "title": "Dinner with Madina's parents",
+     "date": "2026-09-27",
+     "time": "18:00"
+    },
+    {
+     "title": "Buy sweets and fruits for Madina's parents",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Iron my white shirt",
+     "date": null,
+     "time": null
+    }
+   ],
+   "profile": "spoken"
+  },
+  {
+   "note": "Okay listen, in two hours I have online English lesson. Also, uh, don't forget, Thursday morning take my car to the service in Sergeli, the brakes are making strange noise.",
+   "tasks": [
+    {
+     "title": "Online English lesson",
+     "date": "2026-09-23",
+     "time": "17:00"
+    },
+    {
+     "title": "Take the car to the service in Sergeli",
+     "date": "2026-09-24",
+     "time": "09:00"
+    }
+   ],
+   "profile": "spoken"
+  }
+ ]
+}

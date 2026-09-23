@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tasuke_ai/app/bootstrap/app_bootstrap.dart';
@@ -8,6 +10,8 @@ import 'package:tasuke_ai/app/theme/tasuke_gradients.dart';
 import 'package:tasuke_ai/app/theme/tasuke_spacing.dart';
 import 'package:tasuke_ai/app/theme/tasuke_typography.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
+import 'package:tasuke_ai/core/database/database_provider.dart';
+import 'package:tasuke_ai/core/logging/log.dart';
 
 /// The brand splash, held until [appBootstrapProvider] resolves.
 ///
@@ -93,22 +97,41 @@ class _FatalError extends ConsumerWidget {
           const SizedBox(height: TasukeSpacing.xxl),
           PrimaryButton(
             label: context.l10n.actionRetry,
-            onPressed: () => ref.invalidate(appBootstrapProvider),
+            onPressed: () {
+              // ⚠️ The database too, not only the boot: drift caches a failed
+              // open on the instance, so a retry against the same one fails
+              // forever even once the cause (a full disk, a lock) is gone.
+              ref.invalidate(appDatabaseProvider);
+              ref.invalidate(appBootstrapProvider);
+            },
           ),
           const SizedBox(height: TasukeSpacing.md),
           TextLinkButton(
             label: context.l10n.errorResetData,
             style: TasukeTypography.bodyMd.copyWith(color: TasukeColors.danger),
-            onPressed: () async {
-              final bool confirmed = await _confirmReset(context);
-              if (!confirmed) return;
-              await ref.read(databaseResetProvider)();
-              ref.invalidate(appBootstrapProvider);
-            },
+            onPressed: () => unawaited(_reset(context, ref)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _reset(BuildContext context, WidgetRef ref) async {
+    final bool confirmed = await _confirmReset(context);
+    if (!confirmed) return;
+    try {
+      await ref.read(fatalDatabaseResetProvider)();
+    } on Object catch (error, stack) {
+      Log.e('resetting the broken database failed', error, stack);
+      if (context.mounted) {
+        AppSnack.error(context, context.l10n.errorResetFailed);
+      }
+      return;
+    }
+    // ⚠️ A retry boot can finish during the reset and take this screen away;
+    // `ref` on an unmounted widget throws. Gone means the boot recovered.
+    if (!context.mounted) return;
+    ref.invalidate(appBootstrapProvider);
   }
 
   Future<bool> _confirmReset(BuildContext context) async {

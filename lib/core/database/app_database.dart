@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
@@ -53,11 +55,29 @@ class AppDatabase extends _$AppDatabase {
   /// directory to use if we ever wanted it *excluded* would be Caches, which
   /// the OS is free to delete under storage pressure — catastrophic here.)
   static QueryExecutor _openConnection() => driftDatabase(
-    name: 'tasuke',
+    name: _name,
     native: DriftNativeOptions(
       databaseDirectory: getApplicationSupportDirectory,
     ),
   );
+
+  /// `driftDatabase` stores the file as `<name>.sqlite` in the directory above.
+  static const String _name = 'tasuke';
+
+  /// Deletes the database file and its side files: the fatal-error screen's
+  /// way out of a file that will not open.
+  ///
+  /// ⚠️ Close the instance first. A connection still open here can unlink or
+  /// recreate the `-wal` under the next one.
+  static Future<void> deleteFiles() async {
+    final Directory directory = await getApplicationSupportDirectory();
+    for (final String suffix in <String>['', '-wal', '-shm', '-journal']) {
+      final File file = File(
+        '${directory.path}${Platform.pathSeparator}$_name.sqlite$suffix',
+      );
+      if (file.existsSync()) await file.delete();
+    }
+  }
 
   @override
   int get schemaVersion => 1;

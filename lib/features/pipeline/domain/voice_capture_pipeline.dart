@@ -72,7 +72,23 @@ final class VoiceCapturePipeline {
   Completer<String>? _transcriptCompleter;
   DateTime? _startedAt;
   bool _cancelled = false;
+
+  /// The most recent revision whisper produced, kept so a session that ends
+  /// without finalising does not throw away words that were already heard.
+  ///
+  /// ⚠️ A field, not a local in `startRecording`: `stopRecording` needs it too,
+  /// as the fallback when the recogniser never finalises at all.
+  String _lastPartial = '';
   bool _hitLimit = false;
+
+  /// Which recording the fields above belong to. Bumped by every
+  /// [startRecording] and every [cancel].
+  ///
+  /// ⚠️ A [stopRecording] the user cancelled out of can outlive its session by
+  /// seconds, and its timeout and `finally` acted on whatever these fields
+  /// held by then — which, after a quick re-record, was the NEXT recording's
+  /// recogniser and subscriptions.
+  int _session = 0;
 
   /// The waveform's data source. Owned here so the recorder's chunks feed it
   /// directly rather than travelling through the state object.
@@ -123,10 +139,20 @@ final class VoiceCapturePipeline {
     required void Function(String partial) onPartial,
     required void Function() onAutoStop,
   }) async {
+    _session++;
     _cancelled = false;
     _hitLimit = false;
+    _lastPartial = '';
     amplitude.reset();
     elapsed.reset();
+
+    // ⚠️ Before asking, not after being told no. The bundled speech model is
+    // copied out of the asset bundle on the launch path, but a user who taps
+    // the mic during that first second would otherwise be told the model is
+    // unavailable and handed a "Try again" that changes nothing. This is also
+    // what makes that retry work: it is idempotent and it is the only thing
+    // standing between a fresh install and a working microphone.
+    await _recognizer.prepare();
 
     final SpeechAvailability availability = await _recognizer.availability();
     if (availability != SpeechAvailability.ready) {
@@ -149,11 +175,24 @@ final class VoiceCapturePipeline {
       );
     }
 
-    // One source of audio, two consumers: the waveform and the recogniser.
-    // A broadcast controller rather than `asBroadcastStream()` so that a late
-    // recogniser subscription cannot drop the first chunks.
-    final StreamController<Uint8List> fanout =
-        StreamController<Uint8List>.broadcast();
+    // One producer, one consumer — and a **single-subscription** controller on
+    // purpose.
+    //
+    // ⚠️ This was `StreamController.broadcast()`, and the comment above it
+    // claimed broadcast was what stopped a late subscriber dropping the first
+    // chunks. It is the exact opposite: a broadcast controller discards
+    // everything added while nobody is listening, and the recogniser does not
+    // subscribe until whisper.cpp has loaded a 60 MB model — seconds. So the
+    // first seconds of every single capture were thrown away while the orb
+    // pulsed and the waveform moved. "Tomorrow at 3 PM call the dentist" came
+    // back as "call the dentist".
+    //
+    // A single-subscription controller buffers instead, and replays in order
+    // the moment `transcribeStream` attaches. The waveform is not a second
+    // consumer — `amplitude.addChunk` is fed straight from `_audioSub` below —
+    // so nothing needs broadcast semantics. The worst-case buffer is bounded by
+    // the 60 s recording cap: 16 kHz mono PCM16 is ~1.9 MB.
+    final StreamController<Uint8List> fanout = StreamController<Uint8List>();
 
     _audioSub = raw.listen(
       (Uint8List chunk) {
@@ -171,11 +210,13 @@ final class VoiceCapturePipeline {
     );
 
     final Completer<String> completer = Completer<String>();
+    // ⚠️ The recogniser can fail before Stop — a model that will not load is
+    // reported on its stream the moment the session starts — and nothing awaits
+    // this future until `stopRecording`. Unmarked, that error reaches the zone
+    // as an uncaught async error; `ignore()` only stops that report, and the
+    // later `await` in `stopRecording` still receives it.
+    completer.future.ignore();
     _transcriptCompleter = completer;
-
-    // The most recent revision, kept so a session that ends without finalising
-    // does not throw away words that were already heard.
-    String lastPartial = '';
 
     _speechSub = _recognizer
         .transcribeStream(fanout.stream)
@@ -183,7 +224,7 @@ final class VoiceCapturePipeline {
           (SpeechEvent event) {
             switch (event) {
               case SpeechPartial(:final String text):
-                lastPartial = text;
+                _lastPartial = text;
                 onPartial(text);
               case SpeechFinal(:final String text):
                 if (!completer.isCompleted) completer.complete(text);
@@ -205,7 +246,7 @@ final class VoiceCapturePipeline {
             // an aborted utterance keeps what was heard. Words the user has to
             // say again are worse than a slightly short transcript, which is
             // the contract SpeechError states.
-            if (!completer.isCompleted) completer.complete(lastPartial);
+            if (!completer.isCompleted) completer.complete(_lastPartial);
           },
           cancelOnError: false,
         );
@@ -238,6 +279,11 @@ final class VoiceCapturePipeline {
   /// the caller can keep the user on the Recording screen instead of pushing
   /// them through a pipeline that will find nothing.
   Future<Object> stopRecording() async {
+    // Taken before any await, so a [cancel] or a new recording that lands
+    // while this one finalises cannot swap them out from under it.
+    final int session = _session;
+    final Completer<String>? completer = _transcriptCompleter;
+
     final Duration duration = recordedDuration;
     if (!_hitLimit && duration < _minDuration) {
       // ⚠️ The microphone is released here too, not merely unsubscribed from.
@@ -252,7 +298,7 @@ final class VoiceCapturePipeline {
       } on Object catch (error, stack) {
         Log.e('releasing after a too-short clip failed', error, stack);
       } finally {
-        await _teardown();
+        if (session == _session) await _teardown();
       }
       return const RecordingFailure(
         'Recording too short',
@@ -261,16 +307,66 @@ final class VoiceCapturePipeline {
     }
 
     try {
+      // ⚠️ First thing, before any await. The ticker runs off a `Timer.periodic`
+      // that only `_teardown` cancels, and `_teardown` is in the `finally` —
+      // so while the recogniser finalises, a screen showing `elapsed` kept
+      // counting up under a title that said "Recording...". The user had
+      // pressed Stop and was watching the timer go up.
+      _ticker?.cancel();
+      _ticker = null;
+
       await _recorder.stop();
       await _recognizer.stop();
+
+      // ⚠️ Bounded. This await used to be bare, so a recogniser that never
+      // finalised — a whisper worker isolate that died, a native abort — left
+      // the phase pinned at `transcribing` and the Processing screen animating
+      // forever, with the recording lost and no way out but killing the app.
+      bool timedOut = false;
       final String transcript =
-          await (_transcriptCompleter?.future ?? Future<String>.value(''));
+          await (completer?.future ?? Future<String>.value('')).timeout(
+            ExtractionDefaults.transcriptionTimeout,
+            onTimeout: () {
+              timedOut = true;
+              // Cancelled, or another recording has started: the
+              // recogniser and the last partial belong to someone else.
+              if (session != _session) return '';
+              Log.w(
+                'the recogniser never finalised; '
+                'falling back to the last partial',
+              );
+              // ⚠️ Unawaited, and it must be: `cancel()` awaits the very
+              // native session that is wedged. Not calling it at all leaves
+              // the model parked and the OS microphone indicator lit —
+              // `_teardown` only drops this object's subscriptions.
+              unawaited(_recognizer.cancel());
+              return _lastPartial;
+            },
+          );
+
+      // ⚠️ Only when the deadline fired. An empty transcript that the
+      // recogniser *finalised* is silence, and silence is not an error: it
+      // flows on to `extract`, which rejects it as `noSpeech`. (The whisper
+      // recogniser reports silence itself, as a `noSpeech` failure, which the
+      // arm below hands back as it is.) Neither path spends one of the day's
+      // day's free captures; a blanket "empty means failure" here would charge
+      // the user for saying nothing.
+      if (timedOut && transcript.trim().isEmpty) {
+        return const TranscriptionFailure('Transcription timed out');
+      }
       return transcript.trim();
+    } on TranscriptionFailure catch (failure) {
+      // ⚠️ Already classified — `noSpeech` for silence, `modelUnavailable` for
+      // a missing model. The catch-all below flattened both to `unknown`, and
+      // a user who said nothing read "Something went wrong".
+      return failure;
     } on Object catch (error, stack) {
       Log.e('stopRecording failed', error, stack);
       return const TranscriptionFailure('Transcription failed');
     } finally {
-      await _teardown();
+      // A [cancel] meanwhile tears its own session down; by the time this
+      // runs the fields may already be a new recording's.
+      if (session == _session) await _teardown();
     }
   }
 
@@ -287,9 +383,9 @@ final class VoiceCapturePipeline {
 
     final LocalDateTime now = LocalDateTime.fromLocal(_clock.nowLocal());
 
-    // The language model is preferred, but it may still be downloading. The
-    // deterministic extractor is not a degraded mode in that case — it is the
-    // reason the app is usable at all on first launch.
+    // The primary runs only when it says it can. Both are the rule-based
+    // extractor in the app; the check is what keeps a primary that is not
+    // ready from costing the user what they just said.
     TaskExtractor extractor = _fallback;
     try {
       if (await _primary.isReady()) extractor = _primary;
@@ -303,8 +399,8 @@ final class VoiceCapturePipeline {
           .extract(transcript, now: now)
           .timeout(ExtractionDefaults.extractionTimeout);
     } on TimeoutException {
-      // A timeout on the model is not a dead end: the rule-based extractor is
-      // microseconds and produces something the user can edit.
+      // A timeout is not a dead end: the fallback gets one more go, and even
+      // nothing from it still ends in a draft the user can edit (below).
       Log.w('extraction timed out; falling back to the rule-based extractor');
       try {
         extracted = await _fallback.extract(transcript, now: now);
@@ -363,6 +459,15 @@ final class VoiceCapturePipeline {
 
   Future<void> cancel() async {
     _cancelled = true;
+    _session++;
+    // Before any await. The timer stops counting now, not after the
+    // recogniser has handed its session back, and a [stopRecording] already
+    // waiting on this transcript returns at once instead of at its deadline.
+    _ticker?.cancel();
+    _ticker = null;
+    final Completer<String>? pending = _transcriptCompleter;
+    _transcriptCompleter = null;
+    if (pending != null && !pending.isCompleted) pending.complete('');
     try {
       await _recorder.cancel();
       await _recognizer.cancel();

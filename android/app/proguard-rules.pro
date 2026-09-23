@@ -5,22 +5,20 @@
 # moment it is exercised, with a stack trace naming an obfuscated class. None of
 # it is reproducible from a debug build or from any test on a Linux box.
 
-# ── whisper.cpp and llama.cpp FFI ─────────────────────────────────────────────
+# ── whisper.cpp FFI ───────────────────────────────────────────────────────────
 #
 # ⚠️ The single most important rule in this file.
 #
-# Both engines are reached through dart:ffi by SYMBOL NAME. The JNI/native
+# The speech engine is reached through dart:ffi by SYMBOL NAME. The JNI/native
 # bridge classes declare `native` methods whose names must survive minification,
 # because the runtime linker resolves them textually. R8 renames them by default,
 # `DynamicLibrary.lookup` then throws ArgumentError "Failed to lookup symbol",
-# and the app's whole reason to exist — transcription and extraction — fails in
-# RELEASE BUILDS ONLY.
+# and the app's whole reason to exist — transcription — fails in RELEASE BUILDS
+# ONLY.
 -keepclasseswithmembernames class * {
     native <methods>;
 }
 -keep class com.whispercpp.** { *; }
--keep class de.oklachwitz.llamadart.** { *; }
--keep class com.llamadart.** { *; }
 
 # ── sqlite3 / drift ───────────────────────────────────────────────────────────
 #

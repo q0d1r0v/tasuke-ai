@@ -61,13 +61,15 @@ step 'Analyze'
 flutter analyze --fatal-infos --fatal-warnings
 
 step 'Unit and widget tests (with coverage)'
-# Excludes three tag families, each for its own reason:
+# Excludes four tag families, each for its own reason:
 #   golden    — the default comparator is an exact pixel match and this
 #               rasteriser does not reproduce BoxShadow byte-for-byte.
 #   migration — slow (each case opens an old schema and migrates forward); run
 #               as its own step below so a timeout there is unambiguous.
 #   device    — needs a real engine, not the Dart VM.
-flutter test --exclude-tags 'golden || migration || device' --coverage
+#   asr       — the voice evaluation; needs a host-built whisper library and a
+#               manifest of audio clips (test/asr/asr_eval_test.dart).
+flutter test --exclude-tags 'golden || migration || device || asr' --coverage
 
 step 'Database migration tests'
 flutter test --tags migration
@@ -84,8 +86,8 @@ dart run tool/check_coverage.dart \
 if [[ "$WITH_DEVICE" == 1 ]]; then
   step 'Emulator end-to-end'
   "$SCRIPT_DIR/boot_emulator.sh"
-  # integration_test drives the real pipeline: mic → whisper.cpp → llama.cpp →
-  # date parser → Drift → notification. It is the only test that proves the
+  # integration_test drives the real pipeline: whisper.cpp → rule-based
+  # extractor → Drift → notification. It is the only test that proves the
   # native libraries actually load.
   flutter test integration_test --device-id emulator-5554
 fi

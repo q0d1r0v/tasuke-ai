@@ -1,1 +1,0 @@
-/home/user/projects/startup-apps/tasuke-ai/packages/whisper_ggml/android/src/whisper/CMakeLists.txt

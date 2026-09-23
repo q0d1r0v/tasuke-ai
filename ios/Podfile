@@ -1,10 +1,10 @@
 # ⚠️ 16.4, and it must stay in lockstep with IPHONEOS_DEPLOYMENT_TARGET in
 # ios/Runner.xcodeproj/project.pbxproj (all three configurations).
 #
-# 16.4 is `llamadart`'s floor — below it the pod refuses to install. The reason
-# the two files both carry the number is that nothing reconciles them: CocoaPods
-# reads THIS file to resolve pods and to stamp the Pods project, and Xcode reads
-# the pbxproj for the app target. When they disagree the failure is not a clean
+# 16.4 is the floor the app ships with, and nothing requires lowering it. The
+# reason the two files both carry the number is that nothing reconciles them:
+# CocoaPods reads THIS file to resolve pods and to stamp the Pods project, and
+# Xcode reads the pbxproj for the app target. When they disagree the failure is not a clean
 # "deployment target too low": you get a linker error about a symbol built for a
 # newer iOS, or a pod that silently compiles its unavailable branch.
 # test/app/platform/ios_plist_test.dart asserts both files say 16.4.

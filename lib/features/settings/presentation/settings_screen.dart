@@ -9,10 +9,10 @@ import 'package:tasuke_ai/app/theme/tasuke_colors.dart';
 import 'package:tasuke_ai/app/theme/tasuke_spacing.dart';
 import 'package:tasuke_ai/app/theme/tasuke_typography.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
-import 'package:tasuke_ai/core/models/model_installer.dart';
+import 'package:tasuke_ai/core/logging/log.dart';
+import 'package:tasuke_ai/core/purchases/purchase_gateway.dart';
 import 'package:tasuke_ai/core/purchases/purchase_providers.dart';
 import 'package:tasuke_ai/features/extraction/domain/extraction_defaults.dart';
-import 'package:tasuke_ai/features/model_setup/presentation/model_setup_providers.dart';
 import 'package:tasuke_ai/features/reminders/data/reminder_providers.dart';
 import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
 import 'package:tasuke_ai/features/settings/domain/app_settings.dart';
@@ -88,27 +88,6 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 onTap: () => context.push(AppRoute.paywall.path),
               ),
-              // ⚠️ The one way back to the model download after skipping it.
-              //
-              // `/model-setup` is offered once during first run and the router
-              // bounces you off it afterwards, so without this row a user who
-              // tapped "Not now" could never enable voice capture at all — and
-              // the review notes promise this row exists.
-              SettingsRow(
-                title: context.l10n.settingsAiModel,
-                leading: const IconTile(
-                  icon: Icon(Icons.auto_awesome_outlined),
-                ),
-                trailing: Text(switch (ref.watch(
-                  currentExtractorModelStateProvider,
-                )) {
-                  ModelReady() => context.l10n.settingsAiModelReady,
-                  ModelDownloading(:final int percent) =>
-                    context.l10n.modelSetupProgress(percent),
-                  _ => context.l10n.settingsAiModelMissing,
-                }, style: TasukeTypography.label),
-                onTap: () => context.push(AppRoute.modelSetup.path),
-              ),
               SettingsRow(
                 title: context.l10n.settingsUsage,
                 leading: const IconTile(icon: Icon(Icons.bar_chart_rounded)),
@@ -135,9 +114,30 @@ class SettingsScreen extends ConsumerWidget {
                 leading: const IconTile(icon: Icon(Icons.restore_rounded)),
                 showChevron: false,
                 onTap: () async {
-                  await ref.read(purchaseGatewayProvider).restore();
+                  final PurchaseGateway gateway = ref.read(
+                    purchaseGatewayProvider,
+                  );
+                  try {
+                    await gateway.restore();
+                  } on Object catch (error, stack) {
+                    Log.e('restore failed', error, stack);
+                    if (context.mounted) {
+                      AppSnack.error(
+                        context,
+                        context.l10n.paywallStoreUnavailableBody,
+                      );
+                    }
+                    return;
+                  }
                   if (!context.mounted) return;
-                  AppSnack.info(context, context.l10n.paywallRestoredNone);
+                  // `restore()` completes once the store's answer is applied,
+                  // so `current` is that answer.
+                  AppSnack.info(
+                    context,
+                    gateway.current.isPro
+                        ? context.l10n.paywallRestored
+                        : context.l10n.paywallRestoredNone,
+                  );
                 },
               ),
               SettingsRow(

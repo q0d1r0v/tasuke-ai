@@ -26,8 +26,9 @@ final class ScheduledReminder {
 enum SchedulePrecision {
   exact,
 
-  /// Android 12+ refused SCHEDULE_EXACT_ALARM, so the reminder may arrive up
-  /// to ~15 minutes late. The UI says so once rather than failing.
+  /// Android 12+ refused SCHEDULE_EXACT_ALARM, so the reminder is an inexact
+  /// alarm: Android may deliver it up to an hour late, and later still under
+  /// Doze or battery saver. The Home banner says so rather than failing.
   inexact,
 }
 

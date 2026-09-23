@@ -180,6 +180,30 @@ void main() {
     await shutdown(tester);
   });
 
+  testWidgets('clearing mid-debounce keeps the query cleared', (
+    WidgetTester tester,
+  ) async {
+    tasks.seed(<Task>[task('t1', 'Send the build to James')]);
+
+    await pumpSearch(tester);
+    await tester.enterText(find.byType(TextField), 'build');
+    await tester.pump(debounce + const Duration(milliseconds: 50));
+    await pumpSettled(tester);
+
+    // ⚠️ One more keystroke, then the X before its debounce has fired. The
+    // stale timer used to land afterwards and put "builds" back.
+    await tester.enterText(find.byType(TextField), 'builds');
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pump(debounce + const Duration(milliseconds: 50));
+    await pumpSettled(tester);
+
+    expect(fieldText(tester), isEmpty);
+    expect(queryInFlight(tester), isEmpty);
+    expect(find.text('Search your tasks'), findsOneWidget);
+
+    await shutdown(tester);
+  });
+
   testWidgets('tapping a result opens its detail route', (
     WidgetTester tester,
   ) async {

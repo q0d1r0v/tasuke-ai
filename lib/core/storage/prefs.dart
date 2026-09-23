@@ -86,3 +86,14 @@ permissionsPrimerSeenProvider =
     NotifierProvider<PermissionsPrimerSeenController, bool>(
       PermissionsPrimerSeenController.new,
     );
+
+/// Whether the exact-alarm settings page has been offered once already.
+final class ExactAlarmPromptedController extends _PrefFlagController {
+  ExactAlarmPromptedController() : super(PrefKeys.exactAlarmPrompted);
+}
+
+final NotifierProvider<ExactAlarmPromptedController, bool>
+exactAlarmPromptedProvider =
+    NotifierProvider<ExactAlarmPromptedController, bool>(
+      ExactAlarmPromptedController.new,
+    );

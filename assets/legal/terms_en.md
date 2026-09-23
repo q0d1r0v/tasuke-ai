@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Tasuke AI** — last updated 21 September 2026
+**Tasuke AI** — last updated 23 September 2026
 
 ## 1. Agreement
 
@@ -21,10 +21,10 @@ except where that restriction is prohibited by law.
 
 ## 3. What the free version includes
 
-The free version gives you five voice captures per calendar day, and unlimited
-typed tasks, reminders, search and history. The voice counter resets at midnight
-in your device's local time. A capture that fails — silence, or speech the model
-could not transcribe — does not count against it.
+The free version gives you one capture per calendar day — a spoken note or a
+task you type — and unlimited reminders, search and history. The counter resets
+at midnight in your device's local time. A capture that fails — silence, or
+speech the model could not transcribe — does not count against it.
 
 We may change the free allowance in a future version. A change of that kind
 applies to the version that introduces it; it cannot be applied retroactively to
@@ -32,8 +32,8 @@ a version already on your device.
 
 ## 4. Tasuke Pro
 
-Tasuke Pro is an auto-renewing subscription that removes the daily voice
-capture limit.
+Tasuke Pro is an auto-renewing subscription that removes the daily capture
+limit.
 
 - **Monthly** — $4.99 per month
 - **Yearly** — $39.99 per year
@@ -67,9 +67,10 @@ it switched on.
 
 ## 6. What the app does, and what it cannot promise
 
-Tasuke AI interprets speech with a language model running on your device. Like
-every such model, it is sometimes wrong: it may mishear a word, split one task
-into two, miss a date, or read "Friday" as the wrong Friday.
+Tasuke AI interprets speech on your device, with a speech-recognition model and
+a set of rules. Like any automatic interpretation, it is sometimes wrong: it may
+mishear a word, split one task into two, miss a date, or read "Friday" as the
+wrong Friday.
 
 **This is why the app shows you every extracted task on a confirmation screen
 before it saves anything.** Check it. Do not rely on Tasuke AI as the only
@@ -124,4 +125,4 @@ mandatory consumer law in your country of residence.
 
 ## 13. Contact
 
-support@tasuke.app
+info@digital-group.uz

@@ -41,6 +41,10 @@ class WhisperController {
   /// stops, so the next session (or one-shot [transcribe]) with the same
   /// model skips the multi-second load — see
   /// [TranscribeRequest.keepModelLoaded]. Release it with [releaseModel].
+  ///
+  /// [initialPrompt] primes every pass, the live previews included; with
+  /// [promptOnPreviews] false it primes only the passes whose text is final,
+  /// so the previews do not pay for it.
   Future<WhisperLiveSession> transcribeLive({
     WhisperModel? model,
     String? modelPath,
@@ -52,6 +56,7 @@ class WhisperController {
     double gateRmsMin = 0.0015,
     double gateVoiceRatio = 2.5,
     double gateNoiseFloorCap = 0.01,
+    bool promptOnPreviews = true,
   }) async {
     if ((model == null) == (modelPath == null)) {
       throw ArgumentError('Provide exactly one of model or modelPath.');
@@ -69,6 +74,7 @@ class WhisperController {
       gateRmsMin: gateRmsMin,
       gateVoiceRatio: gateVoiceRatio,
       gateNoiseFloorCap: gateNoiseFloorCap,
+      promptOnPreviews: promptOnPreviews,
     );
 
     pcm16Stream.listen(

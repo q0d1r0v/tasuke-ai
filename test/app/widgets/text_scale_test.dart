@@ -138,7 +138,7 @@ List<Specimen> catalogue(
           SettingsRow(title: 'Restore Purchases', onTap: () {}),
           SettingsRow(
             title: 'Usage',
-            trailing: const Text('3 / 5 today'),
+            trailing: const Text('0 / 1 today'),
             onTap: () {},
           ),
         ],
@@ -256,6 +256,16 @@ List<Specimen> catalogue(
       scrollable: true,
     ),
     (name: 'GradientOrb', widget: const GradientOrb(), scrollable: true),
+    // Both are fixed-size pictures with no text in them, so what is being
+    // checked is the one thing that can still go wrong: that they keep their
+    // box at 2× type scale instead of stretching and pushing a headline off
+    // the page.
+    (name: 'BlobOrb', widget: const BlobOrb(), scrollable: true),
+    (
+      name: 'SvgIllustration',
+      widget: const SvgIllustration(asset: TasukeArt.guideVoice, size: 216),
+      scrollable: true,
+    ),
     (
       name: 'ProcessingChecklist',
       widget: const ProcessingChecklist(

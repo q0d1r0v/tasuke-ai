@@ -231,20 +231,24 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('later and completedOn fall back to the day label', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('later renders "Later"; completedOn falls back to the day '
+        'label', (WidgetTester tester) async {
       final BuildContext context = await pumpContext(tester);
 
-      final LocalDate far = today.addDays(40);
-      expect(
-        DateLabels.groupHeader(
-          context,
-          group(TaskGroupLabel.later, far),
-          today,
-        ),
-        DateFormat.MMMd(locale).format(far.toDateTimeLocal()),
-      );
+      // ⚠️ Through `groupByDate`, not a hand-built group: the merge is what
+      // leaves `date` pointing at the first of three unrelated days, and a
+      // header built from it read "Apr 10" above rows due in May and June.
+      final List<TaskGroup> far = TaskGroup.groupByDate(<Task>[
+        for (final int days in <int>[30, 60, 90])
+          Task(
+            id: 'far-$days',
+            title: 'Far $days',
+            createdAt: DateTime.utc(2026, 3, 11),
+            updatedAt: DateTime.utc(2026, 3, 11),
+            due: TaskDue(date: today.addDays(days)),
+          ),
+      ], today: today);
+      expect(DateLabels.groupHeader(context, far.single, today), 'Later');
 
       // Completed lists group by the day the task was finished, so their dates
       // are in the past and the relative names are the ones that matter.

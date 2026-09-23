@@ -36,6 +36,12 @@ const rec.RecordConfig kTasukeRecordConfig = rec.RecordConfig(
   // echoCancel/noiseSuppress left off on purpose: both lower input gain, and
   // whisper's own energy gate already discards silence. A quiet speaker loses
   // more to the AGC than they gain from the denoiser.
+  //
+  // ⚠️ `pauseResume`, not the plugin's default `pause`. A declined call, an
+  // alarm, a timer or Siri pauses capture, and `pause` never resumes it: the
+  // stream stays open and silent, the screen still says "Recording...", and
+  // everything said after the interruption was lost without a word.
+  audioInterruption: rec.AudioInterruptionMode.pauseResume,
 );
 
 /// The one importer of `package:record` in the app.
@@ -113,9 +119,10 @@ final class RecordAudioRecorder implements AudioRecorder, AudioLevelSource {
         }
         unawaited(_teardown(stopPlatform: true));
       },
-      // The platform can end capture on its own — an audio-session interruption
-      // does exactly that — so the session has to be able to finish without
-      // anyone calling stop().
+      // The platform can end capture on its own, so the session has to be able
+      // to finish without anyone calling stop(). An audio-session interruption
+      // is NOT that: it pauses the stream without closing it (see
+      // `audioInterruption` in [kTasukeRecordConfig]).
       onDone: () => unawaited(_teardown(stopPlatform: false)),
     );
 

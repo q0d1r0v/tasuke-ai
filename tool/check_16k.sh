@@ -12,16 +12,20 @@
 # those devices only. NDK 28.2 links 16 KB-aligned by DEFAULT, so our own code
 # is fine and it is very easy to conclude the whole problem is handled.
 #
-# It is not. The risk is THIRD-PARTY PREBUILT .so FILES: libsqlite3, the
-# whisper.cpp and llama.cpp binaries, and the Play Billing native bits all
-# arrive as compiled artifacts built by someone else with someone else's linker
-# flags. One 4 KB-aligned library in the bundle and Play rejects the release, or
+# It is not. The risk is THIRD-PARTY PREBUILT .so FILES: libsqlite3 and the
+# Play Billing native bits arrive as compiled artifacts built by someone else
+# with someone else's linker flags, and the vendored whisper.cpp build is only
+# as aligned as its CMake flags say. One 4 KB-aligned library in the bundle and Play rejects the release, or
 # worse, accepts it and the crash rate on new hardware climbs quietly.
 #
 # Two independent checks, because they catch different failures:
 #   1. `llvm-readelf -l` on each .so — the LINKER's alignment (0x4000).
 #   2. `zipalign -c -P 16` on the APK — the PACKAGER's alignment inside the zip.
 # A library can pass one and fail the other.
+#
+# Plus one packaging check that only an unzipped APK can answer: the bundled
+# whisper model must be STORED, not deflated (see `noCompress` in
+# android/app/build.gradle.kts).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -127,11 +131,33 @@ if [[ "$ZRC" -ne 0 ]]; then
 fi
 
 echo
+echo 'check_16k: the bundled whisper model is stored, not deflated'
+# ⚠️ A deflated model makes AAsset_getBuffer inflate all 57 MB into native
+# memory, on the UI thread, the first time WhisperModelAsset copies it out.
+# Stored, it is mapped straight from the APK.
+MODEL_ENTRY='assets/flutter_assets/assets/models/ggml-base.en-q5_1.bin'
+MODEL_METHOD="$(
+  (unzip -v "$APK" "$MODEL_ENTRY" 2>/dev/null || true) \
+    | awk -v entry="$MODEL_ENTRY" '$NF == entry { print $2 }'
+)"
+MODEL_FAILED=0
+case "$MODEL_METHOD" in
+  Stored) echo "ok    $MODEL_ENTRY" ;;
+  '') echo "FAIL  $MODEL_ENTRY is not in the APK"; MODEL_FAILED=1 ;;
+  *) echo "FAIL  $MODEL_ENTRY is $MODEL_METHOD, needs Stored"; MODEL_FAILED=1 ;;
+esac
+
+echo
 if [[ "$FAILED" -ne 0 ]]; then
   echo "✗ check_16k FAILED — this build will be rejected by Play for apps targeting Android 15+." >&2
   echo "  For a bad third-party .so there is no local fix: upgrade the plugin, or ask upstream" >&2
   echo "  to rebuild with '-Wl,-z,max-page-size=16384'." >&2
   exit 1
 fi
+if [[ "$MODEL_FAILED" -ne 0 ]]; then
+  echo "✗ check_16k FAILED — the whisper model is not stored uncompressed." >&2
+  echo "  Check androidResources.noCompress in android/app/build.gradle.kts." >&2
+  exit 1
+fi
 
-echo "✓ check_16k: ${#LIBS[@]} libraries are 16 KB-aligned and the APK is aligned for them."
+echo "✓ check_16k: ${#LIBS[@]} libraries are 16 KB-aligned, the APK is aligned for them, and the whisper model is stored."

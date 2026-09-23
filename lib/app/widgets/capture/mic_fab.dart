@@ -16,12 +16,15 @@ class MicFab extends StatelessWidget {
 
   final VoidCallback onTap;
 
-  /// False while the model is still installing or the day's quota is spent. The
-  /// button stays in place and greys — it never disappears, because its absence
-  /// is the one thing that would make the app look broken.
+  /// False greys the button and ignores taps. It stays in place rather than
+  /// disappearing, because its absence is the one thing that would make the
+  /// app look broken. Nothing in the app passes false today: a spent quota
+  /// opens the paywall instead.
   final bool enabled;
 
-  /// "Preparing AI — 42%". Announced, and turns the glyph into a ring.
+  /// What the mic is waiting on, with its progress. Announced, and turns the
+  /// glyph into a ring. Nothing in the app sets it since the model download,
+  /// its only caller, was removed.
   ///
   /// ⚠️ Drawn as a ring and not as text. A 64pt circle cannot lay out a label at
   /// 2× type scale, and a `SizedBox` that clips it is the overflow this

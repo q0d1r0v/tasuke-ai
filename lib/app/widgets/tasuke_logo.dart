@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:tasuke_ai/app/l10n/l10n_context.dart';
 import 'package:tasuke_ai/app/theme/tasuke_colors.dart';
@@ -7,7 +5,7 @@ import 'package:tasuke_ai/app/theme/tasuke_gradients.dart';
 import 'package:tasuke_ai/app/theme/tasuke_spacing.dart';
 import 'package:tasuke_ai/app/theme/tasuke_typography.dart';
 
-/// The app mark: a rounded gradient tile with a white waveform inside it.
+/// The app mark: a rounded gradient tile with a white voice trace inside it.
 ///
 /// Painted rather than loaded, so the splash and the About screen cannot
 /// disagree with the launcher icon, and so it costs no asset decode on the one
@@ -25,7 +23,7 @@ class TasukeLogo extends StatelessWidget {
       label: context.l10n.appTitle,
       child: CustomPaint(
         size: Size.square(size),
-        painter: const _LogoPainter(),
+        painter: const TasukeLogoPainter(),
       ),
     );
 
@@ -42,68 +40,102 @@ class TasukeLogo extends StatelessWidget {
   }
 }
 
-class _LogoPainter extends CustomPainter {
-  const _LogoPainter();
+/// Draws the mark.
+///
+/// ⚠️ Public, and the **only** definition of the logo's geometry anywhere in
+/// the repo. `tool/generate_icons.dart` renders this same painter to
+/// `assets/images/icon.png`, `icon_foreground.png`, `icon_rounded.png` and
+/// `splash_logo.png`, which is what guarantees that the launcher icon, the OS
+/// splash and the in-app logo are the same drawing. The user sees the launcher
+/// icon and the in-app logo within a second of each other on every cold start,
+/// and two marks that are nearly the same read as the wrong app.
+///
+/// Regenerate after any change here:
+///
+/// ```
+/// flutter test tool/generate_icons.dart
+/// dart run flutter_launcher_icons
+/// dart run flutter_native_splash:create
+/// ```
+class TasukeLogoPainter extends CustomPainter {
+  const TasukeLogoPainter({this.drawTile = true, this.markScale = 1});
 
-  /// The glyph: one continuous stroke that dips and rises, like a voice trace.
+  /// False for the Android adaptive foreground, which supplies its own
+  /// background colour and must not carry a second tile inside the mask.
+  final bool drawTile;
+
+  /// Scales the whole drawing about the canvas centre.
   ///
-  /// ⚠️ This must stay in step with `tool/`-generated launcher icon and the
-  /// splash image, which draw the same curve from the same parameters. Two
-  /// marks that are nearly the same are worse than one that is obviously
-  /// different — the user sees the launcher icon and the in-app logo side by
-  /// side on the splash, and a mismatch reads as the wrong app.
-  static const int _samples = 96;
+  /// The adaptive icon is cropped to roughly the inner two thirds of its
+  /// canvas, so the foreground is drawn at [adaptiveSafeScale] to survive the
+  /// mask on a circular launcher.
+  final double markScale;
 
-  /// Fractions of the tile, never pixels, so the mark is identical at 32pt and
-  /// at 160.
-  static const double _spanFraction = 0.46;
-  static const double _amplitudeFraction = 0.21;
-  static const double _strokeFraction = 0.088;
+  /// What fits inside every adaptive-icon mask Android ships.
+  static const double adaptiveSafeScale = 0.66;
+
+  /// The design grid the path below is expressed in, matching
+  /// `design/tasuke_ai_logo.svg` one-to-one so the two can be diffed by eye.
+  static const double _grid = 512;
+
+  /// Tile corner radius, as a fraction of the tile.
+  static const double _cornerFraction = 0.225;
+
+  /// Stroke weight of the trace, in grid units (38 / 512).
+  static const double _strokeGridUnits = 38;
 
   @override
   void paint(Canvas canvas, Size size) {
     final Rect tile = Offset.zero & size;
 
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(tile, Radius.circular(size.width * 0.225)),
-      Paint()..shader = TasukeGradients.brand.createShader(tile),
-    );
-
-    final double cx = size.width / 2;
-    final double cy = size.height / 2;
-    final double span = size.width * _spanFraction;
-    final double amplitude = size.height * _amplitudeFraction;
-
-    final Path path = Path();
-    for (int i = 0; i <= _samples; i++) {
-      final double t = i / _samples;
-      final double x = cx - (span / 2) + (span * t);
-      // One asymmetric cycle — a shallow dip into a tall peak. A pure sine
-      // reads as a logo for an oscilloscope; this reads as a voice.
-      final double y =
-          cy -
-          amplitude *
-              math.sin(t * 2 * math.pi) *
-              (0.55 + 0.45 * math.sin(t * math.pi));
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
+    if (markScale != 1) {
+      canvas
+        ..save()
+        ..translate(size.width / 2, size.height / 2)
+        ..scale(markScale)
+        ..translate(-size.width / 2, -size.height / 2);
     }
+
+    if (drawTile) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          tile,
+          Radius.circular(size.width * _cornerFraction),
+        ),
+        Paint()..shader = TasukeGradients.brand.createShader(tile),
+      );
+    }
+
+    final double kx = size.width / _grid;
+    final double ky = size.height / _grid;
+
+    // One continuous stroke that dips, climbs into a tall peak, falls through
+    // a trough and lifts again — a voice trace, not an oscilloscope sine. The
+    // asymmetry is what makes it read as speech.
+    final Path path = Path()
+      ..moveTo(128 * kx, 270 * ky)
+      ..cubicTo(145 * kx, 270 * ky, 157 * kx, 252 * ky, 169 * kx, 230 * ky)
+      ..lineTo(205 * kx, 165 * ky)
+      ..cubicTo(218 * kx, 142 * ky, 249 * kx, 144 * ky, 260 * kx, 168 * ky)
+      ..lineTo(306 * kx, 287 * ky)
+      ..cubicTo(314 * kx, 307 * ky, 339 * kx, 311 * ky, 352 * kx, 294 * ky)
+      ..lineTo(386 * kx, 249 * ky);
 
     canvas.drawPath(
       path,
       Paint()
         ..color = TasukeColors.onPrimary
         ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * _strokeFraction
+        ..strokeWidth = size.width * (_strokeGridUnits / _grid)
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..isAntiAlias = true,
     );
+
+    if (markScale != 1) canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_LogoPainter oldDelegate) => false;
+  bool shouldRepaint(TasukeLogoPainter oldDelegate) =>
+      oldDelegate.drawTile != drawTile || oldDelegate.markScale != markScale;
 }

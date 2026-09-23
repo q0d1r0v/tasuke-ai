@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +21,7 @@ import 'package:tasuke_ai/core/permissions/permission_providers.dart';
 import 'package:tasuke_ai/core/purchases/purchase_providers.dart';
 import 'package:tasuke_ai/core/speech/speech_providers.dart';
 import 'package:tasuke_ai/core/storage/prefs.dart';
+import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
 
 import 'fakes.dart';
 
@@ -59,7 +62,8 @@ List<Override> defaultOverrides({
   FakePermissionService? permissions,
   FakeLocalNotifier? notifier,
   FakePurchaseGateway? purchases,
-  FakeModelInstaller? models,
+  FakeStorePageOpener? storePages,
+  FakeSettingsRepository? settings,
   SharedPreferences? preferences,
 }) {
   return <Override>[
@@ -77,11 +81,31 @@ List<Override> defaultOverrides({
     purchaseGatewayProvider.overrideWithValue(
       purchases ?? FakePurchaseGateway(),
     ),
-    modelInstallerProvider.overrideWithValue(models ?? FakeModelInstaller()),
+    storePageOpenerProvider.overrideWithValue(
+      storePages ?? FakeStorePageOpener(),
+    ),
+    // ⚠️ Faked even though most screens never read it. Ticking a task off now
+    // goes through `TaskActions`, which sweeps the reminder window, which
+    // reads the settings — and the real settings repository opens the real
+    // drift database. Inside `testWidgets` that is a deadlock, not a check:
+    // drift closes its query streams through a zero-duration timer and its
+    // `close()` waits on the real event loop, neither of which exists under
+    // FakeAsync.
+    settingsRepositoryProvider.overrideWithValue(
+      settings ?? FakeSettingsRepository(),
+    ),
     if (preferences != null)
       sharedPreferencesProvider.overrideWithValue(preferences),
+    // The boot sweeps the support directory for a retired model file. A
+    // resolver that never answers keeps it off the path_provider channel and
+    // off the host's disk.
+    supportDirPathProvider.overrideWithValue(neverResolvedDirPath),
   ];
 }
+
+/// A directory resolver that never answers, for the widget tests that run the
+/// real boot. No timer, so nothing is left pending when the test ends.
+Future<String> neverResolvedDirPath() => Completer<String>().future;
 
 /// Pumps one screen with the real theme, real fonts and real localizations.
 Future<void> pumpScreen(

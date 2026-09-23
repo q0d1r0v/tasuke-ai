@@ -20,4 +20,15 @@ abstract final class ProductIds {
   static String androidManageUrl(String productId) =>
       'https://play.google.com/store/account/subscriptions'
       '?sku=$productId&package=$androidPackage';
+
+  /// The page "Manage subscription" opens. Without a known [productId], Play
+  /// shows this app's subscriptions rather than one of them.
+  static Uri manageUri({required bool apple, String? productId}) => Uri.parse(
+    apple
+        ? appleManageUrl
+        : productId == null
+        ? 'https://play.google.com/store/account/subscriptions'
+              '?package=$androidPackage'
+        : androidManageUrl(productId),
+  );
 }

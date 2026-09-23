@@ -27,13 +27,13 @@ if ! avdmanager list avd -c 2>/dev/null | grep -qx "$AVD"; then
   exit 1
 fi
 
-# ⚠️ -memory 4096 is not a performance tweak, it is a hard requirement.
-#
-# The Pixel_7 AVD is configured with 2048 MB. The extractor GGUF is ~219 MB on
-# disk but llama.cpp mmaps it and the KV cache plus whisper's ~60 MB model plus
-# the Flutter engine do not fit: the kernel OOM-kills the app mid-inference. The
-# symptom is `Lost connection to device` with no Dart exception and no crash
-# log, which reads like a native segfault in llamadart and is not one.
+# ⚠️ -memory 4096. The Pixel_7 AVD is configured with 2048 MB, which was too
+# little while the app carried an on-device language model: the kernel
+# OOM-killed it mid-inference. The model is gone, but whisper's ~60 MB model,
+# its asset copy and the Flutter engine still run on an emulator image that is
+# memory-hungry itself, and 4096 has not been re-measured down. When the kernel
+# does kill the app the symptom is `Lost connection to device` with no Dart
+# exception and no crash log, which reads like a native segfault and is not one.
 #
 # -no-window/-no-audio: no display or sound device on this machine.
 # -gpu swiftshader_indirect: software GL; the host has no usable GPU.

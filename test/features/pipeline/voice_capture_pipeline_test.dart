@@ -31,6 +31,9 @@ Uint8List pcm16(List<int> samples) {
 /// but it keeps nothing — and "the bytes reached the recogniser" is the one
 /// thing a capture test cannot take on trust.
 final class TappedRecognizer implements SpeechRecognizer {
+  @override
+  Future<void> prepare() async {}
+
   TappedRecognizer(this.inner);
 
   final FakeSpeechRecognizer inner;

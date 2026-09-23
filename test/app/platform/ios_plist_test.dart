@@ -136,7 +136,8 @@ void main() {
 
   group('deployment target 16.4', () {
     test('the Podfile pins it', () {
-      // 16.4 is llamadart's floor.
+      // 16.4 is the floor the app ships with, and nothing requires lowering
+      // it. Changing it means changing the pbxproj too — see below.
       expect(podfile, contains("platform :ios, '16.4'"));
     });
 
@@ -163,7 +164,7 @@ void main() {
       expect(
         pbxproj,
         isNot(contains('IPHONEOS_DEPLOYMENT_TARGET = 15.0;')),
-        reason: 'a leftover 15.0 configuration will fail to resolve llamadart',
+        reason: 'a leftover 15.0 configuration disagrees with the Podfile',
       );
     });
   });
@@ -185,6 +186,23 @@ void main() {
       ]) {
         expect(podfile, isNot(contains(macro)), reason: '$macro must stay off');
       }
+    });
+  });
+
+  group('device family', () {
+    test('is iPhone-only in all three configurations', () {
+      // ⚠️ A portrait-only app that also targets iPad ("1,2") is rejected at
+      // upload with ITMS-90474: iPad multitasking needs all four orientations.
+      expect(
+        RegExp('TARGETED_DEVICE_FAMILY = 1;').allMatches(pbxproj).length,
+        3,
+        reason: 'Debug, Release and Profile must all target iPhone only',
+      );
+      expect(
+        pbxproj,
+        isNot(contains('TARGETED_DEVICE_FAMILY = "1,2";')),
+        reason: 'a portrait-only iPad bundle fails upload with ITMS-90474',
+      );
     });
   });
 

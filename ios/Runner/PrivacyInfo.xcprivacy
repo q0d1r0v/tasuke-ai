@@ -23,11 +23,8 @@
 	<key>NSPrivacyTracking</key>
 	<false/>
 
-	<!-- Empty because nothing is tracked. huggingface.co is NOT listed here:
-	     tracking domains are domains contacted for tracking purposes, and the
-	     model download is a plain asset fetch. Listing it would cause iOS to
-	     block it when "Allow Apps to Request to Track" is off — which would
-	     break first launch for a large share of users. -->
+	<!-- Empty because nothing is tracked: the app contacts no domain at all,
+	     for tracking or otherwise. -->
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
 
@@ -57,29 +54,32 @@
 			</array>
 		</dict>
 		<dict>
-			<!-- File timestamps. The SQLite database, the copied-out whisper
-			     model and the downloaded GGUF all live inside the app's own
-			     container, and the installer compares modification times to
-			     decide whether a partial download can be resumed. 3B52.1 is the
-			     "inside the app container" reason. -->
+			<!-- File metadata (stat): File.exists / File.length on the whisper
+			     model copied out of the bundle and on its .size stamp; SQLite
+			     stats its own database too. All of them live inside the app's
+			     own container, which is C617.1.
+
+			     ⚠️ Not 3B52.1: that one means files the user picked, e.g. through
+			     a document picker, and this app has none. -->
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
-				<string>3B52.1</string>
+				<string>C617.1</string>
 			</array>
 		</dict>
 		<dict>
-			<!-- Available disk space, checked before starting the ~219 MB model
-			     download so the user is told up front instead of watching it
-			     fail at 98% (modelSetupNoSpace).
+			<!-- Available disk space. No Dart code asks for it: dart:io has no
+			     free-space API, so the whisper copy finds a full disk at write
+			     time. Declared defensively, because an undeclared
+			     required-reason API is an automatic ITMS-91053 and an extra
+			     declaration costs nothing.
 
 			     ⚠️ E174.1, not 85F4.1. E174.1 is "check whether there is
-			     sufficient disk space to write files" — the free space GATES a
-			     feature and is never shown as a number. 85F4.1 is for
-			     *displaying* disk-space information to the user, which this app
-			     does not do; declaring it would be a false statement about an
-			     API use Apple's scanner can see. -->
+			     sufficient disk space to write files" — never shown as a
+			     number. 85F4.1 is for *displaying* disk-space information to
+			     the user, which this app does not do; declaring it would be a
+			     false statement. -->
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
 			<key>NSPrivacyAccessedAPITypeReasons</key>

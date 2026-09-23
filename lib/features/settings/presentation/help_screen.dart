@@ -34,6 +34,22 @@ class HelpScreen extends StatelessWidget {
             ),
             const SizedBox(height: TasukeSpacing.cardGap),
           ],
+          TasukeCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(context.l10n.helpContact, style: TasukeTypography.titleSm),
+                const SizedBox(height: TasukeSpacing.sm),
+                // Selectable rather than a mailto link: it needs no intent
+                // query in the manifest, and a phone with no mail app still
+                // lets the user copy it.
+                SelectableText(
+                  context.l10n.helpContactEmail,
+                  style: TasukeTypography.bodyMd,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

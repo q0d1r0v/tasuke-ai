@@ -55,6 +55,14 @@ abstract final class ReminderPlanner {
   /// boot and on a timezone change.
   static const int windowSize = 60;
 
+  /// How long after its minute a reminder may still be in the OS's hands.
+  ///
+  /// Without exact-alarm access Android delivers an inexact alarm up to an
+  /// hour late. A sweep in that gap — the user opening the app at 18:12 for an
+  /// 18:11 reminder the OS has deferred to 18:40 — must not treat the pending
+  /// alarm as an orphan and cancel it, or the reminder never arrives at all.
+  static const int inFlightMinutes = 60;
+
   /// Builds the diff.
   ///
   /// [tasks] must already be filtered to incomplete tasks with a reminder
@@ -76,6 +84,8 @@ abstract final class ReminderPlanner {
     }
 
     final List<PlannedReminder> wanted = <PlannedReminder>[];
+    final Set<int> inFlight = <int>{};
+    final LocalDateTime inFlightFrom = now.subtractMinutes(inFlightMinutes);
     for (final Task task in tasks) {
       final LocalDateTime? at = task.reminder.at;
       final int? id = task.reminder.notificationId;
@@ -84,8 +94,12 @@ abstract final class ReminderPlanner {
       // A reminder whose moment has passed is not rescheduled. It is not an
       // error either: "3 PM" said at 4 PM already rolled to tomorrow in the
       // parser, so anything still in the past here is a task the user knowingly
-      // backdated.
-      if (!at.isAfter(now)) continue;
+      // backdated. But if its minute passed only recently the OS may still be
+      // about to deliver it, so it is left alone rather than cancelled.
+      if (!at.isAfter(now)) {
+        if (at.isAfter(inFlightFrom)) inFlight.add(id);
+        continue;
+      }
       wanted.add(
         PlannedReminder(
           notificationId: id,
@@ -111,7 +125,12 @@ abstract final class ReminderPlanner {
     // sweep is what clears orphans left by a task deleted while the process was
     // dead, and what drops reminders pushed out of the window by newer ones.
     final List<int> toCancel =
-        heldIds.where((int id) => !wantedIds.contains(id)).toList()..sort();
+        heldIds
+            .where(
+              (int id) => !wantedIds.contains(id) && !inFlight.contains(id),
+            )
+            .toList()
+          ..sort();
 
     return ReminderPlan(toSchedule: window, toCancel: toCancel);
   }

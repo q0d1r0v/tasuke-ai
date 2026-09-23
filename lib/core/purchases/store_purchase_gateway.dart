@@ -1,7 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 import 'package:in_app_purchase/in_app_purchase.dart' as iap;
+import 'package:in_app_purchase_android/billing_client_wrappers.dart'
+    as android;
+import 'package:in_app_purchase_android/in_app_purchase_android.dart'
+    as android;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tasuke_ai/core/error/failure.dart';
 import 'package:tasuke_ai/core/logging/log.dart';
@@ -46,6 +52,7 @@ final class StorePurchase {
     required this.productId,
     required this.status,
     required this.needsCompletion,
+    this.fromRestore = false,
     this.handle,
   });
 
@@ -54,6 +61,10 @@ final class StorePurchase {
 
   /// The plugin's `pendingCompletePurchase`.
   final bool needsCompletion;
+
+  /// Sent in answer to a restore. Only a `pending` one needs it: Play's answer
+  /// holds an unpaid purchase as `pending`, and so is a live update.
+  final bool fromRestore;
 
   final Object? handle;
 }
@@ -72,6 +83,11 @@ abstract interface class StoreClient {
   Future<void> buy(StoreProduct product);
 
   Future<void> restore();
+
+  /// Whether an empty restore answer proves the account holds nothing, even
+  /// offline. Only then may the silent launch restore revoke Pro; a restore
+  /// the user asks for revokes either way.
+  bool get emptyRestoreRevokes;
 
   Stream<List<StorePurchase>> get purchases;
 
@@ -99,6 +115,18 @@ final class StorePurchaseGateway implements PurchaseGateway {
   Future<void>? _started;
   Entitlement _current = Entitlement.unknown;
 
+  /// How long a restore waits for each half of the store's answer.
+  static const Duration restoreTimeout = Duration(seconds: 10);
+
+  /// The restore waiting for its answer batch; completes with whether the
+  /// answer holds a paid plan.
+  Completer<bool>? _answer;
+  Future<void>? _restoring;
+
+  /// Whether the restore in flight may revoke. A restore the user asks for
+  /// raises it on a silent one it joins, so its empty answer still revokes.
+  bool _mayRevoke = false;
+
   @override
   Entitlement get current => _current;
 
@@ -107,17 +135,24 @@ final class StorePurchaseGateway implements PurchaseGateway {
 
   /// Restores the persisted entitlement and subscribes to the store.
   ///
-  /// ⚠️ Subscribe **before** the first screen is built. The store replays every
-  /// purchase that was never completed as soon as anything listens, and an
-  /// update delivered before there is a listener is simply lost — which is how a
+  /// ⚠️ Subscribe **before** the first screen is built. StoreKit replays every
+  /// unfinished transaction as soon as anything listens, and an update
+  /// delivered before there is a listener is simply lost — which is how a
   /// subscriber ends up on the free tier after an app restart.
+  ///
+  /// ⚠️ Play replays nothing. A purchase that finished while the app was not
+  /// running — a slow payment clearing, a resubscribe from the Play Store, a
+  /// process killed mid-sheet — is only seen by asking, so this also starts a
+  /// silent [restore]. Unasked, it is never acknowledged and Play refunds it
+  /// three days later.
   ///
   /// The persisted value is read first and on purpose: this app is offline-first
   /// and the store round-trip may never succeed. Pro survives a relaunch on a
   /// plane.
   ///
-  /// Idempotent: the provider starts it eagerly and the bootstrap may await it,
-  /// and subscribing twice would complete every purchase twice.
+  /// Idempotent: the bootstrap awaits it once, before the first route
+  /// resolves, and subscribing twice would complete every purchase twice.
+  @override
   Future<void> initialise() => _started ??= _initialise();
 
   Future<void> _initialise() async {
@@ -134,6 +169,11 @@ final class StorePurchaseGateway implements PurchaseGateway {
       onError: (Object error, StackTrace stack) =>
           Log.e('purchase stream error', error, stack),
     );
+
+    // ⚠️ After `listen`: the answer arrives on the stream, and a broadcast
+    // update with no listener is dropped. Detached, because billing may take
+    // longer than the bootstrap's five seconds, or never connect.
+    unawaited(_restoreOnLaunch());
   }
 
   @override
@@ -193,13 +233,107 @@ final class StorePurchaseGateway implements PurchaseGateway {
   }
 
   @override
-  Future<void> restore() => _client.restore();
+  Future<void> restore() async {
+    // The answer arrives on the stream, so the stream must be listened to.
+    await initialise();
+    await _restoreOnce(revoke: true);
+  }
+
+  Future<void> _restoreOnLaunch() async {
+    try {
+      // ⚠️ Only a store whose empty answer is proof may revoke unasked.
+      // StoreKit's restore reads the device's cache and never syncs, so a
+      // subscriber offline across a renewal gets an empty answer rather than
+      // a throw, and would drop to the free tier. There, a lapse is found when
+      // the user taps Restore.
+      await _restoreOnce(revoke: _client.emptyRestoreRevokes);
+    } on Object catch (error) {
+      // Offline, no Play services, a signed-out store: none of it says
+      // anything about the subscription, and the persisted value stands.
+      Log.w('purchase restore on launch failed — $error');
+    }
+  }
+
+  /// One at a time: a second restore would race the first for its answer.
+  Future<void> _restoreOnce({required bool revoke}) {
+    _mayRevoke |= revoke;
+    return _restoring ??= _reconcile().whenComplete(() {
+      _restoring = null;
+      _mayRevoke = false;
+    });
+  }
+
+  /// Asks the store what this account holds, and revokes Pro when the answer
+  /// holds no paid plan and [_mayRevoke] allows it.
+  ///
+  /// ⚠️ Decided from the answer batch, never from `restore()` returning. Play
+  /// adds the batch to the stream before its future completes; StoreKit sends
+  /// it on a separate channel that can land after. Both send an empty batch
+  /// when nothing is held.
+  ///
+  /// ⚠️ A throw or a timeout is a store that did not answer, and revokes
+  /// nothing. An unpaid (`pending`) purchase in the answer does not keep Pro:
+  /// when it is paid, the live update or the next launch grants it again.
+  Future<void> _reconcile() async {
+    final Completer<bool> answer = Completer<bool>();
+    _answer = answer;
+    final Entitlement asked = _current;
+    try {
+      await _client.restore().timeout(restoreTimeout);
+      final bool holdsPaidPlan = await answer.future.timeout(restoreTimeout);
+      // `identical`: a purchase that landed while this waited is newer than
+      // the answer, and the answer must not revoke it.
+      if (_mayRevoke &&
+          !holdsPaidPlan &&
+          _current.isPro &&
+          identical(_current, asked)) {
+        _set(
+          Entitlement(
+            status: EntitlementStatus.expired,
+            productId: _current.productId,
+          ),
+        );
+      }
+    } finally {
+      if (identical(_answer, answer)) _answer = null;
+    }
+  }
 
   Future<void> _onPurchases(List<StorePurchase> batch) async {
+    // Every update is applied before the first await, so a restore waiting on
+    // this batch reads the entitlement it produced, not the one before it.
     for (final StorePurchase purchase in batch) {
       _apply(purchase);
+    }
+    _answerRestore(batch);
+    for (final StorePurchase purchase in batch) {
       await _completeIfNeeded(purchase);
     }
+  }
+
+  /// Hands a waiting restore its answer: whether it holds a paid plan.
+  ///
+  /// A restore answers with every purchase still held — `restored`, or
+  /// `pending` while unpaid — or with an empty batch. A live update is never
+  /// empty and never `restored`.
+  ///
+  /// ⚠️ A live `pending` is not the answer. Taken for one, it says "nothing
+  /// paid" and revokes a subscriber whose real answer is still on its way.
+  void _answerRestore(List<StorePurchase> batch) {
+    final Completer<bool>? answer = _answer;
+    if (answer == null || answer.isCompleted) return;
+    final bool isAnswer = batch.every(
+      (StorePurchase purchase) =>
+          purchase.status == StorePurchaseStatus.restored ||
+          purchase.fromRestore,
+    );
+    if (!isAnswer) return;
+    answer.complete(
+      batch.any(
+        (StorePurchase purchase) =>
+            purchase.status == StorePurchaseStatus.restored,
+      ),
+    );
   }
 
   /// ⚠️ The single most expensive line in this file to get wrong.
@@ -238,8 +372,13 @@ final class StorePurchaseGateway implements PurchaseGateway {
       case StorePurchaseStatus.pending:
         // Deliberately not persisted: a pending purchase is an Ask-to-Buy or a
         // slow payment method, and writing it would leave the app showing
-        // "waiting for approval" forever if the approval never comes.
-        _emit(const Entitlement(status: EntitlementStatus.pending));
+        // "waiting for approval" forever if the approval never comes. Nor does
+        // it hide a plan already paid for, held in the same restore.
+        _emit(
+          _current.isPro
+              ? _current
+              : const Entitlement(status: EntitlementStatus.pending),
+        );
       case StorePurchaseStatus.error:
         // ⚠️ An error NEVER revokes. This app is offline-first: a store round
         // trip that fails says nothing about whether the user is subscribed, and
@@ -338,6 +477,15 @@ final class PluginStoreClient implements StoreClient {
   @override
   Future<void> restore() => _store.restorePurchases();
 
+  /// Play only. Play's answer comes from the Play Store's own copy of the
+  /// account, which offline still holds the subscription, and a billing
+  /// error throws. StoreKit 2's `restorePurchases` walks
+  /// `Transaction.currentEntitlements` from the device cache and never syncs:
+  /// offline past an expiry the renewal has not reached, it answers empty.
+  @override
+  bool get emptyRestoreRevokes =>
+      defaultTargetPlatform == TargetPlatform.android;
+
   @override
   Future<void> complete(StorePurchase purchase) async {
     final Object? handle = purchase.handle;
@@ -349,18 +497,29 @@ final class PluginStoreClient implements StoreClient {
       .map(
         (iap.PurchaseDetails details) => StorePurchase(
           productId: details.productID,
-          status: switch (details.status) {
-            iap.PurchaseStatus.pending => StorePurchaseStatus.pending,
-            iap.PurchaseStatus.purchased => StorePurchaseStatus.purchased,
-            iap.PurchaseStatus.error => StorePurchaseStatus.error,
-            iap.PurchaseStatus.restored => StorePurchaseStatus.restored,
-            iap.PurchaseStatus.canceled => StorePurchaseStatus.canceled,
-          },
+          status: _isUnpaidOnPlay(details)
+              ? StorePurchaseStatus.pending
+              : switch (details.status) {
+                  iap.PurchaseStatus.pending => StorePurchaseStatus.pending,
+                  iap.PurchaseStatus.purchased => StorePurchaseStatus.purchased,
+                  iap.PurchaseStatus.error => StorePurchaseStatus.error,
+                  iap.PurchaseStatus.restored => StorePurchaseStatus.restored,
+                  iap.PurchaseStatus.canceled => StorePurchaseStatus.canceled,
+                },
           needsCompletion: details.pendingCompletePurchase,
+          fromRestore: details.status == iap.PurchaseStatus.restored,
           handle: details,
         ),
       )
       .toList();
+
+  /// ⚠️ Play's restore labels EVERY purchase it holds `restored`, including one
+  /// still waiting on a cash or voucher payment. Taken at its word, that grants
+  /// Pro for a purchase nobody has paid for, and tries to acknowledge it.
+  static bool _isUnpaidOnPlay(iap.PurchaseDetails details) =>
+      details is android.GooglePlayPurchaseDetails &&
+      details.billingClientPurchase.purchaseState ==
+          android.PurchaseStateWrapper.pending;
 }
 
 /// The last-known entitlement, in SharedPreferences.

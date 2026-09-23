@@ -123,6 +123,14 @@ abstract final class TasukeDurations {
   /// The Recording orb's breathing cycle.
   static const Duration orbPulse = Duration(milliseconds: 1600);
 
+  /// One full pass through the eight blob frames.
+  ///
+  /// 2.4 s over eight frames is 300 ms of dwell each. Faster than about 200 ms
+  /// and the blob stops reading as breathing and starts reading as a stutter;
+  /// slower than about 400 ms and it reads as a still image that occasionally
+  /// twitches.
+  static const Duration blobCycle = Duration(milliseconds: 2400);
+
   /// Minimum time a Processing checklist row stays "in progress" before it may
   /// tick.
   ///

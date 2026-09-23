@@ -1,10 +1,11 @@
 # Declaring the tags stops `flutter test` printing
 # "A tag was used that wasn't specified" for every tagged test.
 tags:
-  # Golden tests. Excluded from the default run because the default comparator
-  # is an exact pixel match and the headless rasteriser does not render
-  # BoxShadow identically across machines — a font or engine difference is a
-  # red build with nothing useful to look at. Run them explicitly.
+  # Golden tests. tool/verify.sh excludes them by tag because the default
+  # comparator is an exact pixel match and the headless rasteriser does not
+  # render BoxShadow identically across machines — a font or engine difference
+  # is a red build with nothing useful to look at. This file excludes nothing,
+  # so a `flutter test` that names test/app runs them too.
   golden:
     description: Pixel-comparison tests against committed golden files.
   # Drift schema-verification tests. Slow: each one opens a database at an old
@@ -14,8 +15,20 @@ tags:
   # Tests that need a real device or emulator, not the Dart VM.
   device:
     description: Requires a connected device or emulator.
+  # Device-free voice evaluation: WAV clips through the real whisper.cpp
+  # binding built for the host, then the rule-based extractor. Needs the host
+  # libwhisper_ggml.so on LD_LIBRARY_PATH and a manifest of clips, so it is
+  # excluded from the default run (and skips without TASUKE_ASR_MANIFEST).
+  # See test/asr/asr_eval_test.dart.
+  asr:
+    description: Speech-to-tasks evaluation over a manifest of WAV clips.
   # Architecture rules enforced by reading the source. Fast, and they run in
   # the default suite — a layering violation should fail the same commit that
   # introduced it, not a later cleanup pass.
   arch:
     description: Source-scanning architecture guards.
+  # Generators under tool/. They write into assets/ and are never part of a
+  # test run: `flutter test` with no path only walks test/, so they are reached
+  # only by naming the file (`flutter test tool/generate_icons.dart`).
+  tool:
+    description: Asset generators, run by hand.

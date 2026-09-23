@@ -84,8 +84,9 @@ void main() {
           'lib/core/permissions/handler_permission_service.dart',
       'package:in_app_purchase/':
           'lib/core/purchases/store_purchase_gateway.dart',
-      'package:llamadart/':
-          'lib/features/extraction/data/llm_task_extractor.dart',
+      'package:in_app_purchase_android/':
+          'lib/core/purchases/store_purchase_gateway.dart',
+      'package:url_launcher/': 'lib/core/purchases/store_page_opener.dart',
     };
 
     test('each platform plugin has exactly one importer', () {

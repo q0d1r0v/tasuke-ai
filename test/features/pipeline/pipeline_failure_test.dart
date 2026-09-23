@@ -45,6 +45,9 @@ final class BusyRecorder implements AudioRecorder {
 /// A recogniser that dies while finalising, which is how a corrupt ggml file
 /// presents: everything works until the last call.
 final class DyingRecognizer implements SpeechRecognizer {
+  @override
+  Future<void> prepare() async {}
+
   DyingRecognizer(this.inner);
 
   final FakeSpeechRecognizer inner;
@@ -70,6 +73,9 @@ final class DyingRecognizer implements SpeechRecognizer {
 /// having revised the transcript a few times. Whisper does this when inference
 /// fails part-way through the utterance.
 final class AbandoningRecognizer implements SpeechRecognizer {
+  @override
+  Future<void> prepare() async {}
+
   AbandoningRecognizer({this.partials = const <String>[]});
 
   final List<String> partials;
@@ -108,6 +114,82 @@ final class AbandoningRecognizer implements SpeechRecognizer {
   Future<void> release() async => released = true;
 }
 
+/// A recogniser that finishes the way whisper does when it has nothing to
+/// give: not with an empty [SpeechFinal], but with a classified failure on the
+/// stream, after [stop] has returned.
+final class ClassifyingRecognizer implements SpeechRecognizer {
+  ClassifyingRecognizer(this.failure);
+
+  final TranscriptionFailure failure;
+  StreamController<SpeechEvent>? _events;
+
+  @override
+  Future<void> prepare() async {}
+
+  @override
+  Future<SpeechAvailability> availability() async => SpeechAvailability.ready;
+
+  @override
+  Stream<SpeechEvent> transcribeStream(Stream<Uint8List> pcm16) {
+    final StreamController<SpeechEvent> controller =
+        StreamController<SpeechEvent>();
+    _events = controller;
+    pcm16.listen((_) {});
+    return controller.stream;
+  }
+
+  @override
+  Future<void> stop() async {
+    final StreamController<SpeechEvent>? events = _events;
+    _events = null;
+    // Later, the way the native final pass lands after the feed has closed.
+    Timer.run(() {
+      events?.addError(failure, StackTrace.current);
+      unawaited(events?.close());
+    });
+  }
+
+  @override
+  Future<void> cancel() async => _events?.close();
+
+  @override
+  Future<void> release() async {}
+}
+
+/// A recogniser whose [stop] a test can hold, and which never finalises a held
+/// session. Its [cancel] does not close the stream either — the way a whisper
+/// session cancelled mid-decode just goes quiet.
+final class HeldRecognizer implements SpeechRecognizer {
+  HeldRecognizer(this.inner);
+
+  final FakeSpeechRecognizer inner;
+  Completer<void>? stopGate;
+
+  @override
+  Future<void> prepare() => inner.prepare();
+
+  @override
+  Future<SpeechAvailability> availability() => inner.availability();
+
+  @override
+  Stream<SpeechEvent> transcribeStream(Stream<Uint8List> pcm16) =>
+      inner.transcribeStream(pcm16);
+
+  @override
+  Future<void> stop() async {
+    final Completer<void>? gate = stopGate;
+    if (gate == null) return inner.stop();
+    stopGate = null;
+    await gate.future;
+  }
+
+  @override
+  Future<void> cancel() async {}
+
+  @override
+  Future<void> release() => inner.release();
+}
+
 /// An extractor whose future never resolves, so the pipeline's own budget is
 /// the only thing that can end the call.
 final class HangingExtractor implements TaskExtractor {
@@ -124,11 +206,10 @@ final class HangingExtractor implements TaskExtractor {
   }) => _never.future;
 }
 
-/// An extractor that cannot even answer whether it is ready — a model file
-/// deleted underneath a running app.
+/// An extractor that cannot even answer whether it is ready.
 final class UnaskableExtractor implements TaskExtractor {
   @override
-  Future<bool> isReady() async => throw StateError('model handle is closed');
+  Future<bool> isReady() async => throw StateError('extractor is closed');
 
   @override
   Future<List<ExtractedTask>> extract(
@@ -363,6 +444,89 @@ void main() {
 
       expect(await pipeline.stopRecording(), '');
     });
+
+    for (final TranscriptionFailureKind kind in <TranscriptionFailureKind>[
+      TranscriptionFailureKind.noSpeech,
+      TranscriptionFailureKind.modelUnavailable,
+    ]) {
+      test('a failure the recogniser already classified keeps its kind: '
+          '${kind.name}', () async {
+        // ⚠️ Whisper reports silence as a `noSpeech` failure, not as an empty
+        // final. The catch-all flattened it to `unknown`, and a user who said
+        // nothing read "Something went wrong" instead of "We didn't catch
+        // that".
+        final MutableClock clock = MutableClock(testNow);
+        final VoiceCapturePipeline pipeline = pipelineOver(
+          recognizer: ClassifyingRecognizer(
+            TranscriptionFailure('classified', kind: kind),
+          ),
+          clock: clock,
+        );
+
+        await pipeline.startRecording(onPartial: (_) {}, onAutoStop: () {});
+        clock.advance(const Duration(seconds: 3));
+        final Object result = await pipeline.stopRecording();
+
+        expect(result, isA<TranscriptionFailure>());
+        expect((result as TranscriptionFailure).kind, kind);
+      });
+    }
+  });
+
+  group('a Stop the user cancelled out of', () {
+    test('returns at once, not at the transcription deadline', () async {
+      // The recogniser goes quiet on cancel — no final, no close — so only the
+      // pipeline's own cancel can end the wait.
+      final MutableClock clock = MutableClock(testNow);
+      final HeldRecognizer recognizer = HeldRecognizer(
+        FakeSpeechRecognizer(transcript: 'call mum'),
+      );
+      final VoiceCapturePipeline pipeline = pipelineOver(
+        recognizer: recognizer,
+        clock: clock,
+      );
+      await pipeline.startRecording(onPartial: (_) {}, onAutoStop: () {});
+      clock.advance(const Duration(seconds: 3));
+
+      final Completer<void> finalising = Completer<void>();
+      recognizer.stopGate = finalising;
+      final Future<Object> stopping = pipeline.stopRecording();
+      await pipeline.cancel();
+      finalising.complete();
+
+      expect(await stopping.timeout(const Duration(seconds: 5)), '');
+    });
+
+    test('leaves the next recording alone when it finally returns', () async {
+      // ⚠️ The stale Stop's `finally` tore down whatever the pipeline held by
+      // then — a quick re-record's subscriptions — so the new recording could
+      // never finalise.
+      final MutableClock clock = MutableClock(testNow);
+      final HeldRecognizer recognizer = HeldRecognizer(
+        FakeSpeechRecognizer(transcript: 'call mum'),
+      );
+      final VoiceCapturePipeline pipeline = pipelineOver(
+        recognizer: recognizer,
+        clock: clock,
+      );
+      await pipeline.startRecording(onPartial: (_) {}, onAutoStop: () {});
+      clock.advance(const Duration(seconds: 3));
+
+      final Completer<void> finalising = Completer<void>();
+      recognizer.stopGate = finalising;
+      final Future<Object> stale = pipeline.stopRecording();
+      await pipeline.cancel();
+
+      await pipeline.startRecording(onPartial: (_) {}, onAutoStop: () {});
+      finalising.complete();
+      expect(await stale.timeout(const Duration(seconds: 5)), '');
+
+      clock.advance(const Duration(seconds: 3));
+      expect(
+        await pipeline.stopRecording().timeout(const Duration(seconds: 5)),
+        'call mum',
+      );
+    });
   });
 
   group('nothing was said', () {
@@ -390,8 +554,8 @@ void main() {
     test(
       'an extractor that throws hands over to the deterministic one',
       () async {
-        // ⚠️ The rule-based extractor is not a degraded mode: it is the only
-        // extractor a user who declines the 219 MB download will ever have.
+        // ⚠️ A crash in extraction must never cost the user what they just
+        // said: the fallback gets the same transcript.
         final FakeTaskExtractor fallback = FakeTaskExtractor(
           result: const <ExtractedTask>[ExtractedTask(title: 'Call mum')],
         );
@@ -473,24 +637,21 @@ void main() {
       },
     );
 
-    test(
-      'a model still downloading means the deterministic one runs',
-      () async {
-        final FakeTaskExtractor primary = FakeTaskExtractor(ready: false);
-        final FakeTaskExtractor fallback = FakeTaskExtractor(
-          result: const <ExtractedTask>[ExtractedTask(title: 'Call mum')],
-        );
-        final VoiceCapturePipeline pipeline = pipelineOver(
-          primary: primary,
-          fallback: fallback,
-        );
+    test('a primary that is not ready hands over to the fallback', () async {
+      final FakeTaskExtractor primary = FakeTaskExtractor(ready: false);
+      final FakeTaskExtractor fallback = FakeTaskExtractor(
+        result: const <ExtractedTask>[ExtractedTask(title: 'Call mum')],
+      );
+      final VoiceCapturePipeline pipeline = pipelineOver(
+        primary: primary,
+        fallback: fallback,
+      );
 
-        await pipeline.extract('call mum');
+      await pipeline.extract('call mum');
 
-        expect(primary.lastTranscript, isNull);
-        expect(fallback.lastTranscript, 'call mum');
-      },
-    );
+      expect(primary.lastTranscript, isNull);
+      expect(fallback.lastTranscript, 'call mum');
+    });
 
     test(
       'both extractors failing still leaves the user their own words',

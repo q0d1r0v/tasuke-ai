@@ -14,45 +14,70 @@ import 'package:tasuke_ai/app/theme/tasuke_spacing.dart';
 import 'package:tasuke_ai/app/theme/tasuke_typography.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
 import 'package:tasuke_ai/core/clock/clock_provider.dart';
+import 'package:tasuke_ai/core/logging/log.dart';
+import 'package:tasuke_ai/core/permissions/notification_permission.dart';
+import 'package:tasuke_ai/core/permissions/permission_providers.dart';
+import 'package:tasuke_ai/core/storage/prefs.dart';
 import 'package:tasuke_ai/core/time/local_date.dart';
+import 'package:tasuke_ai/core/time/local_date_time.dart';
 import 'package:tasuke_ai/core/time/local_time_of_day.dart';
 import 'package:tasuke_ai/features/home/presentation/date_labels.dart';
 import 'package:tasuke_ai/features/reminders/data/reminder_providers.dart';
+import 'package:tasuke_ai/features/reminders/domain/reminder_scheduler.dart';
 import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
+import 'package:tasuke_ai/features/settings/domain/app_settings.dart';
+import 'package:tasuke_ai/features/tasks/data/task_mapper.dart';
 import 'package:tasuke_ai/features/tasks/data/task_providers.dart';
 import 'package:tasuke_ai/features/tasks/domain/task.dart';
+import 'package:tasuke_ai/features/tasks/domain/task_repository.dart';
 
 final StreamProviderFamily<Task?, String> taskByIdProvider =
     StreamProvider.family<Task?, String>((Ref ref, String id) {
       return ref.watch(taskRepositoryProvider).watchById(id);
     });
 
-class TaskDetailScreen extends ConsumerWidget {
+class TaskDetailScreen extends ConsumerStatefulWidget {
   const TaskDetailScreen({required this.taskId, super.key});
 
   final String taskId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TaskDetailScreen> createState() => _TaskDetailScreenState();
+}
+
+class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
+  /// The last task the stream delivered, for the frames after a delete.
+  Task? _last;
+
+  @override
+  Widget build(BuildContext context) {
     return TasukeScaffold(
       title: context.l10n.taskDetailTitle,
       showBack: true,
       scrollable: false,
       child: AsyncValueView<Task?>(
-        value: ref.watch(taskByIdProvider(taskId)),
+        value: ref.watch(taskByIdProvider(widget.taskId)),
         data: (Task? task) {
-          if (task == null) {
-            // Reachable from a notification whose task was deleted while the
-            // process was dead. Not an error — just gone.
-            return EmptyState(
-              title: context.l10n.taskDeleted,
-              message: context.l10n.errorGenericBody,
-              actionLabel: context.l10n.actionGotIt,
-              onAction: () => context.go('/home'),
-              icon: Icons.task_alt_rounded,
-            );
+          if (task != null) {
+            _last = task;
+            return _Body(task: task);
           }
-          return _Body(task: task);
+          // ⚠️ Deleted from this screen: the stream's null lands while the
+          // route is still sliding out, and the empty state below flashed
+          // "Please try again." on every delete. A leaving route ignores
+          // pointers, so the old page is safe to keep on screen.
+          final Task? last = _last;
+          final bool leaving = !(ModalRoute.of(context)?.isCurrent ?? true);
+          if (leaving && last != null) return _Body(task: last);
+          // Reachable from a notification whose task was deleted while the
+          // process was dead. Not an error — just gone.
+          return EmptyState(
+            title: context.l10n.taskDeleted,
+            message: context.l10n.errorGenericBody,
+            actionLabel: context.l10n.actionGotIt,
+            onAction: () => context.go('/home'),
+            icon: Icons.task_alt_rounded,
+          );
         },
       ),
     );
@@ -74,28 +99,107 @@ class _BodyState extends ConsumerState<_Body> {
   );
   Timer? _debounce;
 
+  // ⚠️ Held, not re-read. The title is also saved from dispose() and after
+  // awaits, where `ref` throws once the page is unmounted. All three are
+  // keep-alive providers that outlive this page.
+  late final TaskRepository _tasks;
+  late final SettingsRepository _settings;
+  late final ReminderScheduler _scheduler;
+
+  @override
+  void initState() {
+    super.initState();
+    _tasks = ref.read(taskRepositoryProvider);
+    _settings = ref.read(settingsRepositoryProvider);
+    _scheduler = ref.read(reminderSchedulerProvider);
+  }
+
   @override
   void dispose() {
-    _debounce?.cancel();
+    // ⚠️ Leaving is how a title edit is finished, and a cancelled debounce
+    // used to drop whatever was typed in its last 400 ms.
+    if (_debounce?.isActive ?? false) {
+      _debounce!.cancel();
+      unawaited(
+        _saveTitle(_title.text).catchError((Object error, StackTrace stack) {
+          Log.e('saving the title on exit failed', error, stack);
+        }),
+      );
+    }
     _title.dispose();
     super.dispose();
   }
 
-  Future<void> _persist(Task next) async {
-    await ref.read(taskRepositoryProvider).update(next);
+  /// Writes [next], keeping the reminder in step with the due time.
+  ///
+  /// ⚠️ `reminder.at` is DERIVED from `due`, and it is recomputed here on
+  /// every date, time and reminder edit rather than by each call site. The
+  /// date and time pickers used to write `due` alone, so editing a task's time
+  /// left its alarm at the old one: a user who moved a call to 6:11 PM had a
+  /// reminder still pointed at 5:29 PM — already past, so the scheduler
+  /// skipped it, and nothing rang at either time. The scheduler fires on
+  /// `reminder.at`, never on `due`.
+  ///
+  /// ⚠️ A title-only edit leaves `reminder.at` as stored. An all-day reminder
+  /// for today moves to the first quarter hour at least five minutes ahead
+  /// once its minute has passed (see [TaskMapper.resolveReminderAt]);
+  /// re-deriving it on a later title edit
+  /// would move it again and re-arm an alarm that has already rung.
+  ///
+  /// [askForNotifications] is set by the edits that make a reminder matter —
+  /// the switch, the date, the time — and deliberately NOT by a title edit, so
+  /// the OS permission dialog can never pop up while the user is typing.
+  Future<void> _persist(Task next, {bool askForNotifications = false}) async {
+    final TaskDue? due = next.due;
+    Task synced = next;
+    if (due != null && (askForNotifications || due != widget.task.due)) {
+      final LocalDateTime now = LocalDateTime.fromLocal(
+        ref.read(clockProvider).nowLocal(),
+      );
+      final int allDayMinute = (await _settings.read()).allDayReminderMinute;
+      synced = next.copyWith(
+        reminder: next.reminder.copyWith(
+          at: TaskMapper.resolveReminderAt(
+            due,
+            allDayReminderMinute: allDayMinute,
+            now: now,
+          ),
+        ),
+      );
+    }
+
+    await _tasks.update(synced);
+
+    if (askForNotifications && synced.reminder.enabled && mounted) {
+      try {
+        await ensureReminderPermissions(
+          ref.read(permissionServiceProvider),
+          alreadyPrompted: () => ref.read(exactAlarmPromptedProvider),
+          markPrompted: ref.read(exactAlarmPromptedProvider.notifier).complete,
+        );
+      } on Object catch (error, stack) {
+        Log.e('asking for the notification permission failed', error, stack);
+      }
+    }
+
     // Any change to a date, a time or the reminder switch changes what the OS
     // should be holding, so the sweep runs on every write rather than each call
     // site remembering to.
-    unawaited(ref.read(reminderSchedulerProvider).sync());
+    unawaited(_scheduler.sync());
+  }
+
+  Future<void> _saveTitle(String value) async {
+    final String normalised = TaskTitle.normalise(value);
+    if (normalised.isEmpty || normalised == widget.task.title) return;
+    await _persist(widget.task.copyWith(title: normalised));
   }
 
   void _onTitleChanged(String value) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () {
-      final String normalised = TaskTitle.normalise(value);
-      if (normalised.isEmpty || normalised == widget.task.title) return;
-      unawaited(_persist(widget.task.copyWith(title: normalised)));
-    });
+    _debounce = Timer(
+      const Duration(milliseconds: 400),
+      () => unawaited(_saveTitle(value)),
+    );
   }
 
   Future<void> _pickDate() async {
@@ -113,6 +217,7 @@ class _BodyState extends ConsumerState<_Body> {
         due: TaskDue(date: date, time: widget.task.due?.time),
         updatedAt: ref.read(clockProvider).nowUtc(),
       ),
+      askForNotifications: true,
     );
   }
 
@@ -133,6 +238,7 @@ class _BodyState extends ConsumerState<_Body> {
         ),
         updatedAt: ref.read(clockProvider).nowUtc(),
       ),
+      askForNotifications: true,
     );
   }
 
@@ -195,20 +301,13 @@ class _BodyState extends ConsumerState<_Body> {
                 semanticLabel: context.l10n.taskFieldReminder,
                 onChanged: task.due == null
                     ? null
-                    : (bool value) async {
-                        final int allDayMinute =
-                            (await ref.read(settingsRepositoryProvider).read())
-                                .allDayReminderMinute;
-                        await _persist(
-                          task.copyWith(
-                            reminder: task.reminder.copyWith(
-                              enabled: value,
-                              at: task.due!.resolve(allDayMinute: allDayMinute),
-                            ),
-                            updatedAt: ref.read(clockProvider).nowUtc(),
-                          ),
-                        );
-                      },
+                    : (bool value) => _persist(
+                        task.copyWith(
+                          reminder: task.reminder.copyWith(enabled: value),
+                          updatedAt: ref.read(clockProvider).nowUtc(),
+                        ),
+                        askForNotifications: true,
+                      ),
               ),
             ),
           ],
@@ -216,11 +315,14 @@ class _BodyState extends ConsumerState<_Body> {
         const SizedBox(height: TasukeSpacing.xl),
         TasukeCard(
           onTap: () async {
+            final bool nowCompleted = !task.completed;
             await ref
                 .read(taskRepositoryProvider)
-                .setCompleted(task.id, completed: !task.completed);
+                .setCompleted(task.id, completed: nowCompleted);
             unawaited(ref.read(reminderSchedulerProvider).sync());
-            if (!context.mounted) return;
+            // Reopening says nothing: the label flipping back is the feedback,
+            // and "Task completed" there said the opposite of what happened.
+            if (!context.mounted || !nowCompleted) return;
             AppSnack.success(context, context.l10n.taskCompleted);
           },
           child: Row(

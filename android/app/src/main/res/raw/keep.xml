@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ⚠️ Resources the release resource shrinker must not delete.
+
+     `isShrinkResources = true` removes every resource it cannot find a
+     reference to in the manifest, in other resources or in Java/Kotlin code.
+     A name passed from Dart through a platform channel is none of those.
+
+     @drawable/ic_notification is that case: flutter_local_notifications looks
+     it up by name when a reminder fires. When it was missing, the plugin's
+     receiver crashed with a NullPointerException in setSmallIcon at the exact
+     minute of every reminder — debug builds (which do not shrink) worked, the
+     release build on the phone never showed a single notification. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification"/>

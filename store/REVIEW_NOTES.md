@@ -21,23 +21,24 @@ build is bounced for missing demo credentials.
 
 ---
 
-## One network request, for the whole life of the app
+## Nothing to download, and no server of our own
 
-On first launch the app downloads its language model
-(`LFM2-350M-Extract-Q4_K_M.gguf`, ~219 MB) from `huggingface.co`. That is the
-**only** outbound request Tasuke AI ever makes:
+The speech model (whisper.cpp, `ggml-base.en-q5_1`) is **bundled in the
+binary**, and tasks are extracted from the transcript by deterministic,
+on-device rules. There is no download on first launch, and voice capture works
+from the start.
 
 - no analytics, no crash reporter, no ads, no attribution SDK, no remote config
 - no API, because there is no server
 - speech and text never leave the device
 
-The app is **fully usable while the download runs** — you can create, edit,
-schedule and complete tasks by typing. Only the voice pipeline waits for the
-model. If the download fails or you decline it, the app keeps working and
-Settings offers "Download AI model" again.
+The only network traffic is the subscription itself: plans, purchases and
+restores go through Apple's or Google's own billing. Links such as "Manage
+subscription" open in the browser or the store app.
 
-If your test device is offline, the app still launches and every non-voice
-feature works.
+If your test device is offline, the app still launches, and voice capture,
+tasks and reminders all work. Only the paywall's plans, buying and restoring
+need a connection.
 
 ---
 
@@ -68,8 +69,7 @@ the app degrades to an inexact reminder and says so.
 
 ## Test script — please run this one
 
-1. Launch the app. Accept the microphone prompt. If the model download prompt
-   appears, tap **Download now** and wait for it to finish (Wi-Fi recommended).
+1. Launch the app. Accept the microphone prompt.
 2. Tap the large microphone button in the centre of the bottom bar.
 3. Say, in one breath:
 
@@ -87,20 +87,21 @@ the app degrades to an inexact reminder and says so.
 5. Tap **Save**. Both tasks appear on Home, grouped under their dates.
 6. Open the first task → a reminder is scheduled for tomorrow at 3:00 PM.
 
-Everything in steps 2–6 happens with the device in **Airplane Mode**, and we
-encourage you to try it that way once the model is downloaded.
+Everything in steps 2–6 works with the device in **Airplane Mode**, and we
+encourage you to try it that way.
 
 ---
 
 ## Free tier and the paywall
 
-- **Free, with no time limit:** 5 voice captures per day, unlimited manual
-  tasks, unlimited reminders, unlimited history, every settings screen.
+- **Free, with no time limit:** 1 capture per day, spoken or typed (a voice
+  note or a task added by hand), unlimited reminders, unlimited history, every
+  settings screen.
 - The counter resets at local midnight. Only a *successful* capture counts — a
   capture that hit silence or failed to transcribe does not consume quota.
-- After the fifth capture in a day, tapping the microphone shows the paywall
-  with "You've used 5 of 5 voice captures today." Dismissing it returns to the
-  app, which continues to work; only voice capture is gated.
+- After the first capture in a day, tapping the microphone shows the paywall
+  with "You've used today's free capture." Dismissing it returns to the app,
+  which continues to work; only adding new tasks is gated.
 - **Tasuke Pro** removes the daily limit: `tasuke_pro_monthly` ($4.99/month) and
   `tasuke_pro_yearly` ($39.99/year), one subscription group, auto-renewing, no
   introductory offer. Prices shown in-app are always the store's own localised
@@ -109,8 +110,8 @@ encourage you to try it that way once the model is downloaded.
 - Terms of Use and Privacy Policy are linked from the paywall and are also
   bundled **inside the app** (`assets/legal/`), so they open with no network.
 
-To reach the paywall immediately without using five captures: **Settings →
-Tasuke Pro**.
+To reach the paywall without using the day's capture: **Settings →
+Subscription**.
 
 ---
 
@@ -119,12 +120,11 @@ Tasuke Pro**.
 No location, no photos, no contacts, no calendar, no health data, no tracking,
 no IDFA, no third-party SDKs beyond the open-source Flutter packages listed in
 `pubspec.yaml`. `PrivacyInfo.xcprivacy` declares exactly three required-reason
-APIs: UserDefaults (CA92.1), file timestamps inside our own container (3B52.1)
-and free disk space before the model download (E174.1).
+APIs: UserDefaults (CA92.1), file size and timestamps inside our own container
+(C617.1), and disk space for writing files (E174.1).
 
 ## Contact
 
-<!-- TODO(human): replace with the real support address before the first upload.
-     It must match the address on the App Store Connect listing and in
+<!-- Must match the address on the App Store Connect listing and in
      store/privacy-policy.html. -->
-support@tasuke.app
+info@digital-group.uz

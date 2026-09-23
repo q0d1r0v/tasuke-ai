@@ -1,0 +1,347 @@
+{
+ "_about": "Labelled development set for task extraction. Reference moment: Monday 2026-09-21 10:00 local. '*' means any value is accepted (the note is ambiguous about it). Scored by test/helpers/extraction_scoring.dart.",
+ "now": "2026-09-21T10:00",
+ "cases": [
+  {
+   "note": "I have some tasks. Today I go travel to mountains and we are jumping.",
+   "tasks": [
+    {
+     "title": "Travel to the mountains",
+     "date": "2026-09-21",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "I have some tasks for today.",
+   "tasks": []
+  },
+  {
+   "note": "Call Anna at 7:40 pm.",
+   "tasks": [
+    {
+     "title": "Call Anna",
+     "date": "2026-09-21",
+     "time": "19:40"
+    }
+   ]
+  },
+  {
+   "note": "Remind me to buy bread and milk tomorrow morning.",
+   "tasks": [
+    {
+     "title": "Buy bread and milk",
+     "date": "2026-09-22",
+     "time": "09:00"
+    }
+   ]
+  },
+  {
+   "note": "I need to call my mom tonight and also pay the electricity bill.",
+   "tasks": [
+    {
+     "title": "Call my mom",
+     "date": "2026-09-21",
+     "time": "20:00"
+    },
+    {
+     "title": "Pay the electricity bill",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "So, um, tomorrow I have a meeting with Sardor at 10 and after that I should send him the report.",
+   "tasks": [
+    {
+     "title": "Meeting with Sardor",
+     "date": "2026-09-22",
+     "time": "10:00"
+    },
+    {
+     "title": "Send him the report",
+     "date": "*",
+     "time": "*"
+    }
+   ]
+  },
+  {
+   "note": "Go to the gym at six.",
+   "tasks": [
+    {
+     "title": "Go to the gym",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Next Monday doctor appointment at 9:30 am.",
+   "tasks": [
+    {
+     "title": "Doctor appointment",
+     "date": "2026-09-28",
+     "time": "09:30"
+    }
+   ]
+  },
+  {
+   "note": "Pick up the kids from school at 4 pm and then cook dinner.",
+   "tasks": [
+    {
+     "title": "Pick up the kids from school",
+     "date": "2026-09-21",
+     "time": "16:00"
+    },
+    {
+     "title": "Cook dinner",
+     "date": "*",
+     "time": "*"
+    }
+   ]
+  },
+  {
+   "note": "Don't forget to renew my passport next week.",
+   "tasks": [
+    {
+     "title": "Renew my passport",
+     "date": "2026-09-28",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Hello, how are you?",
+   "tasks": []
+  },
+  {
+   "note": "Buy a gift for my wife's birthday on Saturday, book a table at the restaurant, and call the florist.",
+   "tasks": [
+    {
+     "title": "Buy a gift for my wife's birthday",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Book a table at the restaurant",
+     "date": "*",
+     "time": "*"
+    },
+    {
+     "title": "Call the florist",
+     "date": "*",
+     "time": "*"
+    }
+   ]
+  },
+  {
+   "note": "At 5.30 pm I need to pick up my laptop from the repair shop.",
+   "tasks": [
+    {
+     "title": "Pick up my laptop from the repair shop",
+     "date": "2026-09-21",
+     "time": "17:30"
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow I will fly to Istanbul, so pack the bags tonight.",
+   "tasks": [
+    {
+     "title": "Fly to Istanbul",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Pack the bags",
+     "date": "2026-09-21",
+     "time": "20:00"
+    }
+   ]
+  },
+  {
+   "note": "Send the invoice to the client by Friday and remind me on Thursday evening.",
+   "tasks": [
+    {
+     "title": "Send the invoice to the client",
+     "date": "*",
+     "time": "*"
+    }
+   ]
+  },
+  {
+   "note": "Clean the house.",
+   "tasks": [
+    {
+     "title": "Clean the house",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Meeting at 2 pm with the design team about the new app.",
+   "tasks": [
+    {
+     "title": "Meeting with the design team about the new app",
+     "date": "2026-09-21",
+     "time": "14:00"
+    }
+   ]
+  },
+  {
+   "note": "I want to learn English every day at 8 am.",
+   "tasks": [
+    {
+     "title": "Learn English",
+     "date": "2026-09-22",
+     "time": "08:00"
+    }
+   ]
+  },
+  {
+   "note": "Check my email, reply to Aziz, and schedule the call with investors for Wednesday at 11.",
+   "tasks": [
+    {
+     "title": "Check my email",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Reply to Aziz",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Schedule the call with investors",
+     "date": "2026-09-23",
+     "time": "11:00"
+    }
+   ]
+  },
+  {
+   "note": "Okay, so first I need to finish the presentation, second I need to print it, and third bring it to the office tomorrow.",
+   "tasks": [
+    {
+     "title": "Finish the presentation",
+     "date": "*",
+     "time": "*"
+    },
+    {
+     "title": "Print the presentation",
+     "date": "*",
+     "time": "*"
+    },
+    {
+     "title": "Bring it to the office",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Water the plants.",
+   "tasks": [
+    {
+     "title": "Water the plants",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Remind me in two hours to take my medicine.",
+   "tasks": [
+    {
+     "title": "Take my medicine",
+     "date": "2026-09-21",
+     "time": "12:00"
+    }
+   ]
+  },
+  {
+   "note": "I go to the market tomorrow and buy vegetables and fruits.",
+   "tasks": [
+    {
+     "title": "Go to the market and buy vegetables and fruits",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Today evening I must call to my brother.",
+   "tasks": [
+    {
+     "title": "Call my brother",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Thank you.",
+   "tasks": []
+  },
+  {
+   "note": "Let's go.",
+   "tasks": []
+  },
+  {
+   "note": "Tomorrow morning at nine I have to go to the bank and open an account, then at twelve lunch with Dilnoza, and in the evening I have to prepare the documents for the visa application.",
+   "tasks": [
+    {
+     "title": "Go to the bank and open an account",
+     "date": "2026-09-22",
+     "time": "09:00"
+    },
+    {
+     "title": "Lunch with Dilnoza",
+     "date": "2026-09-22",
+     "time": "12:00"
+    },
+    {
+     "title": "Prepare the documents for the visa application",
+     "date": "2026-09-22",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Pay rent on the first of October.",
+   "tasks": [
+    {
+     "title": "Pay rent",
+     "date": "2026-10-01",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Pay the internet bill, it's due on the 25th.",
+   "tasks": [
+    {
+     "title": "Pay the internet bill",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow at 10 am interview with Google, prepare my CV tonight.",
+   "tasks": [
+    {
+     "title": "Interview with Google",
+     "date": "2026-09-22",
+     "time": "10:00"
+    },
+    {
+     "title": "Prepare my CV",
+     "date": "2026-09-21",
+     "time": "20:00"
+    }
+   ]
+  }
+ ]
+}

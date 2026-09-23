@@ -10,8 +10,19 @@ import 'package:tasuke_ai/app/theme/tasuke_typography.dart';
 /// surface that outlives the screen that raised it, and `Log.redact` exists for
 /// the same reason.
 abstract final class AppSnack {
-  static void info(BuildContext context, String message) =>
-      _show(context, message, TasukeColors.ink, Icons.info_outline_rounded);
+  /// [action] is for the one case a snack needs a way forward, such as
+  /// "Open Settings" after the OS declined to show a permission prompt.
+  static void info(
+    BuildContext context,
+    String message, {
+    ({String label, VoidCallback onPressed})? action,
+  }) => _show(
+    context,
+    message,
+    TasukeColors.ink,
+    Icons.info_outline_rounded,
+    action: action,
+  );
 
   static void success(BuildContext context, String message) => _show(
     context,
@@ -27,8 +38,9 @@ abstract final class AppSnack {
     BuildContext context,
     String message,
     Color background,
-    IconData icon,
-  ) {
+    IconData icon, {
+    ({String label, VoidCallback onPressed})? action,
+  }) {
     ScaffoldMessenger.of(context)
       // Hidden first, not queued. Two saves in a row otherwise leave the second
       // confirmation waiting four seconds behind the first, long after the
@@ -38,6 +50,13 @@ abstract final class AppSnack {
         SnackBar(
           backgroundColor: background,
           margin: const EdgeInsets.all(TasukeSpacing.lg),
+          action: action == null
+              ? null
+              : SnackBarAction(
+                  label: action.label,
+                  textColor: TasukeColors.onPrimary,
+                  onPressed: action.onPressed,
+                ),
           content: Row(
             children: <Widget>[
               Icon(icon, color: TasukeColors.onPrimary, size: TasukeSpacing.xl),

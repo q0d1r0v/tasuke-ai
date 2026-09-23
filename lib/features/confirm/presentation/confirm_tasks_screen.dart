@@ -14,6 +14,7 @@ import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/features/confirm/presentation/draft_date_sheet.dart';
 import 'package:tasuke_ai/features/home/presentation/date_labels.dart';
 import 'package:tasuke_ai/features/pipeline/presentation/capture_controller.dart';
+import 'package:tasuke_ai/features/tasks/domain/task.dart';
 import 'package:tasuke_ai/features/tasks/domain/task_draft.dart';
 
 class ConfirmTasksScreen extends ConsumerWidget {
@@ -57,7 +58,14 @@ class ConfirmTasksScreen extends ConsumerWidget {
                   ),
                   children: <Widget>[
                     Text(
-                      context.l10n.confirmFoundTasks(state.drafts.length),
+                      // Typed by hand: nothing was "found", so saying so
+                      // reads like the app misheard a recording.
+                      state.drafts.isNotEmpty &&
+                              state.drafts.every(
+                                (TaskDraft d) => d.source == TaskSource.manual,
+                              )
+                          ? context.l10n.confirmManualTasks(state.drafts.length)
+                          : context.l10n.confirmFoundTasks(state.drafts.length),
                       style: TasukeTypography.bodyMd,
                     ),
                     if (state.truncatedAtLimit) ...<Widget>[
@@ -81,6 +89,11 @@ class ConfirmTasksScreen extends ConsumerWidget {
                     const SizedBox(height: TasukeSpacing.xl),
                     for (final TaskDraft draft in state.drafts) ...<Widget>[
                       EditableTaskCard(
+                        // ⚠️ Keyed, so a card's text field, caret and focus
+                        // move with its draft. Unkeyed, deleting the card above
+                        // a focused one handed that field the next draft, and
+                        // the user's typing went into a different task.
+                        key: ValueKey<String>(draft.draftId),
                         draft: draft,
                         dateLabelBuilder: (TaskDraft d) =>
                             _dateLabel(context, d, today),

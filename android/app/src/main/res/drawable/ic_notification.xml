@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The status-bar icon for task reminders: the logo's voice trace alone.
+
+     Android draws a small icon from its ALPHA channel only, so this is a white
+     stroke on nothing. The launcher icon is fully opaque and would render as a
+     plain white square.
+
+     The path is TasukeLogoPainter's, in the same 512 grid, re-centred into a
+     tighter viewport so the stroke reads at 24 dp instead of vanishing inside
+     the tile's margins.
+
+     ⚠️ Referenced only by NAME, from Dart (PluginNotificationHost.smallIcon),
+     which the release resource shrinker cannot see. res/raw/keep.xml is what
+     stops it being deleted from the APK. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="312"
+    android:viewportHeight="312">
+    <group
+        android:translateX="-101"
+        android:translateY="-71.5">
+        <path
+            android:pathData="M128,270 C145,270 157,252 169,230 L205,165 C218,142 249,144 260,168 L306,287 C314,307 339,311 352,294 L386,249"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="38"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000"/>
+    </group>
+</vector>

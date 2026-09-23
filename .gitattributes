@@ -1,0 +1,26 @@
+# Generated native build output that is (for now) tracked.
+#
+# ⚠️ 211 files and ~161 MB of CMake/Ninja cache under
+# packages/whisper_ggml/android/.cxx/ were committed before .gitignore covered
+# them. Until they are untracked with `git rm -r --cached`, every diff of this
+# branch measures ~244 MB, which is large enough that review tooling reports an
+# oversize or truncated context and refuses to vouch for what it read.
+#
+# `-diff` makes git emit "Binary files differ" for them instead of their
+# contents, so a diff of this branch is the size of the change rather than the
+# size of the cache. `linguist-generated` keeps them collapsed in review UIs.
+#
+# This bounds the noise; it does not remove it. The fix is still:
+#   git rm -r --cached packages/whisper_ggml/android/.cxx
+packages/*/android/.cxx/**   -diff linguist-generated
+packages/*/android/build/**  -diff linguist-generated
+packages/*/android/.gradle/** -diff linguist-generated
+
+# Binary assets: a textual diff of a PNG or a ggml model helps nobody.
+*.png  -diff
+*.jpg  -diff
+*.webp -diff
+*.ttf  -diff
+*.bin  -diff
+*.aab  -diff
+*.apk  -diff

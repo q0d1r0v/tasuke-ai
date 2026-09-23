@@ -114,6 +114,7 @@ abstract final class TaskMapper {
               at: resolveReminderAt(
                 due,
                 allDayReminderMinute: allDayReminderMinute,
+                now: LocalDateTime.fromLocal(nowUtc.toLocal()),
               ),
               notificationId: notificationId,
             )
@@ -135,11 +136,47 @@ abstract final class TaskMapper {
   /// task due at 00:15 fires at 23:45 the previous day; clamping the minute at
   /// zero instead — the obvious shortcut — would fire it at midnight, fifteen
   /// minutes late and on the wrong day.
+  ///
+  /// ⚠️ With [now], an ALL-DAY task due today whose all-day minute has already
+  /// passed fires at the first quarter hour at least [_minLeadMinutes] out
+  /// instead. "Remind me to buy milk today" said at 14:00 would otherwise
+  /// resolve to 09:00, which the planner skips as past, and the reminder the
+  /// user asked for never rings. Timed and past-dated tasks are left alone:
+  /// their time is the user's own.
+  ///
+  /// ⚠️ Not simply the NEXT quarter hour. The time is fixed here, at save,
+  /// but only armed by the reminder sweep that runs after the save's
+  /// permission prompts; a first-time user on Android's "Alarms & reminders"
+  /// page is easily gone a minute. Saved at 14:14 with a 14:15 reminder, the
+  /// sweep came back to a time already past, filed it as in flight, and it
+  /// never rang. The lead gives the sweep room.
+  ///
+  /// Still capped at 23:59, so a task captured in the last few minutes of the
+  /// day gets less than the lead, and one captured at 23:59 itself resolves to
+  /// now and does not ring. Pushing it past midnight would ring it on a day
+  /// the task is no longer due, which is worse.
   static LocalDateTime resolveReminderAt(
     TaskDue due, {
     required int allDayReminderMinute,
     int leadMinutes = 0,
-  }) => due
-      .resolve(allDayMinute: allDayReminderMinute)
-      .subtractMinutes(leadMinutes);
+    LocalDateTime? now,
+  }) {
+    final LocalDateTime at = due
+        .resolve(allDayMinute: allDayReminderMinute)
+        .subtractMinutes(leadMinutes);
+    if (now == null || !due.isAllDay || due.date != now.date) return at;
+    if (at.isAfter(now)) return at;
+    // ceil((now + lead) / 15) * 15. Capped at 23:59 so it still rings on the
+    // day the task is due, never at midnight on the next.
+    final int next = (now.time.minuteOfDay + _minLeadMinutes + 14) ~/ 15 * 15;
+    return LocalDateTime(
+      now.date,
+      LocalTimeOfDay(next < _minutesPerDay ? next : _minutesPerDay - 1),
+    );
+  }
+
+  static const int _minutesPerDay = 24 * 60;
+
+  /// How far ahead a moved-forward all-day reminder lands, at the least.
+  static const int _minLeadMinutes = 5;
 }

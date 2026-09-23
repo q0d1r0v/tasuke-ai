@@ -23,9 +23,7 @@ void main() {
   });
 
   test('NSPrivacyTrackingDomains is empty', () {
-    // huggingface.co is deliberately NOT listed: a tracking domain is blocked
-    // when "Allow Apps to Request to Track" is off, which would break the model
-    // download — i.e. first launch — for a large share of users.
+    // The app contacts no domain at all, for tracking or otherwise.
     final String? value = plistValue(manifest, 'NSPrivacyTrackingDomains');
     expect(value, isNotNull);
     expect(value!.contains('<string>'), isFalse);
@@ -57,15 +55,16 @@ void main() {
     test('declares exactly the three reason codes, and no others', () {
       // Each code is the narrowest one that is true:
       //   CA92.1 — UserDefaults, this app only (no app group).
-      //   3B52.1 — file timestamps inside our own container.
-      //   E174.1 — free space GATES the model download; 85F4.1 would mean we
+      //   C617.1 — file size/timestamps inside our own container. ⚠️ Not
+      //            3B52.1, which means user-picked files (a document picker).
+      //   E174.1 — free space for writing files; 85F4.1 would mean we
       //            display the number to the user, which we do not.
       final List<String> reasons = RegExp(r'<string>([0-9A-Z]{4}\.\d)</string>')
           .allMatches(manifest)
           .map((RegExpMatch m) => m.group(1)!)
           .toList();
 
-      expect(reasons, <String>['CA92.1', '3B52.1', 'E174.1']);
+      expect(reasons, <String>['CA92.1', 'C617.1', 'E174.1']);
     });
   });
 

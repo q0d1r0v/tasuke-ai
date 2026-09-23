@@ -47,8 +47,8 @@ void main() {
         ),
         fallbackTaskExtractorProvider.overrideWithValue(FakeTaskExtractor()),
         taskRepositoryProvider.overrideWithValue(tasks),
-        settingsRepositoryProvider.overrideWithValue(settings),
         usageRepositoryProvider.overrideWithValue(usage),
+        settingsRepositoryProvider.overrideWithValue(settings),
       ],
     );
     addTearDown(() {

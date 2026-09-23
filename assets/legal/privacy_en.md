@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Tasuke AI** — last updated 21 September 2026
+**Tasuke AI** — last updated 23 September 2026
 
 ## The short version
 
@@ -44,18 +44,20 @@ no background audio capability and cannot listen when it is not in front of you.
 If you refuse microphone access, the rest of the app works normally; you type
 your tasks instead.
 
-## The one network request
+## Network use
 
-Tasuke AI makes exactly one outbound request in its entire life: on first
-launch it downloads its language model file (about 219 MB) from
-`huggingface.co`.
+Tasuke AI downloads nothing when you first open it. The speech model is built
+into the app, and turning what you said into tasks happens on your device too.
 
-That request carries no personal data. It is an ordinary file download, the same
-as any other; Hugging Face will see the request in their own server logs, as any
-website would, under their own privacy policy.
+The app never sends your voice, your transcripts or your tasks anywhere. Only
+two things in it use the network. Viewing the Tasuke Pro plans, buying and
+restoring go through Apple's App Store or Google Play (see Subscriptions
+below). And a few links, such as Manage subscription, open in your browser or
+the store app; the sites they open see the visit as any website would, under
+their own privacy policies.
 
-After the download finishes, Tasuke AI never contacts the network again. You can
-switch off mobile data and Wi-Fi permanently and every feature still works.
+Voice capture, tasks and reminders all work with mobile data and Wi-Fi switched
+off, from the first launch.
 
 ## Backups
 
@@ -97,9 +99,9 @@ it at any moment from Settings, or by uninstalling the app.
 
 ## Third-party code
 
-Tasuke AI is built on open-source components — Flutter, whisper.cpp, llama.cpp,
-SQLite and the packages listed in the project's `pubspec.yaml`. All of them run
-locally on your device. None of them is an advertising, analytics or attribution
+Tasuke AI is built on open-source components — Flutter, whisper.cpp, SQLite and
+the packages listed in the project's `pubspec.yaml`. All of them run locally on
+your device. None of them is an advertising, analytics or attribution
 SDK, and none of them sends data anywhere.
 
 ## Changes to this policy
@@ -111,4 +113,4 @@ already installed.
 
 ## Contact
 
-support@tasuke.app
+info@digital-group.uz

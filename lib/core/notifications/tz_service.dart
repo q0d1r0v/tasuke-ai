@@ -31,6 +31,9 @@ final class TzService {
   String _zoneName = 'UTC';
   bool _databaseReady = false;
 
+  /// Whether a device zone has been read successfully yet.
+  bool _resolved = false;
+
   String get zoneName => _zoneName;
 
   /// Emits the new zone name whenever [refresh] finds a different one.
@@ -38,6 +41,12 @@ final class TzService {
   /// A user who flies from Tashkent to Tokyo has every pending reminder off by
   /// four hours until something reschedules them; the rescheduler listens here
   /// and the app-resume provider is what makes it fire.
+  ///
+  /// ⚠️ The first successful read is not a change, so it does not emit. It
+  /// used to: the placeholder UTC "changed" to the device zone on every cold
+  /// start, and the zone listener ran a second full sweep on top of the
+  /// bootstrap's, while the splash was up. Every caller of [refresh] after
+  /// startup re-syncs on its own.
   Stream<String> get zoneChanges => _changes.stream;
 
   /// Loads the tz database and reads the device zone. Idempotent.
@@ -69,7 +78,11 @@ final class TzService {
       );
       return false;
     }
-    if (name.isEmpty || name == _zoneName) return false;
+    if (name.isEmpty) return false;
+    if (name == _zoneName) {
+      _resolved = true;
+      return false;
+    }
 
     final tz.Location? location = _locationOrNull(name);
     if (location == null) {
@@ -80,9 +93,11 @@ final class TzService {
       return false;
     }
 
+    final bool isChange = _resolved;
     _zoneName = name;
+    _resolved = true;
     tz.setLocalLocation(location);
-    if (!_changes.isClosed) _changes.add(name);
+    if (isChange && !_changes.isClosed) _changes.add(name);
     Log.d('timezone is now $name');
     return true;
   }

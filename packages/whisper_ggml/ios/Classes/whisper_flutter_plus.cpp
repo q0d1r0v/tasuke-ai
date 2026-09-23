@@ -1,5 +1,28 @@
 #include "whisper/include/whisper.h"
 
+// ⚠️ Kept in step with android/src/whisper/main.h by
+// `test/app/platform/whisper_ffi_parity_test.dart`.
+//
+// Today's iOS build does not need it: the pod links as a dynamic
+// `whisper_ggml.framework` (ios/Podfile uses a bare `use_frameworks!`, the
+// podspec sets no `static_framework`), nothing in the Xcode configuration
+// turns on `-fvisibility=hidden`, and `-dead_strip` treats a dylib's exported
+// globals as roots. So these symbols are already reachable from
+// `DynamicLibrary.process()`.
+//
+// It is here anyway because every one of those three facts is a setting
+// somebody can flip — `:linkage => :static` in the Podfile is one line — and
+// the failure mode is not a build error. It is a release IPA in which every
+// `lookupFunction` throws at runtime, on a platform this repo cannot compile,
+// let alone test.
+#if defined(__GNUC__)
+#define FUNCTION_ATTRIBUTE __attribute__((visibility("default"))) __attribute__((used))
+#elif defined(_MSC_VER)
+#define FUNCTION_ATTRIBUTE __declspec(dllexport)
+#else
+#define FUNCTION_ATTRIBUTE
+#endif
+
 #define DR_WAV_IMPLEMENTATION
 #include "whisper/examples/dr_wav.h"
 
@@ -497,6 +520,7 @@ json transcribe(json jsonBody)
 
 extern "C"
 {
+    FUNCTION_ATTRIBUTE
     char *request(char *body)
     {
         json jsonBody = json::parse(body);
@@ -544,21 +568,29 @@ extern "C"
 //   stream_feed(pcm, n)         -> appends 16 kHz mono float samples; re-runs
 //                                  inference when >= ~1.5 s of new audio has
 //                                  accumulated and returns the partial text
+//   stream_append(pcm, n)       -> stream_feed without the inference, for the
+//                                  tail Stop hands over
 //   stream_stop()               -> final text; frees the context, or parks it
 //                                  in g_model_cache when the session was
 //                                  started with keep_model_loaded or borrowed
 //                                  a parked context (issue #26)
+//   stream_abort()              -> stream_stop without the final pass, for a
+//                                  cancel
 //
 // Partials re-decode the whole current window with no_context = true, so a
 // wrong early partial does not condition later ones. When the window grows
 // past ~25 s its text is committed and the buffer restarts, keeping memory
-// and inference time bounded (a word straddling the commit boundary may be
-// clipped — acceptable for a draft).
+// and inference time bounded.
+// ⚠️ Committed text is final text: stream_stop returns committed + last_text.
+// The commit happens in whichever pass crosses 25 s, in practice a preview,
+// wherever the audio ends — so a word straddling the cut can be lost from the
+// transcript of a note longer than ~25 s. Known and not yet fixed.
 //
-// An RMS energy gate tracks the last voiced sample: inference only runs
-// when new voiced audio has arrived, and the decoded window is trimmed
-// shortly after the last voiced sample. Without this, whisper hallucinates
-// over trailing silence (repeating earlier text or inventing phrases).
+// An RMS energy gate, evaluated per ~100 ms frame, tracks the last voiced
+// sample: inference only runs when new voiced audio has arrived, and the
+// decoded window is trimmed shortly after the last voiced sample. Without
+// this, whisper hallucinates over trailing silence (repeating earlier text or
+// inventing phrases).
 // ---------------------------------------------------------------------------
 
 struct whisper_stream_state
@@ -579,6 +611,9 @@ struct whisper_stream_state
     int n_threads = 4;
     bool translate = false;
     bool suppress_nst = false;
+    // false: `prompt` primes only the passes whose text is final (see
+    // stream_run_inference), not the previews.
+    bool prompt_on_previews = true;
     // Park ctx into g_model_cache when the session ends: set when the
     // session asked for keep_model_loaded or borrowed a parked context.
     bool park_on_stop = false;
@@ -621,7 +656,10 @@ static const size_t STREAM_COMMIT_SAMPLES = (size_t)(25.0 * WHISPER_SAMPLE_RATE)
 static const size_t STREAM_VOICE_PAD      = (size_t)(0.2 * WHISPER_SAMPLE_RATE);
 
 // Runs whisper_full over the current window. Caller must hold g_stream.mutex.
-static json stream_run_inference()
+//
+// [final] is true for the pass `stream_stop` runs — the one whose text becomes
+// the user's tasks — and false for every live preview while they are talking.
+static json stream_run_inference(bool final)
 {
     json result;
     result["@type"] = "streamPartial";
@@ -634,10 +672,32 @@ static json stream_run_inference()
     wparams.language         = g_stream.language.c_str();
     wparams.n_threads        = g_stream.n_threads;
     wparams.no_context       = true;
+
+    // ⚠️ No temperature fallback, one candidate, no timestamps.
+    //
+    // whisper.cpp's defaults are built for offline transcription of long,
+    // clean files: when a decode looks uncertain (low average logprob, high
+    // compression ratio) it RETRIES at temperature 0.2, 0.4, 0.6, 0.8 and 1.0,
+    // and each retry samples `best_of = 5` candidates. On exactly the audio a
+    // phone produces — room noise, a quiet voice, a clip that trails off —
+    // "uncertain" is the norm, so one pass became as many as ~26 decoder runs.
+    // On a Dimensity 7200 that was over thirty seconds of "Transcribing your
+    // voice" for six seconds of speech.
+    //
+    // Greedy at temperature 0 is what whisper.cpp's own live-stream example
+    // uses. Timestamps are skipped because the segment text is all this binding
+    // ever reads, and emitting timestamp tokens only lengthens the decode.
+    //
+    // Re-measured on the host eval (705 clips, greedy vs the same pass with
+    // whisper's default fallback): fallback never fired, so it bought nothing,
+    // and forcing it through every temperature tripled the final pass. Beam
+    // search on the final pass alone was measured too: 5 beams +19% final-pass
+    // time for +2.5 points of exact tasks, 3 beams +10% for none. A prompt buys
+    // more for less (see below), so the final pass stays greedy as well.
+    wparams.temperature_inc  = 0.0f;
+    wparams.greedy.best_of   = 1;
+    wparams.no_timestamps    = true;
     wparams.suppress_nst = g_stream.suppress_nst;
-    if (!g_stream.prompt.empty()) {
-        wparams.initial_prompt = g_stream.prompt.c_str();
-    }
 
     // Trim trailing silence from the decode window; decoding it makes
     // whisper hallucinate (repeats or invented phrases).
@@ -646,6 +706,59 @@ static json stream_run_inference()
     if (n_decode < (size_t)WHISPER_SAMPLE_RATE / 2) {
         result["text"] = g_stream.committed + g_stream.last_text;
         return result;
+    }
+
+    // ⚠️ Bound a repetition loop. With one greedy candidate and no fallback,
+    // a decode that never emits end-of-text runs all n_text_ctx/2 - 4 = 220
+    // steps — seconds on a phone — and whisper.cpp still returns that text.
+    // 10 tokens per second of window is roughly twice the fastest English
+    // dictation, so real speech never reaches it; from ~19 s of window the
+    // cap is past 220 and changes nothing. English-only (base.en): a
+    // multilingual model needs a higher rate.
+    wparams.max_tokens = (int)(n_decode * 10 / WHISPER_SAMPLE_RATE) + 32;
+
+    // The prompt is decoded against the encoder output before the first
+    // token, which roughly doubles the decoder's share of a pass. On text that
+    // becomes tasks it is worth it; on a preview it is not — the final pass
+    // replaces that text, and the preview still running when Stop is pressed
+    // is part of the wait. So `prompt_on_previews = false` primes the final
+    // pass, and the pass that commits a 25-second window (its text is final
+    // too, see below), and nothing else.
+    const bool commits = n_decode >= STREAM_COMMIT_SAMPLES;
+    if (!g_stream.prompt.empty() &&
+        (final || commits || g_stream.prompt_on_previews)) {
+        wparams.initial_prompt = g_stream.prompt.c_str();
+    }
+
+    // ⚠️ Size the encoder to the audio. This is the whole speed story.
+    //
+    // whisper encodes a fixed 30-second window — 1500 encoder frames — no
+    // matter how much audio it is given, and the encoder is most of the cost
+    // of a pass. Live transcription runs a pass every ~1.5 s of new speech,
+    // each over the entire window from the start, so a 7-second note paid for
+    // five or six full 30-second encodes before Stop could even begin its own.
+    // On a mid-range phone that was "Finishing up..." for tens of seconds.
+    //
+    // `audio_ctx` caps the encoder at the audio actually present: 50 frames per
+    // second of 16 kHz input (320 samples each), plus ~1.3 s of margin so the
+    // last word is never clipped, and a floor below which quality drops off.
+    // A 7 s clip encodes ~414 frames instead of 1500.
+    //
+    // ⚠️ PREVIEWS ONLY. Measured on the whisper.cpp JFK clip: a sized encoder
+    // halves the time of a pass (3.7 s -> 1.8 s for 11 s of audio) but costs
+    // accuracy — "ask not" came back as "asked not", with a hallucinated
+    // "[BLANK_AUDIO]" on the end. That is fine for a preview the user watches
+    // scroll past and wrong for the text that becomes their tasks, so the
+    // final pass keeps the full 30-second context. The speed still lands where
+    // it matters: the preview that is in flight when Stop is pressed now takes
+    // half as long, and that is most of what the user waited for.
+    if (!final) {
+        const int kSamplesPerFrame = WHISPER_SAMPLE_RATE / 50;  // 320
+        const int kMarginFrames    = 64;
+        const int kMinFrames       = 128;
+        const int kMaxFrames       = 1500;                      // 30 s
+        const int frames = (int)(n_decode / kSamplesPerFrame) + kMarginFrames;
+        wparams.audio_ctx = std::min(kMaxFrames, std::max(kMinFrames, frames));
     }
 
     if (whisper_full(g_stream.ctx, wparams, g_stream.pcmf32.data(),
@@ -664,7 +777,7 @@ static json stream_run_inference()
     g_stream.last_text = text;
     g_stream.n_transcribed = n_decode;
 
-    if (n_decode >= STREAM_COMMIT_SAMPLES) {
+    if (commits) {
         g_stream.committed += text;
         g_stream.last_text.clear();
         g_stream.pcmf32.erase(g_stream.pcmf32.begin(),
@@ -677,11 +790,77 @@ static json stream_run_inference()
     return result;
 }
 
+// Appends to the window and advances the energy gate. Caller must hold
+// g_stream.mutex.
+//
+// ⚠️ The gate runs per ~100 ms frame, not once per call. A call carries
+// whatever Dart coalesced while the previous preview ran — 1-3 s on a
+// mid-range phone — and one RMS over all of it let a soft last word drown in
+// the silence after it: the call failed the gate, n_voiced stayed put, and
+// the final pass never decoded the word. The floor constants were tuned at
+// one update per ~128 ms recorder chunk, which is what a frame is; a call of
+// up to 150 ms is still a single frame, exactly as before.
+static void stream_append_locked(const float *pcm, int32_t n_samples)
+{
+    if (pcm == nullptr || n_samples <= 0) {
+        return;
+    }
+    const size_t base = g_stream.pcmf32.size();
+    g_stream.pcmf32.insert(g_stream.pcmf32.end(), pcm, pcm + n_samples);
+
+    const int32_t kFrame = WHISPER_SAMPLE_RATE / 10;  // 100 ms
+    int32_t off = 0;
+    while (off < n_samples) {
+        // A remainder under a frame and a half joins this frame, so no frame
+        // is shorter than 50 ms unless the whole call is.
+        const int32_t end = (n_samples - off < kFrame + kFrame / 2)
+                                ? n_samples
+                                : off + kFrame;
+        double sum2 = 0.0;
+        for (int32_t i = off; i < end; ++i) {
+            sum2 += (double)pcm[i] * pcm[i];
+        }
+
+        // Adaptive noise floor: falls quickly, rises slowly, so it
+        // tracks room tone without absorbing speech. A frame is
+        // voiced only when clearly above the floor.
+        const float rms = (float)std::sqrt(sum2 / (end - off));
+        if (rms < g_stream.noise_floor) {
+            g_stream.noise_floor += 0.5f * (rms - g_stream.noise_floor);
+        } else {
+            g_stream.noise_floor += 0.0005f * (rms - g_stream.noise_floor);
+        }
+        g_stream.noise_floor =
+            std::min(g_stream.noise_floor, g_stream.gate_floor_cap);
+        const float voice_thold = std::max(
+            g_stream.gate_ratio * g_stream.noise_floor,
+            g_stream.gate_rms_min);
+        if (rms >= voice_thold) {
+            g_stream.n_voiced = base + (size_t)end;
+        }
+        off = end;
+    }
+}
+
+// Hands the context back and empties the window. Caller must hold
+// g_stream.mutex.
+static void stream_end_locked()
+{
+    stream_dispose_ctx();
+    g_stream.pcmf32.clear();
+    g_stream.pcmf32.shrink_to_fit();
+    g_stream.n_transcribed = 0;
+    g_stream.n_voiced = 0;
+    g_stream.committed.clear();
+    g_stream.last_text.clear();
+}
+
 extern "C"
 {
     // body: {"model": path, "language": "en", "threads": 4,
     //        "is_translate": false, "initial_prompt": "...",
-    //        "keep_model_loaded": false}
+    //        "prompt_on_previews": true, "keep_model_loaded": false}
+    FUNCTION_ATTRIBUTE
     char *stream_start(char *body)
     {
         std::lock_guard<std::mutex> lock(g_stream.mutex);
@@ -716,6 +895,8 @@ extern "C"
             g_stream.gate_rms_min   = (float)jsonBody.value("gate_rms_min", 0.0015);
             g_stream.gate_ratio     = (float)jsonBody.value("gate_voice_ratio", 2.5);
             g_stream.gate_floor_cap = (float)jsonBody.value("gate_floor_cap", 0.01);
+            g_stream.prompt_on_previews =
+                jsonBody.value("prompt_on_previews", true);
             g_stream.prompt.clear();
             if (jsonBody.contains("initial_prompt") && jsonBody["initial_prompt"].is_string()) {
                 g_stream.prompt = jsonBody["initial_prompt"].get<std::string>();
@@ -766,6 +947,7 @@ extern "C"
     }
 
     // pcm: 16 kHz mono float32 samples in [-1, 1].
+    FUNCTION_ATTRIBUTE
     char *stream_feed(const float *pcm, int32_t n_samples)
     {
         std::lock_guard<std::mutex> lock(g_stream.mutex);
@@ -776,37 +958,13 @@ extern "C"
             jsonResult["message"] = "stream_feed: stream not started";
             return jsonToChar(jsonResult);
         }
-        if (pcm != nullptr && n_samples > 0) {
-            double sum2 = 0.0;
-            for (int32_t i = 0; i < n_samples; ++i) {
-                sum2 += (double)pcm[i] * pcm[i];
-            }
-            g_stream.pcmf32.insert(g_stream.pcmf32.end(), pcm, pcm + n_samples);
-
-            // Adaptive noise floor: falls quickly, rises slowly, so it
-            // tracks room tone without absorbing speech. A chunk is
-            // voiced only when clearly above the floor.
-            const float rms = (float)std::sqrt(sum2 / n_samples);
-            if (rms < g_stream.noise_floor) {
-                g_stream.noise_floor += 0.5f * (rms - g_stream.noise_floor);
-            } else {
-                g_stream.noise_floor += 0.0005f * (rms - g_stream.noise_floor);
-            }
-            g_stream.noise_floor =
-                std::min(g_stream.noise_floor, g_stream.gate_floor_cap);
-            const float voice_thold = std::max(
-                g_stream.gate_ratio * g_stream.noise_floor,
-                g_stream.gate_rms_min);
-            if (rms >= voice_thold) {
-                g_stream.n_voiced = g_stream.pcmf32.size();
-            }
-        }
+        stream_append_locked(pcm, n_samples);
 
         // Run only when new *voiced* audio arrived — silence alone
         // never triggers a decode.
         if (g_stream.n_voiced > g_stream.n_transcribed &&
             g_stream.pcmf32.size() - g_stream.n_transcribed >= STREAM_STEP_SAMPLES) {
-            return jsonToChar(stream_run_inference());
+            return jsonToChar(stream_run_inference(/*final=*/false));
         }
 
         jsonResult["@type"] = "streamPartial";
@@ -814,6 +972,28 @@ extern "C"
         return jsonToChar(jsonResult);
     }
 
+    // stream_feed without the preview, for the tail Stop hands over: the
+    // final pass decodes it anyway. Fed through stream_feed it started one
+    // more preview — a whole decode, text thrown away — before that pass.
+    FUNCTION_ATTRIBUTE
+    char *stream_append(const float *pcm, int32_t n_samples)
+    {
+        std::lock_guard<std::mutex> lock(g_stream.mutex);
+        json jsonResult;
+
+        if (g_stream.ctx == nullptr) {
+            jsonResult["@type"] = "error";
+            jsonResult["message"] = "stream_append: stream not started";
+            return jsonToChar(jsonResult);
+        }
+        stream_append_locked(pcm, n_samples);
+
+        jsonResult["@type"] = "streamPartial";
+        jsonResult["text"] = g_stream.committed + g_stream.last_text;
+        return jsonToChar(jsonResult);
+    }
+
+    FUNCTION_ATTRIBUTE
     char *stream_stop()
     {
         std::lock_guard<std::mutex> lock(g_stream.mutex);
@@ -825,26 +1005,41 @@ extern "C"
             return jsonToChar(jsonResult);
         }
 
-        // Cover voiced audio that arrived after the last run; a silent
-        // tail is dropped rather than decoded.
+        // ⚠️ ALWAYS one full-context pass over the voiced audio, not only
+        // when new audio arrived after the last preview.
+        //
+        // Every preview runs with a sized encoder (see stream_run_inference),
+        // which is faster and less accurate. If the last preview happened to
+        // cover all the audio, the old condition skipped the final pass and
+        // returned that preview's text as the result — so the lower-accuracy
+        // text became the user's tasks. A silent tail is still trimmed.
         const size_t n_tail = std::min(g_stream.pcmf32.size(),
                                        g_stream.n_voiced + STREAM_VOICE_PAD);
-        if (g_stream.n_voiced > g_stream.n_transcribed &&
+        if (g_stream.n_voiced > 0 &&
             n_tail >= (size_t)WHISPER_SAMPLE_RATE / 2) {
-            stream_run_inference();
+            stream_run_inference(/*final=*/true);
         }
 
         jsonResult["@type"] = "streamFinal";
         jsonResult["text"] = g_stream.committed + g_stream.last_text;
 
-        stream_dispose_ctx();
-        g_stream.pcmf32.clear();
-        g_stream.pcmf32.shrink_to_fit();
-        g_stream.n_transcribed = 0;
-        g_stream.n_voiced = 0;
-        g_stream.committed.clear();
-        g_stream.last_text.clear();
+        stream_end_locked();
 
+        return jsonToChar(jsonResult);
+    }
+
+    // stream_stop without the final pass, for a cancel: nobody reads that
+    // text, and it is a full-context decode — seconds on a phone. The
+    // context is still handed back (freed or parked) exactly as on stop.
+    FUNCTION_ATTRIBUTE
+    char *stream_abort()
+    {
+        std::lock_guard<std::mutex> lock(g_stream.mutex);
+        json jsonResult;
+
+        stream_end_locked();
+
+        jsonResult["@type"] = "streamAborted";
         return jsonToChar(jsonResult);
     }
 }

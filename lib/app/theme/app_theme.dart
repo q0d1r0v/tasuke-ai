@@ -179,7 +179,10 @@ abstract final class TasukeTheme {
 
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: TasukeColors.primary,
-        linearTrackColor: TasukeColors.primaryTint,
+        // ⚠️ Not primaryTint. See TasukeColors.progressTrack — the tint is
+        // invisible on every ground this app puts a progress bar on. Set here
+        // rather than on the usage meter, so the next bar cannot repeat it.
+        linearTrackColor: TasukeColors.progressTrack,
         circularTrackColor: TasukeColors.primaryTint,
       ),
 

@@ -91,6 +91,23 @@ final class Entitlement {
 
 /// The store port.
 abstract interface class PurchaseGateway {
+  /// Restores the persisted entitlement and subscribes to the store.
+  ///
+  /// ⚠️ Awaited by the app bootstrap, before the first route resolves.
+  /// StoreKit replays every unfinished transaction to whoever is listening at
+  /// launch, and an update delivered with nothing subscribed is simply gone.
+  /// Play replays nothing, so this also starts a silent [restore] once the
+  /// listener is attached.
+  ///
+  /// Its absence shipped: the implementation existed, both of its doc comments
+  /// claimed the bootstrap awaited it, and nothing called it. A user could pay,
+  /// be left on the free tier, watch the quota gate send them back to the
+  /// paywall they had just bought — and then have Google Play refund the
+  /// purchase three days later because it was never completed.
+  ///
+  /// Idempotent: subscribing twice would complete every purchase twice.
+  Future<void> initialise();
+
   /// False when the device has no store, or the Paid Applications agreement is
   /// unsigned. The paywall must say so rather than spin forever.
   Future<bool> isAvailable();
@@ -102,6 +119,12 @@ abstract interface class PurchaseGateway {
   /// Starts a purchase. The result arrives on [entitlements].
   Future<void> buy(SubscriptionPlan plan);
 
+  /// Asks the store what this account still holds and applies the answer —
+  /// granting what it holds, and revoking Pro when it holds no paid plan.
+  ///
+  /// Completes once the answer has been applied, so [current] is the result.
+  /// Throws when the store did not answer; that says nothing about the
+  /// subscription, so nothing is revoked.
   Future<void> restore();
 
   /// The live entitlement, updated as the purchase stream delivers.

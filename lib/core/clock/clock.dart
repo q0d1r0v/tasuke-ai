@@ -55,3 +55,26 @@ final class MutableClock implements Clock {
   @override
   DateTime nowUtc() => _instant.toUtc();
 }
+
+/// How long until the next local midnight, measured from [nowLocal].
+///
+/// ⚠️ `DateTime(y, m, d + 1)` and NOT `nowLocal.add(const Duration(days: 1))`.
+/// A Duration is 24 absolute hours; across a DST transition that lands an hour
+/// either side of midnight, and the day-rollover timer then fires on the wrong
+/// day twice a year — in the direction that leaves "Today" showing yesterday.
+///
+/// Takes `now` as a parameter rather than reading a clock, so it is pure, is
+/// testable at 23:59:59 and on a spring-forward date, and keeps
+/// `DateTime.now()` inside this file where the layering guard expects it.
+///
+/// Never returns zero or a negative: a timer armed with those fires
+/// immediately and spins.
+Duration untilNextLocalMidnight(DateTime nowLocal) {
+  final DateTime next = DateTime(
+    nowLocal.year,
+    nowLocal.month,
+    nowLocal.day + 1,
+  );
+  final Duration remaining = next.difference(nowLocal);
+  return remaining.inSeconds < 1 ? const Duration(seconds: 1) : remaining;
+}

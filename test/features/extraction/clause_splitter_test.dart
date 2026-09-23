@@ -70,6 +70,70 @@ void main() {
     });
   });
 
+  group('complex spoken notes', () {
+    test('a when the splitter knows only because the grammar does', () {
+      // ⚠️ "the day after tomorrow", "in an hour and a half" — and the "and"
+      // inside the second one joins nothing.
+      expect(
+        splitter.splitClauses(
+          'the day after tomorrow book the car inspection and change the oil',
+        ),
+        <String>[
+          'the day after tomorrow book the car inspection',
+          'change the oil',
+        ],
+      );
+      expect(
+        splitter.splitClauses(
+          'in an hour and a half call mom and at 7 cook dinner',
+        ),
+        <String>['in an hour and a half call mom', 'at 7 cook dinner'],
+      );
+    });
+
+    test('filler between two tasks goes with the second', () {
+      expect(
+        splitter.splitClauses(
+          'call Umid about the car, oh and on Saturday take the kids to the zoo',
+        ),
+        <String>[
+          'call Umid about the car',
+          'oh, on Saturday take the kids to the zoo',
+        ],
+      );
+    });
+
+    test('a verb said once for a list of dated items', () {
+      expect(
+        splitter.splitClauses(
+          'on the 1st pay the mortgage, on the 2nd the gas bill',
+        ),
+        <String>['on the 1st pay the mortgage', 'on the 2nd pay the gas bill'],
+      );
+    });
+
+    test('"… and print it" is the same task; a verb still to come joins', () {
+      expect(
+        splitter.splitClauses(
+          'on Monday I have to, uh, update my CV and print it',
+        ),
+        <String>['on Monday I have to, uh, update my CV and print it'],
+      );
+    });
+
+    test('a new request is never the purpose of an errand', () {
+      expect(
+        splitter.splitClauses(
+          'stop at the pharmacy for her vitamins, and remind me on Saturday to buy shoes',
+        ),
+        <String>[
+          'stop at the pharmacy for her vitamins',
+          'remind me on Saturday to buy shoes',
+        ],
+      );
+    });
+  });
+
   group('what must stay one clause', () {
     test('the critical negative case', () {
       const String utterance = 'send the build and the release notes to James';
@@ -105,6 +169,88 @@ void main() {
       expect(splitter.splitClauses('order the cake then the flowers'), <String>[
         'order the cake then the flowers',
       ]);
+    });
+
+    test('a weekday\'s part of the day and the date after it are one', () {
+      // ⚠️ "morning" counted as a time, so the rule against two times in one
+      // task cut the appointment at the comma.
+      for (final String utterance in <String>[
+        'Dentist appointment on Thursday morning, October 15th at 10.',
+        'Dinner with Anna Saturday evening, October 3rd at 8.',
+        'Dentist on Thursday morning, the 15th at 10.',
+      ]) {
+        expect(splitter.splitClauses(utterance), <String>[
+          utterance,
+        ], reason: utterance);
+      }
+      expect(
+        splitter.splitClauses('Pick up Max in the morning, Anna at 3.'),
+        hasLength(2),
+        reason: 'no date after the comma: two times, two tasks',
+      );
+    });
+
+    test('a when said alone before a comma opens the task after it', () {
+      // ⚠️ Glued onto the task before, it put "and on Friday" in that title
+      // and left the glasses with the doctor's day.
+      expect(
+        splitter.splitClauses(
+          'Tomorrow afternoon take the results to the doctor, and on Friday '
+          'afternoon, pick up her glasses.',
+        ),
+        <String>[
+          'Tomorrow afternoon take the results to the doctor',
+          'on Friday afternoon, pick up her glasses.',
+        ],
+      );
+      expect(
+        splitter.splitClauses('Call Anna tomorrow, at 5, and buy milk.'),
+        <String>['Call Anna tomorrow, at 5', 'buy milk.'],
+        reason: 'followed by "and", the 5 is the call\'s',
+      );
+      expect(
+        splitter.splitClauses(
+          "Tomorrow is Otabek's farewell party, at 7 p.m., he is moving to "
+          'Korea.',
+        ),
+        isNot(contains(startsWith('at 7 p.m., he'))),
+        reason: "somebody else's plan after it is not a task for the 7",
+      );
+    });
+
+    test('"tell Anna to …, and to …" is one errand for Anna', () {
+      expect(
+        splitter.splitClauses('Tell Anna to call me and to bring the keys.'),
+        hasLength(1),
+      );
+      expect(
+        splitter.splitClauses(
+          'Remind me to ask Timur to call me and to send the photos.',
+        ),
+        hasLength(1),
+      );
+      expect(
+        splitter.splitClauses('I need to call Anna and to send the report.'),
+        hasLength(2),
+        reason: "the speaker's own list is still one task per \"to\"",
+      );
+    });
+
+    test('a pronoun continues a task, not a remark', () {
+      expect(
+        splitter.splitClauses(
+          'Oh man, the car insurance ends on Monday, renew it on Saturday.',
+        ),
+        hasLength(2),
+        reason: 'nothing before "renew it" is a task for it to repeat',
+      );
+    });
+
+    test('a trip after "after work" still has its purpose after "and"', () {
+      expect(
+        splitter.splitClauses('After work go to Korzinka and buy eggs.'),
+        hasLength(1),
+      );
     });
 
     test('an anchor behind a preposition does not start a new task', () {
@@ -153,6 +299,12 @@ void main() {
       for (final String word in <String>['is', 'was', 'are', 'am', 'be']) {
         expect(ClauseLexicon.isImperativeVerb(word), isFalse, reason: word);
       }
+    });
+
+    test('"listen" is filler only when nothing is listened to', () {
+      expect(ClauseLexicon.isFillerAt('uh, listen, call the bank', 4), isTrue);
+      expect(ClauseLexicon.isFillerAt('listen to the podcast', 0), isFalse);
+      expect(ClauseLexicon.isFillerAt('um, call the bank', 0), isTrue);
     });
 
     test('nouns that double as verbs are kept out on purpose', () {

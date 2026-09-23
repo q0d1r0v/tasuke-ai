@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tasuke_ai/app/l10n/l10n_context.dart';
 import 'package:tasuke_ai/app/router/routes.dart';
-import 'package:tasuke_ai/app/theme/tasuke_colors.dart';
 import 'package:tasuke_ai/app/theme/tasuke_spacing.dart';
 import 'package:tasuke_ai/app/theme/tasuke_typography.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
@@ -51,7 +50,6 @@ class UsageScreen extends ConsumerWidget {
                     child: LinearProgressIndicator(
                       value: (usage.captureCount / limit).clamp(0.0, 1.0),
                       minHeight: 8,
-                      backgroundColor: TasukeColors.primaryTint,
                     ),
                   ),
                 ],

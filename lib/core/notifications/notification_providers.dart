@@ -33,10 +33,23 @@ final Provider<LocalNotifier> localNotifierProvider = Provider<LocalNotifier>((
   return notifier;
 });
 
+/// One tap on a notification. [seq] is unique per tap within the process.
+typedef NotificationTap = ({int seq, String payload});
+
 /// Notification taps that arrive while the app is running.
-final StreamProvider<String> notificationTapsProvider = StreamProvider<String>(
-  (Ref ref) => ref.watch(localNotifierProvider).taps,
-);
+///
+/// ⚠️ `seq` is load-bearing, the same trap as `appResumedProvider`: riverpod
+/// only notifies when previous != next, and every tap on one task carries the
+/// identical payload. As a bare String stream, the second tap on the same
+/// task's reminder never reached the listener and the task did not open.
+final StreamProvider<NotificationTap> notificationTapsProvider =
+    StreamProvider<NotificationTap>((Ref ref) {
+      int seq = 0;
+      return ref
+          .watch(localNotifierProvider)
+          .taps
+          .map((String payload) => (seq: ++seq, payload: payload));
+    });
 
 /// Emits whenever the device's timezone changes. The rescheduler listens here:
 /// every pending reminder is resolved against a zone, and a flight invalidates

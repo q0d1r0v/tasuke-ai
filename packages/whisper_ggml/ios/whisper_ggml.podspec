@@ -21,18 +21,20 @@ A new Flutter FFI plugin project.
   # Only whisper.h is public; the ggml tree has duplicate header basenames
   # (common.h, quants.h) that collide when flattened into the framework.
   s.public_header_files = 'Classes/whisper/include/whisper.h'
-  s.platform = :ios, '15.6'
-  s.ios.deployment_target  = '15.6'
+  # 16.4, the app's floor; ios/Podfile forces it on every pod.
+  s.platform = :ios, '16.4'
+  s.ios.deployment_target  = '16.4'
 
-  # Flutter.framework does not contain a i386 slice.
-  s.xcconfig = {
-    'IPHONEOS_DEPLOYMENT_TARGET' => '15.6',
-    'CLANG_CXX_LANGUAGE_STANDARD' => 'c++20',
-  }
   s.library = 'c++'
   s.frameworks = 'Accelerate'
+  # ⚠️ pod_target_xcconfig only, never `s.xcconfig`. That deprecated key is
+  # merged into the APP target's xcconfig as well, where its
+  # IPHONEOS_DEPLOYMENT_TARGET = 15.6 overrode the project's 16.4 and every
+  # archive declared MinimumOSVersion 15.6.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
+    'CLANG_CXX_LANGUAGE_STANDARD' => 'c++20',
+    # Flutter.framework does not contain a i386 slice.
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
     # whisper.cpp v1.9.1 (CPU backend) include roots
     'HEADER_SEARCH_PATHS' => [

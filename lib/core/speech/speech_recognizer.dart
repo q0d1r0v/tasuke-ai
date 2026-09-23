@@ -58,6 +58,22 @@ enum SpeechAvailability {
 /// stream, which is what makes the whole capture pipeline testable on a Linux
 /// CI box with no microphone.
 abstract interface class SpeechRecognizer {
+  /// Puts the model wherever the engine needs it, if it is not there already.
+  ///
+  /// ⚠️ This exists because its absence shipped. The ggml model is bundled as
+  /// an asset, whisper.cpp takes a filesystem **path**, and the method that
+  /// bridges the two — `WhisperModelAsset.ensureInstalled()` — had no caller
+  /// anywhere in the app. [availability] therefore answered
+  /// [SpeechAvailability.modelUnavailable] on every device forever, every voice
+  /// capture died on "The voice model isn't ready", and all 1098 tests stayed
+  /// green because each of them replaces this port with a fake.
+  ///
+  /// Idempotent and cheap once done: a later call is a stat and a size compare,
+  /// not a 60 MB re-copy. Called on the launch path and again defensively
+  /// before each recording, so a user who taps the mic during first launch
+  /// waits rather than fails.
+  Future<void> prepare();
+
   Future<SpeechAvailability> availability();
 
   /// Consumes 16 kHz mono little-endian PCM16 and emits partials, then one

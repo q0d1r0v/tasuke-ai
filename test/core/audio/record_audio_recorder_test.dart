@@ -26,6 +26,13 @@ void main() {
       expect(kTasukeRecordConfig.numChannels, 1);
       expect(kTasukeRecordConfig.encoder.name, 'pcm16bits');
     });
+
+    test('resumes by itself after a call, an alarm or Siri', () {
+      // ⚠️ The plugin's default, `pause`, never resumes: the stream stays open
+      // and silent under a screen that still says "Recording...", and every
+      // word after the interruption is lost.
+      expect(kTasukeRecordConfig.audioInterruption.name, 'pauseResume');
+    });
   });
 
   group('rmsOf', () {

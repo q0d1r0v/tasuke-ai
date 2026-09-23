@@ -11,11 +11,13 @@ import '_harness.dart';
 
 /// Pixel comparisons against the design sheet.
 ///
-/// ⚠️ Tagged `golden` and excluded from the default run on purpose. The default
-/// comparator is an exact match and the headless rasteriser does not render
-/// `BoxShadow` identically across machines, so a font or engine difference is a
-/// red build with nothing useful to look at. Design drift is worth catching; it
-/// is not worth blocking every unrelated change on.
+/// ⚠️ Tagged `golden` so that `tool/verify.sh` can leave it out of its run
+/// (`--exclude-tags`), on purpose. The default comparator is an exact match
+/// and the headless rasteriser does not render `BoxShadow` identically across
+/// machines, so a font or engine difference is a red build with nothing useful
+/// to look at. Design drift is worth catching; it is not worth blocking every
+/// unrelated change on. `dart_test.yaml` only declares the tag and excludes
+/// nothing, so a `flutter test` that names this directory runs these too.
 ///
 /// Regenerate with:  flutter test --tags golden --update-goldens
 void main() {
@@ -159,27 +161,36 @@ void main() {
     await golden(
       tester,
       'plan_cards',
-      Row(
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Expanded(
-            child: PlanCard(
-              title: 'Monthly',
-              price: r'$4.99',
-              period: '1 month',
-              selected: true,
-              onTap: () {},
-            ),
+          PlanCard(
+            title: 'Monthly',
+            price: r'$4.99',
+            period: '1 month',
+            selected: true,
+            onTap: () {},
           ),
-          const SizedBox(width: TasukeSpacing.cardGap),
-          Expanded(
-            child: PlanCard(
-              title: 'Yearly',
-              price: r'$39.99',
-              period: '1 year',
-              badge: 'Save 33%',
-              selected: false,
-              onTap: () {},
-            ),
+          const SizedBox(height: TasukeSpacing.cardGap),
+          PlanCard(
+            title: 'Yearly',
+            price: r'$39.99',
+            period: '1 year',
+            badge: 'Save 33%',
+            footnote: 'USD 3.33 per month, billed yearly',
+            selected: false,
+            onTap: () {},
+          ),
+          const SizedBox(height: TasukeSpacing.cardGap),
+          // A long store string goes under the title at full size; it never
+          // wraps, and it is not shrunk to squeeze in beside it.
+          PlanCard(
+            title: 'Yearly',
+            price: 'UZS 499 000,00',
+            period: '1 year',
+            selected: false,
+            onTap: () {},
           ),
         ],
       ),
@@ -257,9 +268,15 @@ void main() {
   testWidgets('paywall stack on the smallest phone', (
     WidgetTester tester,
   ) async {
-    // ⚠️ 320pt wide on purpose. Every store-required disclosure — period,
-    // price, auto-renew, Restore, both legal links — has to be reachable on the
-    // smallest supported phone, and this is the golden that proves it.
+    // 320pt wide on purpose: the header, benefit rows and buttons the paywall
+    // is built from, on the smallest supported phone.
+    //
+    // ⚠️ Not the paywall, and not its copy. The labels are sample text from
+    // before the benefits were cut to what Pro really unlocks; the real rows
+    // are pinned by "promise only what Pro unlocks" in paywall_screen_test.
+    // Nor does this prove the store-required disclosures fit (period, price,
+    // auto-renew, both legal links: none is drawn here). paywall_screen_test
+    // does that on the real screen at 320×568.
     await golden(
       tester,
       'paywall_small_320',

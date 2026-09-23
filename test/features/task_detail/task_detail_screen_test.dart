@@ -15,10 +15,10 @@ import 'package:tasuke_ai/app/l10n/app_localizations.dart';
 import 'package:tasuke_ai/app/theme/app_theme.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
 import 'package:tasuke_ai/core/clock/clock.dart';
+import 'package:tasuke_ai/core/permissions/app_permission.dart';
 import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/core/time/local_date_time.dart';
 import 'package:tasuke_ai/core/time/local_time_of_day.dart';
-import 'package:tasuke_ai/features/settings/data/settings_providers.dart';
 import 'package:tasuke_ai/features/settings/domain/app_settings.dart';
 import 'package:tasuke_ai/features/task_detail/presentation/task_detail_screen.dart';
 import 'package:tasuke_ai/features/tasks/data/task_providers.dart';
@@ -40,11 +40,13 @@ void main() {
   late FakeTaskRepository tasks;
   late FakeSettingsRepository settings;
   late FakeLocalNotifier notifier;
+  late FakePermissionService permissions;
 
   setUp(() {
     tasks = FakeTaskRepository();
     settings = FakeSettingsRepository();
     notifier = FakeLocalNotifier();
+    permissions = FakePermissionService();
   });
 
   tearDown(() {
@@ -75,10 +77,17 @@ void main() {
   /// ⚠️ Pushed rather than started on, because the screen pops itself after a
   /// delete. A route with nothing underneath cannot pop, and the assertion
   /// would fail for a reason that has nothing to do with deleting a task.
+  ///
+  /// [animated] builds the page the way go_router does on a device, with a
+  /// real slide-out; under test it otherwise falls back to a page with no
+  /// transition at all.
   Future<GoRouter> pumpDetail(
     WidgetTester tester, {
     String taskId = 't1',
+    bool animated = false,
   }) async {
+    Widget detail(GoRouterState state) =>
+        TaskDetailScreen(taskId: state.pathParameters['id'] ?? '');
     final GoRouter router = GoRouter(
       initialLocation: '/home',
       routes: <RouteBase>[
@@ -86,11 +95,17 @@ void main() {
           path: '/home',
           builder: (_, _) => const Scaffold(body: Center(child: Text('home'))),
         ),
-        GoRoute(
-          path: '/task/:id',
-          builder: (_, GoRouterState state) =>
-              TaskDetailScreen(taskId: state.pathParameters['id'] ?? ''),
-        ),
+        if (animated)
+          GoRoute(
+            path: '/task/:id',
+            pageBuilder: (_, GoRouterState state) =>
+                MaterialPage<void>(key: state.pageKey, child: detail(state)),
+          )
+        else
+          GoRoute(
+            path: '/task/:id',
+            builder: (_, GoRouterState state) => detail(state),
+          ),
       ],
     );
 
@@ -100,9 +115,13 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: <Override>[
-          ...defaultOverrides(clock: FixedClock(testNow), notifier: notifier),
+          ...defaultOverrides(
+            settings: settings,
+            clock: FixedClock(testNow),
+            notifier: notifier,
+            permissions: permissions,
+          ),
           taskRepositoryProvider.overrideWithValue(tasks),
-          settingsRepositoryProvider.overrideWithValue(settings),
         ],
         child: MaterialApp.router(
           debugShowCheckedModeBanner: false,
@@ -199,6 +218,30 @@ void main() {
     await shutdown(tester);
   });
 
+  testWidgets('leaving inside the debounce still saves the title', (
+    WidgetTester tester,
+  ) async {
+    // ⚠️ With animations off (an accessibility setting) the page is disposed
+    // ~25 ms after Back, well inside the 400 ms window that used to be
+    // cancelled and dropped.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    tasks.seed(<Task>[task(date: today)]);
+
+    final GoRouter router = await pumpDetail(tester, animated: true);
+    await tester.enterText(find.byType(TextField), 'Send the build to Amir');
+    router.pop();
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(find.byType(TextField), findsNothing, reason: 'the page is gone');
+    expect(tasks.all.single.title, 'Send the build to Amir');
+
+    await shutdown(tester);
+  });
+
   testWidgets('a title emptied by hand is never persisted', (
     WidgetTester tester,
   ) async {
@@ -241,10 +284,81 @@ void main() {
     await shutdown(tester);
   });
 
+  testWidgets('a stale reminder time is brought back in step with the task', (
+    WidgetTester tester,
+  ) async {
+    // ⚠️ The device report. A call was captured for 5:29 PM, its time edited
+    // to 6:11 PM — and the date and time pickers wrote `due` alone, leaving
+    // `reminder.at` on 5:29. The scheduler fires on `reminder.at`, so the
+    // alarm pointed at a minute already gone and nothing rang at 6:11.
+    //
+    // Seeded here as exactly that state: due at 18:11, reminder at 17:29.
+    tasks.seed(<Task>[
+      task(date: today, time: const LocalTimeOfDay.hm(18, 11)).copyWith(
+        reminder: const TaskReminder(
+          notificationId: 7,
+          at: LocalDateTime(today, LocalTimeOfDay.hm(17, 29)),
+        ),
+      ),
+    ]);
+
+    await pumpDetail(tester);
+    await tester.tap(find.byType(TasukeSwitch));
+    await pumpSettled(tester);
+
+    expect(
+      tasks.all.single.reminder.at,
+      const LocalDateTime(today, LocalTimeOfDay.hm(18, 11)),
+      reason: 'reminder.at is derived from due on every write',
+    );
+
+    await shutdown(tester);
+  });
+
+  testWidgets('turning a reminder on asks for the notification permission', (
+    WidgetTester tester,
+  ) async {
+    // ⚠️ The other half of the same report: the permission had only ever been
+    // requested from onboarding's skippable primer, the user had skipped it,
+    // and Android left the app at POST_NOTIFICATION: ignore.
+    permissions.set(AppPermission.notifications, PermissionState.notDetermined);
+    tasks.seed(<Task>[task(date: today, time: const LocalTimeOfDay.hm(15, 0))]);
+
+    await pumpDetail(tester);
+    await tester.tap(find.byType(TasukeSwitch));
+    await pumpSettled(tester);
+
+    expect(permissions.requested, contains(AppPermission.notifications));
+
+    await shutdown(tester);
+  });
+
+  testWidgets('editing the title never raises the permission dialog', (
+    WidgetTester tester,
+  ) async {
+    permissions.set(AppPermission.notifications, PermissionState.notDetermined);
+    tasks.seed(<Task>[
+      task(date: today, time: const LocalTimeOfDay.hm(15, 0), reminder: true),
+    ]);
+
+    await pumpDetail(tester);
+    await tester.enterText(find.byType(TextField), 'Call Dad');
+    await tester.pump(const Duration(milliseconds: 500));
+    await pumpSettled(tester);
+
+    expect(
+      permissions.requested,
+      isEmpty,
+      reason: 'a system dialog popping up mid-sentence is worse than none',
+    );
+
+    await shutdown(tester);
+  });
+
   testWidgets('an all-day task takes its reminder time from settings', (
     WidgetTester tester,
   ) async {
-    tasks.seed(<Task>[task(date: today)]);
+    tasks.seed(<Task>[task(date: today.addDays(1))]);
 
     await pumpDetail(tester);
     await tester.tap(find.byType(TasukeSwitch));
@@ -253,9 +367,56 @@ void main() {
     expect(
       tasks.all.single.reminder.at,
       LocalDateTime(
-        today,
+        today.addDays(1),
         LocalTimeOfDay(AppSettings.defaults.allDayReminderMinute),
       ),
+    );
+
+    await shutdown(tester);
+  });
+
+  testWidgets('an all-day reminder turned on after its minute still rings '
+      'today', (WidgetTester tester) async {
+    // ⚠️ 09:00 has passed at the fixed 10:00 "now". Resolved to 09:00, the
+    // planner skipped it as past and the switch sat ON over nothing.
+    tasks.seed(<Task>[task(date: today)]);
+
+    await pumpDetail(tester);
+    await tester.tap(find.byType(TasukeSwitch));
+    await pumpSettled(tester);
+
+    expect(
+      tasks.all.single.reminder.at,
+      const LocalDateTime(today, LocalTimeOfDay.hm(10, 15)),
+    );
+
+    await shutdown(tester);
+  });
+
+  testWidgets('a title edit leaves a moved-forward reminder where it is', (
+    WidgetTester tester,
+  ) async {
+    // Moved to 09:45 by an earlier edit and already rung by 10:00. Re-deriving
+    // it on a title edit would arm it again for 10:15.
+    tasks.seed(<Task>[
+      task(date: today).copyWith(
+        reminder: const TaskReminder(
+          enabled: true,
+          notificationId: 7,
+          at: LocalDateTime(today, LocalTimeOfDay.hm(9, 45)),
+        ),
+      ),
+    ]);
+
+    await pumpDetail(tester);
+    await tester.enterText(find.byType(TextField), 'Send the build to Amir');
+    await tester.pump(debounce);
+    await pumpSettled(tester);
+
+    expect(tasks.all.single.title, 'Send the build to Amir');
+    expect(
+      tasks.all.single.reminder.at,
+      const LocalDateTime(today, LocalTimeOfDay.hm(9, 45)),
     );
 
     await shutdown(tester);
@@ -295,6 +456,7 @@ void main() {
 
       expect(tasks.all.single.completed, isTrue);
       expect(find.text('Mark not done'), findsOneWidget);
+      expect(find.text('Task completed'), findsOneWidget);
 
       await tester.tap(find.text('Mark not done'));
       await pumpSettled(tester);
@@ -305,6 +467,21 @@ void main() {
       await shutdown(tester);
     },
   );
+
+  testWidgets('reopening a finished task does not say "Task completed"', (
+    WidgetTester tester,
+  ) async {
+    tasks.seed(<Task>[task(date: today, completed: true)]);
+
+    await pumpDetail(tester);
+    await tester.tap(find.text('Mark not done'));
+    await pumpSettled(tester);
+
+    expect(tasks.all.single.completed, isFalse);
+    expect(find.text('Task completed'), findsNothing);
+
+    await shutdown(tester);
+  });
 
   testWidgets('a cancelled delete leaves the task where it was', (
     WidgetTester tester,
@@ -340,6 +517,31 @@ void main() {
     expect(tasks.all, isEmpty);
     // Popped, not replaced: the user came from a list and goes back to it.
     expect(router.state.uri.toString(), '/home');
+
+    await shutdown(tester);
+  });
+
+  testWidgets('a delete never flashes the deleted-task state on the way out', (
+    WidgetTester tester,
+  ) async {
+    tasks.seed(<Task>[task(date: today)]);
+
+    await pumpDetail(tester, animated: true);
+    await tester.tap(find.text('Delete Task'));
+    await pumpSettled(tester);
+    await tester.tap(find.text('Delete'));
+
+    // Frame by frame through the pop transition: the stream's null arrives
+    // while the page is still sliding out.
+    bool sawPageLeaving = false;
+    for (int i = 0; i < 14; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      sawPageLeaving |= find.byType(TextField).evaluate().isNotEmpty;
+      expect(find.text('Please try again.'), findsNothing);
+      expect(find.text('Got it'), findsNothing);
+    }
+    expect(sawPageLeaving, isTrue, reason: 'the pop must actually animate');
+    expect(tasks.all, isEmpty);
 
     await shutdown(tester);
   });

@@ -154,6 +154,18 @@ android {
         }
     }
 
+    androidResources {
+        // ⚠️ The bundled whisper model (assets/models/*.bin, 57 MB) must be
+        // STORED in the APK. Deflate saves 6% on quantised weights, and a
+        // deflated asset makes AAsset_getBuffer inflate all of it into native
+        // memory, in one go, on the UI thread, the first time
+        // WhisperModelAsset copies it out. Stored, it is mapped straight from
+        // the APK. Costs ~3.4 MB of installed size; Play compresses the
+        // download anyway. tool/check_16k.sh fails a release APK where it is
+        // not stored.
+        noCompress(".bin")
+    }
+
     packaging {
         jniLibs {
             // ⚠️ Uncompressed, page-aligned .so files in the APK.

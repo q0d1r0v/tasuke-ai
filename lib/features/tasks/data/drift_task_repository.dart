@@ -164,7 +164,23 @@ final class DriftTaskRepository implements TaskRepository {
   /// for reasons nobody would connect to an edit screen.
   @override
   Future<Task> update(Task task) async {
-    final Task stamped = task.copyWith(updatedAt: clock.nowUtc());
+    final DateTime nowUtc = clock.nowUtc();
+    Task next = task;
+    // ⚠️ A task saved without a reminder has no notification id, and the
+    // planner skips any reminder without one. Switching the reminder on later
+    // in Task details used to leave it that way: the switch showed "on" and
+    // nothing was ever scheduled. Minted here, from the same counter as
+    // create/saveDrafts, so the two id spaces can never collide.
+    if (next.reminder.enabled &&
+        next.reminder.at != null &&
+        next.reminder.notificationId == null) {
+      next = next.copyWith(
+        reminder: next.reminder.copyWith(
+          notificationId: await dao.nextNotificationId(nowUtc: nowUtc),
+        ),
+      );
+    }
+    final Task stamped = next.copyWith(updatedAt: nowUtc);
     await dao.updateTask(stamped.id, TaskMapper.toCompanion(stamped));
     return stamped;
   }

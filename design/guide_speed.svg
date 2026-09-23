@@ -1,0 +1,46 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="bolt" x1="180" y1="110" x2="350" y2="400" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#46C2FF"/>
+    <stop offset=".48" stop-color="#238BFF"/>
+    <stop offset="1" stop-color="#1262ED"/>
+  </linearGradient>
+  <radialGradient id="halo">
+    <stop stop-color="#2F8BFF" stop-opacity=".18"/>
+    <stop offset="1" stop-color="#2F8BFF" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#1677F8" flood-opacity=".20"/>
+  </filter>
+</defs>
+
+<circle cx="280" cy="256" r="215" fill="url(#halo)"/>
+<circle cx="292" cy="256" r="160" fill="#2F8BFF" fill-opacity=".045"/>
+
+<!-- speed streaks -->
+<rect x="72" y="181" width="112" height="18" rx="9" fill="#64B8FF" fill-opacity=".55"/>
+<rect x="45" y="244" width="139" height="18" rx="9" fill="#3CA2FF" fill-opacity=".72"/>
+<rect x="86" y="307" width="98" height="18" rx="9" fill="#238BFF" fill-opacity=".58"/>
+
+<!-- lightning -->
+<path d="M315 92
+         C320 81 337 86 335 99
+         L319 207
+         H389
+         C402 207 409 222 400 232
+         L258 415
+         C249 427 230 418 234 403
+         L264 292
+         H198
+         C185 292 178 277 186 267
+         L315 92Z"
+      fill="url(#bolt)" filter="url(#shadow)"/>
+
+<!-- highlight -->
+<path d="M318 112L304 221H371"
+      stroke="white" stroke-opacity=".28" stroke-width="10" stroke-linecap="round"/>
+
+<!-- accent dots -->
+<circle cx="405" cy="126" r="11" fill="#5AB3FF" fill-opacity=".55"/>
+<circle cx="423" cy="339" r="8" fill="#238BFF" fill-opacity=".35"/>
+</svg>

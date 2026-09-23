@@ -12,6 +12,42 @@ void main() {
 
   String? timeOf(String phrase) => parser.parse(phrase, now: now).time?.toIso();
 
+  group('clock times said with their part of the day', () {
+    test('"at 11 at night" is 23:00, and "2 at night" is after midnight', () {
+      expect(timeOf('pick her up at 11 at night'), '23:00');
+      expect(timeOf('at 12 at night'), '00:00');
+      expect(timeOf('at 2 at night'), '02:00');
+    });
+
+    test('"before 6" is a clock time, "before 3 weeks" is not', () {
+      expect(timeOf('cook dinner before 6, he is coming'), '18:00');
+      expect(timeOf('before 6 buy the cake'), '18:00');
+      expect(timeOf('send it by 5'), '17:00');
+      expect(timeOf('before 3 weeks'), isNull);
+      expect(timeOf('buy 2 tickets by 2 people'), isNull);
+    });
+
+    test('"before noon" and "until 5 p.m." take the word with them', () {
+      // ⚠️ Only digits did, so "before noon send the invoice" left "Before
+      // send the invoice" as the title.
+      for (final (String, String) said in <(String, String)>[
+        ('before noon send the invoice', 'before noon'),
+        ('until 5 p.m. finish the report', 'until 5 p.m.'),
+        ('till midnight pack the bags', 'till midnight'),
+        ('before 12 noon call the bank', 'before 12 noon'),
+      ]) {
+        final ParsedWhen when = parser.parse(said.$1, now: now);
+        expect(
+          said.$1.substring(when.matchStart, when.matchEnd),
+          said.$2,
+          reason: said.$1,
+        );
+      }
+      expect(timeOf('before noon send the invoice'), '12:00');
+      expect(timeOf('until 5 p.m. finish the report'), '17:00');
+    });
+  });
+
   group('times of day', () {
     test('the named times are the ones ExtractionDefaults declares', () {
       expect(
@@ -108,6 +144,28 @@ void main() {
       expect(timeOf('noon'), '12:00');
       expect(timeOf('at midday'), '12:00');
       expect(timeOf('midnight'), '00:00');
+    });
+
+    test('"12 midnight" and "12 noon" are one phrase', () {
+      // ⚠️ "at 12" used to win as the leftmost match: midnight read as noon,
+      // and the word left in the title.
+      for (final (String phrase, String time) in <(String, String)>[
+        ('at 12 midnight', '00:00'),
+        ('at 12 noon', '12:00'),
+        ('by 12 midnight', '00:00'),
+        ('at twelve midnight', '00:00'),
+        ('at twelve noon', '12:00'),
+        ('at 12:00 midnight', '00:00'),
+      ]) {
+        final ParsedWhen parsed = parser.parse(phrase, now: now);
+        expect(parsed.time?.toIso(), time, reason: phrase);
+        // The "12" or "twelve" was the part left behind, at the start.
+        expect(
+          (parsed.matchStart, parsed.matchEnd),
+          (0, phrase.length),
+          reason: phrase,
+        );
+      }
     });
 
     test('a bare part of the day', () {

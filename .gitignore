@@ -70,3 +70,16 @@ app.*.map.json
 # "package dev.flutter.plugins.integration_test does not exist".
 # Deleting the directory (or `flutter clean`) regenerates it correctly.
 /android/app/src/main/java/io/flutter/plugins/
+
+# Native build output inside vendored packages. The package carries its own
+# .gitignore too; this is the belt to that's braces, because a stray
+# `packages/whisper_ggml/android/.cxx` is 161 MB of machine-specific CMake
+# cache that reappears as "modified" after every build.
+packages/*/android/.cxx/
+packages/*/android/build/
+packages/*/android/.gradle/
+
+# Golden comparison output. Written next to the goldens on a failure and never
+# useful in a commit — the four PNGs are the master, the candidate and two
+# diffs of a run that is already red on the developer's screen.
+test/**/failures/

@@ -1468,5 +1468,229 @@
     "expectDate": null,
     "expectTime": null,
     "note": "nothing temporal"
+  },
+  {
+    "phrase": "at 1709",
+    "now": "2026-09-21T16:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "17:09",
+    "note": "whisper writes 'seventeen oh nine' as 1709 — was parsed as nothing"
+  },
+  {
+    "phrase": "the report at 1709",
+    "now": "2026-09-21T16:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "17:09",
+    "note": "the exact transcript from the device report"
+  },
+  {
+    "phrase": "at 0900",
+    "now": "2026-09-21T16:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "09:00",
+    "note": "compact 24h with a leading zero, already past today"
+  },
+  {
+    "phrase": "at 5.09 pm",
+    "now": "2026-09-21T16:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "17:09",
+    "note": "dotted minutes with pm — was read as 9 PM (21:00), four hours late"
+  },
+  {
+    "phrase": "5.09 p.m.",
+    "now": "2026-09-21T16:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "17:09",
+    "note": "dotted minutes, dotted meridiem"
+  },
+  {
+    "phrase": "at 509 pm",
+    "now": "2026-09-21T16:00",
+    "expectDate": "2026-09-21",
+    "expectTime": "17:09",
+    "note": "hour and minutes run together — was parsed as nothing"
+  },
+  {
+    "phrase": "1130 am",
+    "now": "2026-09-21T16:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "11:30",
+    "note": "run-together two-digit hour, already past today"
+  },
+  {
+    "phrase": "send the 2026 report",
+    "now": "2026-09-21T16:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "four digits with no 'at' are a year, not 20:26"
+  },
+  {
+    "phrase": "buy 500 apples",
+    "now": "2026-09-21T16:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "three digits with no am/pm are a quantity"
+  },
+  {
+    "phrase": "meet at 2560",
+    "now": "2026-09-21T16:00",
+    "expectDate": null,
+    "expectTime": null,
+    "note": "HH 25 is not an hour, so 'at' alone does not make it a time"
+  },
+  {
+    "phrase": "on the 5th of December",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-12-05",
+    "expectTime": null,
+    "note": "the named month beats the 'on the 5th' that starts a word earlier"
+  },
+  {
+    "phrase": "by the fifth of December",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-12-05",
+    "expectTime": null,
+    "note": "spelled ordinal, same rule"
+  },
+  {
+    "phrase": "for the 12th of January 2027",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2027-01-12",
+    "expectTime": null,
+    "note": "with a year"
+  },
+  {
+    "phrase": "on Thursday, October 15th at 10 am",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-10-15",
+    "expectTime": "10:00",
+    "note": "a weekday in front of the date is part of it, not tomorrow"
+  },
+  {
+    "phrase": "Thursday the 15th of October at 10 am",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-10-15",
+    "expectTime": "10:00",
+    "note": "weekday, then the day of the month"
+  },
+  {
+    "phrase": "tonight at 2",
+    "now": "2026-09-24T00:40",
+    "expectDate": "2026-09-24",
+    "expectTime": "02:00",
+    "note": "said in the small hours: tonight is the night under way"
+  },
+  {
+    "phrase": "tonight at 12",
+    "now": "2026-09-24T00:40",
+    "expectDate": "2026-09-25",
+    "expectTime": "00:00",
+    "note": "midnight is already behind, so the next one"
+  },
+  {
+    "phrase": "tonight at 1",
+    "now": "2026-09-24T03:00",
+    "expectDate": "2026-09-25",
+    "expectTime": "01:00",
+    "note": "1 is already behind, so the next night"
+  },
+  {
+    "phrase": "tonight at 1",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-09-24",
+    "expectTime": "01:00",
+    "note": "said in the afternoon: after midnight"
+  },
+  {
+    "phrase": "this Friday night at 2",
+    "now": "2026-09-25T00:40",
+    "expectDate": "2026-09-26",
+    "expectTime": "02:00",
+    "note": "a named day's night is still the one ahead"
+  },
+  {
+    "phrase": "tonight at midnight",
+    "now": "2026-09-22T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "00:00",
+    "note": "tonight's midnight is the end of today, not noon"
+  },
+  {
+    "phrase": "this evening at midnight",
+    "now": "2026-09-22T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "00:00",
+    "note": "same, said with the evening"
+  },
+  {
+    "phrase": "in half an hour",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "15:30",
+    "note": "half an hour"
+  },
+  {
+    "phrase": "in a half hour",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "15:30",
+    "note": "half an hour, other order"
+  },
+  {
+    "phrase": "in an hour and a half",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "16:30",
+    "note": "not 'in an hour' with 'and a half' left over"
+  },
+  {
+    "phrase": "in two and a half hours",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "17:30",
+    "note": "and a half in the middle"
+  },
+  {
+    "phrase": "in 1.5 hours",
+    "now": "2026-09-23T15:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "16:30",
+    "note": "decimal hours"
+  },
+  {
+    "phrase": "at 12 midnight",
+    "now": "2026-09-22T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "00:00",
+    "note": "12 midnight is not noon"
+  },
+  {
+    "phrase": "at 12 noon",
+    "now": "2026-09-22T10:00",
+    "expectDate": "2026-09-22",
+    "expectTime": "12:00",
+    "note": "12 noon"
+  },
+  {
+    "phrase": "by 12 midnight",
+    "now": "2026-09-22T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "00:00",
+    "note": "by 12 midnight"
+  },
+  {
+    "phrase": "at twelve midnight",
+    "now": "2026-09-22T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "00:00",
+    "note": "spelled out"
+  },
+  {
+    "phrase": "tomorrow at 12 midnight",
+    "now": "2026-09-22T10:00",
+    "expectDate": "2026-09-23",
+    "expectTime": "00:00",
+    "note": "with a day"
   }
 ]

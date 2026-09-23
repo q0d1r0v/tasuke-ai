@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ⚠️ riverpod 3.x does not export `Override` from its main library — only from
@@ -10,6 +12,7 @@ import 'package:tasuke_ai/app/l10n/app_localizations.dart';
 import 'package:tasuke_ai/app/theme/app_theme.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
 import 'package:tasuke_ai/core/clock/clock.dart';
+import 'package:tasuke_ai/core/lifecycle/app_lifecycle.dart';
 import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/core/time/local_time_of_day.dart';
 import 'package:tasuke_ai/features/home/presentation/home_screen.dart';
@@ -51,7 +54,12 @@ void main() {
   /// The router is also the assertion for the segments: they are a provider,
   /// not three routes, and the only way to prove that is to watch the location
   /// while they are tapped.
-  Future<GoRouter> pumpHome(WidgetTester tester, {DateTime? now}) async {
+  Future<GoRouter> pumpHome(
+    WidgetTester tester, {
+    DateTime? now,
+    Clock? clock,
+    List<Override> overrides = const <Override>[],
+  }) async {
     final GoRouter router = GoRouter(
       initialLocation: '/home',
       routes: <RouteBase>[
@@ -73,8 +81,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: <Override>[
-          ...defaultOverrides(clock: FixedClock(now ?? testNow)),
+          ...defaultOverrides(clock: clock ?? FixedClock(now ?? testNow)),
           taskRepositoryProvider.overrideWithValue(tasks),
+          ...overrides,
         ],
         child: MaterialApp.router(
           debugShowCheckedModeBanner: false,
@@ -153,6 +162,51 @@ void main() {
       await shutdown(tester);
     },
   );
+
+  testWidgets('the greeting catches up when the app comes back', (
+    WidgetTester tester,
+  ) async {
+    final MutableClock clock = MutableClock(DateTime(2026, 3, 11, 8));
+    final StreamController<int> resumes = StreamController<int>.broadcast();
+
+    await pumpHome(
+      tester,
+      clock: clock,
+      overrides: <Override>[
+        appResumedProvider.overrideWith((Ref ref) => resumes.stream),
+      ],
+    );
+    expect(find.text('Good morning,'), findsOneWidget);
+
+    // ⚠️ One long-lived tree, as on a phone: twelve hours in the background on
+    // the same day changes nothing else Home watches.
+    clock.instant = DateTime(2026, 3, 11, 20);
+    resumes.add(1);
+    await pumpSettled(tester);
+    expect(find.text('Good evening,'), findsOneWidget);
+
+    await shutdown(tester);
+    await resumes.close();
+  });
+
+  testWidgets('an undated task reads Someday, never "Someday, All day"', (
+    WidgetTester tester,
+  ) async {
+    tasks.seed(<Task>[
+      task('t1', 'Learn Spanish'),
+      task('t2', 'Renew the domain', date: today),
+    ]);
+
+    await pumpHome(tester);
+
+    expect(find.text('Someday'), findsOneWidget);
+    // "No date" and "all day" are different things; only the dated one is
+    // all day.
+    expect(find.text('Today, All day'), findsOneWidget);
+    expect(find.textContaining('Someday,'), findsNothing);
+
+    await shutdown(tester);
+  });
 
   testWidgets('switching segments swaps the list without pushing a route', (
     WidgetTester tester,

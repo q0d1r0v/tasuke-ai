@@ -1,13 +1,18 @@
 /// Everything that can go wrong in Tasuke AI.
 ///
 /// ⚠️ There is deliberately **no `NetworkFailure`**, no connectivity plugin and
-/// no retry banner. The app makes exactly one network request in its lifetime —
-/// downloading the AI model — and that has its own [ModelFailure] arm with its
-/// own screen. Every other operation is local.
+/// no retry banner. Everything the app does is local: extraction is rule-based
+/// and the speech model ships inside the binary, so nothing the app does needs
+/// a network at all.
 ///
 /// The next person to add a feature will reach for a generic network failure
 /// out of habit, and half the app will grow an offline state it can never
 /// enter. Do not add one.
+///
+/// There is no extraction failure either. `VoiceCapturePipeline.extract` falls
+/// back to the second extractor when the first throws or times out, and turns
+/// "no tasks at all" into one editable draft of the raw transcript, so
+/// extraction can never end a capture.
 sealed class Failure {
   const Failure(this.message);
 
@@ -35,7 +40,18 @@ final class RecordingFailure extends Failure {
   final RecordingFailureKind kind;
 }
 
-enum RecordingFailureKind { busy, tooShort, noInput, unknown }
+enum RecordingFailureKind {
+  /// Another app or a call holds the microphone.
+  busy,
+
+  /// The app's own last capture has not finished letting go of the speech
+  /// model. Not [busy]: that copy blames another app, and the user, who had
+  /// just backed out of a recording, went looking for one.
+  stillClosing,
+  tooShort,
+  noInput,
+  unknown,
+}
 
 /// Speech-to-text failed, or produced nothing usable.
 final class TranscriptionFailure extends Failure {
@@ -53,44 +69,6 @@ enum TranscriptionFailureKind {
 
   /// The bundled whisper model is missing or corrupt on disk.
   modelUnavailable,
-  unknown,
-}
-
-/// The extractor could not turn a transcript into tasks.
-final class ExtractionFailure extends Failure {
-  const ExtractionFailure(
-    super.message, {
-    this.kind = ExtractionFailureKind.unknown,
-  });
-
-  final ExtractionFailureKind kind;
-}
-
-enum ExtractionFailureKind {
-  /// The model file has not been downloaded yet.
-  modelNotInstalled,
-
-  /// The model produced output that did not survive validation, twice.
-  invalidOutput,
-
-  /// Inference ran past its budget.
-  timeout,
-  unknown,
-}
-
-/// Downloading or verifying the language model failed. The one place the word
-/// "network" legitimately appears.
-final class ModelFailure extends Failure {
-  const ModelFailure(super.message, {required this.kind});
-
-  final ModelFailureKind kind;
-}
-
-enum ModelFailureKind {
-  network,
-  checksumMismatch,
-  insufficientStorage,
-  cancelled,
   unknown,
 }
 

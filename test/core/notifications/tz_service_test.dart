@@ -59,8 +59,44 @@ void main() {
       expect(await service.refresh(), isTrue);
       await Future<void>.delayed(Duration.zero);
 
-      expect(seen, <String>['Asia/Tashkent', 'Asia/Tokyo']);
+      expect(seen, <String>['Asia/Tokyo']);
       expect(service.zoneName, 'Asia/Tokyo');
+      await service.dispose();
+    });
+
+    test('the first read at startup is not a change', () async {
+      // ⚠️ It used to emit UTC → device zone on every cold start, and the zone
+      // listener then ran a whole second reminder sweep behind the splash.
+      final TzService service = TzService(lookup: () async => 'Asia/Tashkent');
+      final List<String> seen = <String>[];
+      service.zoneChanges.listen(seen.add);
+
+      await service.initialise();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(seen, isEmpty);
+      expect(service.zoneName, 'Asia/Tashkent');
+      await service.dispose();
+    });
+
+    test('a zone first read on a later refresh does not emit either', () async {
+      // The startup lookup failed; the resume that finally reads the zone
+      // re-syncs by itself, so an event here would be a duplicate sweep.
+      bool ready = false;
+      final TzService service = TzService(
+        lookup: () async =>
+            ready ? 'Asia/Tashkent' : throw StateError('not yet'),
+      );
+      final List<String> seen = <String>[];
+      service.zoneChanges.listen(seen.add);
+      await service.initialise();
+
+      ready = true;
+      expect(await service.refresh(), isTrue);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(seen, isEmpty);
+      expect(service.zoneName, 'Asia/Tashkent');
       await service.dispose();
     });
 

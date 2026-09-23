@@ -1,0 +1,427 @@
+{
+ "_about": "Thirty notes written for the 2026-09-23 review, typed cleanly. Never used to tune rules. Paired with extraction_whisper_style_corpus.json, which holds the same notes the way whisper transcribes them.",
+ "_labels": "Relabelled to the extraction conventions: 'tonight' is 20:00 (n19, n23).",
+ "now": "2026-09-23T15:00",
+ "cases": [
+  {
+   "note": "Um, tomorrow call Aziz about the rent and pay the internet bill.",
+   "tasks": [
+    {
+     "title": "Call Aziz about the rent",
+     "date": "2026-09-24",
+     "time": null
+    },
+    {
+     "title": "Pay the internet bill",
+     "date": "2026-09-24",
+     "time": null
+    }
+   ],
+   "id": "n01"
+  },
+  {
+   "note": "On Friday at 10am I have a dentist appointment, and after that buy flowers for mom.",
+   "tasks": [
+    {
+     "title": "Dentist appointment",
+     "date": "2026-09-25",
+     "time": "10:00"
+    },
+    {
+     "title": "Buy flowers for mom",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ],
+   "id": "n02"
+  },
+  {
+   "note": "Remind me to send the invoice to Sardor at 5pm today.",
+   "tasks": [
+    {
+     "title": "Send the invoice to Sardor",
+     "date": "2026-09-23",
+     "time": "17:00"
+    }
+   ],
+   "id": "n03"
+  },
+  {
+   "note": "Next Monday submit the quarterly report, it's due at noon.",
+   "tasks": [
+    {
+     "title": "Submit the quarterly report",
+     "date": "2026-09-28",
+     "time": "12:00"
+    }
+   ],
+   "id": "n04"
+  },
+  {
+   "note": "So, uh, the day after tomorrow renew my passport photos.",
+   "tasks": [
+    {
+     "title": "Renew my passport photos",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ],
+   "id": "n05"
+  },
+  {
+   "note": "Tonight at 8 watch the football match with Jasur.",
+   "tasks": [
+    {
+     "title": "Watch the football match with Jasur",
+     "date": "2026-09-23",
+     "time": "20:00"
+    }
+   ],
+   "id": "n06"
+  },
+  {
+   "note": "On the 30th pay the rent, and on October 2nd renew the gym membership.",
+   "tasks": [
+    {
+     "title": "Pay the rent",
+     "date": "2026-09-30",
+     "time": null
+    },
+    {
+     "title": "Renew the gym membership",
+     "date": "2026-10-02",
+     "time": null
+    }
+   ],
+   "id": "n07"
+  },
+  {
+   "note": "Go to the gym at 7:30 in the morning tomorrow, then at 9 meet Madina at the office.",
+   "tasks": [
+    {
+     "title": "Go to the gym",
+     "date": "2026-09-24",
+     "time": "07:30"
+    },
+    {
+     "title": "Meet Madina at the office",
+     "date": "2026-09-24",
+     "time": "09:00"
+    }
+   ],
+   "id": "n08"
+  },
+  {
+   "note": "Buy a birthday cake for Nodira on Saturday and order balloons.",
+   "tasks": [
+    {
+     "title": "Buy a birthday cake for Nodira",
+     "date": "2026-09-26",
+     "time": null
+    },
+    {
+     "title": "Order balloons",
+     "date": "2026-09-26",
+     "time": null
+    }
+   ],
+   "id": "n09"
+  },
+  {
+   "note": "Um, I need to renew my driver's license, so on Monday get new photos taken.",
+   "tasks": [
+    {
+     "title": "Renew my driver's license",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Get new photos taken",
+     "date": "2026-09-28",
+     "time": null
+    }
+   ],
+   "id": "n10"
+  },
+  {
+   "note": "Call the plumber tomorrow at 2 pm, and text Bekzod the address.",
+   "tasks": [
+    {
+     "title": "Call the plumber",
+     "date": "2026-09-24",
+     "time": "14:00"
+    },
+    {
+     "title": "Text Bekzod the address",
+     "date": "2026-09-24",
+     "time": null
+    }
+   ],
+   "id": "n11"
+  },
+  {
+   "note": "This Sunday, write the first draft of the essay and send it to my teacher.",
+   "tasks": [
+    {
+     "title": "Write the first draft of the essay",
+     "date": "2026-09-27",
+     "time": null
+    },
+    {
+     "title": "Send it to my teacher",
+     "date": "2026-09-27",
+     "time": null
+    }
+   ],
+   "id": "n12"
+  },
+  {
+   "note": "Book a table at the restaurant for Friday at 7pm, and invite Dilnoza and Timur.",
+   "tasks": [
+    {
+     "title": "Book a table at the restaurant",
+     "date": "2026-09-25",
+     "time": "19:00"
+    },
+    {
+     "title": "Invite Dilnoza and Timur",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ],
+   "id": "n13"
+  },
+  {
+   "note": "Okay so, today at 6 take the car to the car wash.",
+   "tasks": [
+    {
+     "title": "Take the car to the car wash",
+     "date": "2026-09-23",
+     "time": "18:00"
+    }
+   ],
+   "id": "n14"
+  },
+  {
+   "note": "So tomorrow pack the suitcase and exchange some dollars.",
+   "tasks": [
+    {
+     "title": "Pack the suitcase",
+     "date": "2026-09-24",
+     "time": null
+    },
+    {
+     "title": "Exchange some dollars",
+     "date": "2026-09-24",
+     "time": null
+    }
+   ],
+   "id": "n15"
+  },
+  {
+   "note": "My sister is arriving on the 28th, I need to pick her up from the airport at 11pm.",
+   "tasks": [
+    {
+     "title": "Pick her up from the airport",
+     "date": "2026-09-28",
+     "time": "23:00"
+    }
+   ],
+   "id": "n16"
+  },
+  {
+   "note": "Remind me to call Otabek at 5, to order the cake on Friday, to check the hall tomorrow and to buy candles.",
+   "tasks": [
+    {
+     "title": "Call Otabek",
+     "date": "2026-09-23",
+     "time": "17:00"
+    },
+    {
+     "title": "Order the cake",
+     "date": "2026-09-25",
+     "time": null
+    },
+    {
+     "title": "Check the hall",
+     "date": "2026-09-24",
+     "time": null
+    },
+    {
+     "title": "Buy candles",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "n17"
+  },
+  {
+   "note": "Ugh, call the car dealer about the service on Tuesday.",
+   "tasks": [
+    {
+     "title": "Call the car dealer about the service",
+     "date": "2026-09-29",
+     "time": null
+    }
+   ],
+   "id": "n18"
+  },
+  {
+   "note": "Tomorrow at 9 a.m. I have a job interview, so iron my shirt tonight.",
+   "tasks": [
+    {
+     "title": "Job interview",
+     "date": "2026-09-24",
+     "time": "09:00"
+    },
+    {
+     "title": "Iron my shirt",
+     "date": "2026-09-23",
+     "time": "20:00"
+    }
+   ],
+   "id": "n19"
+  },
+  {
+   "note": "Pay the electricity bill before 6 today.",
+   "tasks": [
+    {
+     "title": "Pay the electricity bill",
+     "date": "2026-09-23",
+     "time": "18:00"
+    }
+   ],
+   "id": "n20"
+  },
+  {
+   "note": "On Wednesday next week, take Malika to the doctor at 10:15.",
+   "tasks": [
+    {
+     "title": "Take Malika to the doctor",
+     "date": "2026-09-30",
+     "time": "10:15"
+    }
+   ],
+   "id": "n21"
+  },
+  {
+   "note": "Reply to Rustam's email and schedule the team meeting for Thursday at 11.",
+   "tasks": [
+    {
+     "title": "Reply to Rustam's email",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Schedule the team meeting",
+     "date": "2026-09-24",
+     "time": "11:00"
+    }
+   ],
+   "id": "n22"
+  },
+  {
+   "note": "Water the garden plants tonight and take out the trash.",
+   "tasks": [
+    {
+     "title": "Water the garden plants",
+     "date": "2026-09-23",
+     "time": "20:00"
+    },
+    {
+     "title": "Take out the trash",
+     "date": "2026-09-23",
+     "time": null
+    }
+   ],
+   "id": "n23"
+  },
+  {
+   "note": "Renew the car insurance by the 5th.",
+   "tasks": [
+    {
+     "title": "Renew the car insurance",
+     "date": "2026-10-05",
+     "time": null
+    }
+   ],
+   "id": "n24"
+  },
+  {
+   "note": "Tomorrow at 1 pm lunch with Feruza, then at 3 call the landlord.",
+   "tasks": [
+    {
+     "title": "Lunch with Feruza",
+     "date": "2026-09-24",
+     "time": "13:00"
+    },
+    {
+     "title": "Call the landlord",
+     "date": "2026-09-24",
+     "time": "15:00"
+    }
+   ],
+   "id": "n25"
+  },
+  {
+   "note": "Um, just quickly buy some eggs and bread on the way home.",
+   "tasks": [
+    {
+     "title": "Buy some eggs and bread on the way home",
+     "date": null,
+     "time": null
+    }
+   ],
+   "id": "n26"
+  },
+  {
+   "note": "Friday evening, pick up Jahongir from the train station at 6:45.",
+   "tasks": [
+    {
+     "title": "Pick up Jahongir from the train station",
+     "date": "2026-09-25",
+     "time": "18:45"
+    }
+   ],
+   "id": "n27"
+  },
+  {
+   "note": "Prepare the slides for the client meeting, it's due tomorrow at 10.",
+   "tasks": [
+    {
+     "title": "Prepare the slides for the client meeting",
+     "date": "2026-09-24",
+     "time": "10:00"
+    }
+   ],
+   "id": "n28"
+  },
+  {
+   "note": "Tomorrow at 12 have lunch with Sherzod, and at 4 go to the bank.",
+   "tasks": [
+    {
+     "title": "Have lunch with Sherzod",
+     "date": "2026-09-24",
+     "time": "12:00"
+    },
+    {
+     "title": "Go to the bank",
+     "date": "2026-09-24",
+     "time": "16:00"
+    }
+   ],
+   "id": "n29"
+  },
+  {
+   "note": "Ah yes, the Wi-Fi at home is not working, call the provider tomorrow at 10.",
+   "tasks": [
+    {
+     "title": "Call the provider",
+     "date": "2026-09-24",
+     "time": "10:00"
+    }
+   ],
+   "id": "n30"
+  }
+ ]
+}

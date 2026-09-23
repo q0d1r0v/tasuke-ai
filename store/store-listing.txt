@@ -45,7 +45,7 @@ and the second begins.
 
 EVERYTHING HAPPENS ON YOUR PHONE
 
-Tasuke AI runs its speech recognition and its language model on your device.
+Tasuke AI runs its speech recognition and its task extraction on your device.
 Your voice is never uploaded. Your task list is never uploaded. There is no
 account to create, no server to trust and no data for anyone to lose, because
 none of it ever leaves your phone.
@@ -70,18 +70,18 @@ WHAT IT DOES NOT DO
 • No account. No email address. No password.
 • No analytics. No crash reporting. No advertising. No tracking of any kind.
 • No cloud sync, because there is no cloud.
-• One single network request in the app's entire life: downloading its language
-  model, once, on first launch. After that you can turn the internet off
-  forever.
+• Nothing to download after you install it. The speech model is built in, so
+  voice capture, tasks and reminders work with the internet off from the very
+  first launch.
 
 FREE, AND HONESTLY FREE
 
-Five voice captures every day, permanently. Unlimited typed tasks, unlimited
-reminders, unlimited history — those are never limited and never will be.
+One capture every day, spoken or typed, permanently. Unlimited reminders,
+unlimited search, unlimited history — those are never limited.
 
 TASUKE PRO
 
-Unlimited voice capture, for people who talk to their phone all day.
+Unlimited captures, for people who put their whole day into their phone.
 
 • $4.99 per month
 • $39.99 per year (save 33%)
@@ -109,10 +109,15 @@ Play       : Productivity
 --------------------------------------------------------------------------------
 SUPPORT / MARKETING URLS
 --------------------------------------------------------------------------------
+TODO(human): publish store/privacy-policy.html and store/terms.html (GitHub
+Pages is enough) and replace <github-user> below. Both stores require a privacy
+policy URL that loads.
+
 Privacy policy : https://<github-user>.github.io/tasuke-ai/privacy-policy.html
 Terms of use   : https://<github-user>.github.io/tasuke-ai/terms.html
-Support        : TODO(human) — a real, monitored address. Apple rejects a
-                 support URL that 404s, and Play requires a contact email.
+Support URL    : TODO(human) — a web page that loads. App Store Connect requires
+                 one and rejects a support URL that 404s.
+Support email  : info@digital-group.uz
 
 --------------------------------------------------------------------------------
 SCREENSHOT CAPTIONS  (in order)

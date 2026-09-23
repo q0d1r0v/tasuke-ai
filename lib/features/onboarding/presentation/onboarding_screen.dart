@@ -8,6 +8,7 @@ import 'package:tasuke_ai/app/theme/tasuke_spacing.dart';
 import 'package:tasuke_ai/app/theme/tasuke_typography.dart';
 import 'package:tasuke_ai/app/widgets/widgets.dart';
 import 'package:tasuke_ai/core/storage/prefs.dart';
+import 'package:tasuke_ai/features/onboarding/presentation/widgets/onboarding_illustration.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -50,17 +51,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _Page(
         title: context.l10n.onboardingTitle1,
         body: context.l10n.onboardingBody1,
-        icon: Icons.mic_none_rounded,
+        art: TasukeArt.guideVoice,
       ),
       _Page(
         title: context.l10n.onboardingTitle2,
         body: context.l10n.onboardingBody2,
-        icon: Icons.checklist_rounded,
+        art: TasukeArt.guideTasks,
       ),
       _Page(
         title: context.l10n.onboardingTitle3,
         body: context.l10n.onboardingBody3,
-        icon: Icons.lock_outline_rounded,
+        art: TasukeArt.guidePrivacy,
       ),
     ];
 
@@ -112,43 +113,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 }
 
 class _Page extends StatelessWidget {
-  const _Page({required this.title, required this.body, required this.icon});
+  const _Page({required this.title, required this.body, required this.art});
 
   final String title;
   final String body;
-  final IconData icon;
+  final String art;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: TasukeSpacing.gutter),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          SizedBox(
-            height: 220,
-            child: Stack(
-              alignment: Alignment.center,
+    // ⚠️ Scrolls when it has to. At the largest accessibility text sizes the
+    // copy outgrows the pager on every iPhone, and a plain Column clipped the
+    // last lines — on page 3, the privacy promise itself.
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: TasukeSpacing.gutter),
+          child: ConstrainedBox(
+            // Centred on a roomy phone, scrollable on a small one.
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                const GradientOrb(size: 190),
-                Icon(icon, size: 56, color: TasukeColors.primary),
+                OnboardingIllustration(asset: art),
+                const SizedBox(height: TasukeSpacing.huge),
+                Text(
+                  title,
+                  style: TasukeTypography.displayLg,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: TasukeSpacing.lg),
+                Text(
+                  body,
+                  style: TasukeTypography.bodyMd,
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: TasukeSpacing.huge),
-          Text(
-            title,
-            style: TasukeTypography.displayLg,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: TasukeSpacing.lg),
-          Text(
-            body,
-            style: TasukeTypography.bodyMd,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

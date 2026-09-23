@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto Backup rules for Android 11 and below (android:fullBackupContent).
+     Android 12+ reads data_extraction_rules.xml instead. Keep the two in step.
+
+     ⚠️ <exclude> only, never <include>. One <include> turns this file into an
+     allow-list, and files/tasuke.sqlite (the user's only copy of their tasks:
+     there is no server) and shared_prefs would silently drop out of it.
+
+     Why anything is excluded: Google cloud backup allows 25 MB per app, and an
+     app over that is skipped whole, not trimmed. files/models/ holds the 57 MB
+     whisper copy, which the app makes again from the APK. -->
+<full-backup-content>
+    <exclude domain="file" path="models"/>
+</full-backup-content>

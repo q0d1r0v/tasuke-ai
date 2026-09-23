@@ -1,4 +1,0 @@
-/home/user/projects/startup-apps/tasuke-ai/packages/whisper_ggml/android/.cxx/Release/2j6k3z4f/arm64-v8a/CMakeFiles/whisper.dir
-/home/user/projects/startup-apps/tasuke-ai/packages/whisper_ggml/android/.cxx/Release/2j6k3z4f/arm64-v8a/CMakeFiles/whisper_flutter.dir
-/home/user/projects/startup-apps/tasuke-ai/packages/whisper_ggml/android/.cxx/Release/2j6k3z4f/arm64-v8a/CMakeFiles/edit_cache.dir
-/home/user/projects/startup-apps/tasuke-ai/packages/whisper_ggml/android/.cxx/Release/2j6k3z4f/arm64-v8a/CMakeFiles/rebuild_cache.dir

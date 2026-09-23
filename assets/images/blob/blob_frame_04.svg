@@ -1,0 +1,51 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <radialGradient id="surface" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+    gradientTransform="translate(190 158) rotate(46) scale(354 340)">
+    <stop offset="0" stop-color="#FFFFFF" stop-opacity=".98"/>
+    <stop offset=".28" stop-color="#EDF7FF" stop-opacity=".96"/>
+    <stop offset=".62" stop-color="#CBE5FF" stop-opacity=".92"/>
+    <stop offset=".86" stop-color="#9FD0FF" stop-opacity=".90"/>
+    <stop offset="1" stop-color="#72B9FF" stop-opacity=".92"/>
+  </radialGradient>
+
+  <radialGradient id="blueCore" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+    gradientTransform="translate(340 235) rotate(90) scale(124 111)">
+    <stop offset="0" stop-color="#55BCFF" stop-opacity=".48"/>
+    <stop offset=".30" stop-color="#6CC8FF" stop-opacity=".38"/>
+    <stop offset=".62" stop-color="#8BD6FF" stop-opacity=".24"/>
+    <stop offset="1" stop-color="#B8E5FF" stop-opacity="0"/>
+  </radialGradient>
+
+  <radialGradient id="cyanCore" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+    gradientTransform="translate(317 219) scale(70 85)">
+    <stop stop-color="#75D5FF" stop-opacity=".30"/>
+    <stop offset="1" stop-color="#BDEEFF" stop-opacity="0"/>
+  </radialGradient>
+
+  <radialGradient id="highlight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+    gradientTransform="translate(166 137) rotate(42) scale(145 124)">
+    <stop stop-color="#FFFFFF" stop-opacity=".94"/>
+    <stop offset=".55" stop-color="#FFFFFF" stop-opacity=".36"/>
+    <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+
+  <linearGradient id="rim" x1="114" y1="101" x2="405" y2="405" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#BEE3FF" stop-opacity=".22"/>
+    <stop offset=".55" stop-color="#3D9DFF" stop-opacity=".48"/>
+    <stop offset="1" stop-color="#1688FF" stop-opacity=".22"/>
+  </linearGradient>
+
+  <clipPath id="clip"><path d="M245 76 C324 55 402 88 440 160 C487 249 463 348 394 405 C318 468 213 466 140 403 C65 338 55 235 111 157 C141 115 187 91 245 76Z"/></clipPath>
+</defs>
+
+<g clip-path="url(#clip)">
+  <rect width="512" height="512" fill="url(#surface)"/>
+  <ellipse cx="340" cy="235" rx="128" ry="137" fill="url(#blueCore)"/>
+  <ellipse cx="317" cy="219" rx="82" ry="96" fill="url(#cyanCore)"/>
+  <ellipse cx="166" cy="137" rx="151" ry="132" fill="url(#highlight)"/>
+  <ellipse cx="223" cy="338" rx="135" ry="91" fill="#FFFFFF" fill-opacity=".10"/>
+</g>
+
+<path d="M245 76 C324 55 402 88 440 160 C487 249 463 348 394 405 C318 468 213 466 140 403 C65 338 55 235 111 157 C141 115 187 91 245 76Z" stroke="url(#rim)" stroke-width="3"/>
+</svg>

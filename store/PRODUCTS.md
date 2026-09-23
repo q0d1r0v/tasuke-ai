@@ -21,7 +21,7 @@ Both belong to one subscription group / one Play subscription family:
 - **Group display name:** Tasuke Pro
 
 There is **no introductory offer and no free trial** on either product. The free
-tier (5 voice captures a day, forever) is the trial; adding a 7-day trial on top
+tier (1 capture a day, spoken or typed, forever) is the trial; adding a 7-day trial on top
 of it would give a new user two overlapping "free" stories and makes the
 `EntitlementStatus.free` → `pending` → `proActive` sequence much harder to
 reason about.
@@ -48,7 +48,9 @@ the simulator behaves like the store.
   equivalents. ⚠️ The app never renders a hardcoded price — `SubscriptionPlan.price`
   is the store's own localised string, and a guard test forbids a currency
   literal under `lib/features/subscription/`.
-- **Billing grace period: ON.** 16 days (yearly), 6 days (monthly).
+- **Billing grace period: ON, 16 days** (App Store Connect → the app →
+  Subscriptions → Billing Grace Period). ⚠️ One app-wide setting that covers
+  both plans; Apple offers only 3, 16 or 28 days and has no per-product value.
 - Family Sharing: **off**.
 - Local testing uses `ios/Runner/Tasuke.storekit`, wired into the Runner scheme.
   That file is a simulator fixture; it does **not** configure the real store.
@@ -72,13 +74,17 @@ Play models this as one subscription per product id with base plans underneath.
   `proGrace` as entitled. A grace-period subscriber has a failing card, not a
   cancelled subscription.
 - Proration mode for monthly → yearly: **charge prorated price / immediate**.
+  The app never switches plans itself: a subscriber's "Manage subscription"
+  opens the store's own subscription page, so this setting applies to changes
+  the user makes there.
 
 ## Manage-subscription links
 
-Rendered by the "Manage subscription" row, from `ProductIds`:
+Opened by the paywall's "Manage subscription" button (what a subscriber sees
+instead of "Subscribe"), from `ProductIds.manageUri`:
 
 - Apple: `https://apps.apple.com/account/subscriptions`
 - Google: `https://play.google.com/store/account/subscriptions?sku=<productId>&package=uz.digitalgroup.tasuke`
 
 Both are `https`, which is why `AndroidManifest.xml` needs its `<queries>` block —
-without it `canLaunchUrl` returns false and the row does nothing.
+without it `canLaunchUrl` returns false and the button does nothing.

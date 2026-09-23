@@ -1,0 +1,952 @@
+{
+ "_about": "HELD-OUT labelled set, written independently of the implementation (three speaker profiles + an auditor). Do not tune rules against these cases; they measure generalisation. Reference moment Monday 2026-09-21 10:00 local. Day parts follow ExtractionDefaults: morning 09:00, afternoon 14:00, evening 18:00, tonight 20:00.",
+ "now": "2026-09-21T10:00",
+ "cases": [
+  {
+   "note": "Tomorrow I go to bazaar and buy meat and vegetables for plov.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Buy meat and vegetables at bazaar",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Call to my brother Aziz today evening.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Call brother Aziz",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Remind me pay for internet at 9.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Pay for internet",
+     "date": "2026-09-22",
+     "time": "09:00"
+    }
+   ]
+  },
+  {
+   "note": "Hello, how are you? Thank you for this app, it's very nice.",
+   "profile": "nonnative",
+   "tasks": []
+  },
+  {
+   "note": "Okay, um, I have some tasks for today.",
+   "profile": "nonnative",
+   "tasks": []
+  },
+  {
+   "note": "Tomorrow I have three things. First, go to bank and take new bank card. Second, call Dilnoza about the wedding. Then buy flowers for my mother.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Get new bank card at bank",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Call Dilnoza about the wedding",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Buy flowers for mother",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Meeting with Sardor on Friday at 3 PM.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Meeting with Sardor",
+     "date": "2026-09-25",
+     "time": "15:00"
+    }
+   ]
+  },
+  {
+   "note": "I must submit my documents for visa next week.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Submit visa documents",
+     "date": "2026-09-28",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Uh, pay the rent for apartment on the 25th.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Pay rent for apartment",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Malika's birthday party is first of October at 7 p.m., don't forget.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Malika's birthday party",
+     "date": "2026-10-01",
+     "time": "19:00"
+    }
+   ]
+  },
+  {
+   "note": "In two hours I need to pick up my son from school.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Pick up son from school",
+     "date": "2026-09-21",
+     "time": "12:00"
+    }
+   ]
+  },
+  {
+   "note": "Call mom and pay the electricity bill.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Call mom",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Pay the electricity bill",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Okay so tomorrow I have exam in university at 9.30 and after exam I need go to library for return the books and in the evening call to Bekzod about football.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Exam at university",
+     "date": "2026-09-22",
+     "time": "09:30"
+    },
+    {
+     "title": "Return books to library",
+     "date": "2026-09-22",
+     "time": null
+    },
+    {
+     "title": "Call Bekzod about football",
+     "date": "2026-09-22",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Buy bread, milk and eggs.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Buy bread, milk and eggs",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Wednesday at 15:00 dentist appointment.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Dentist appointment",
+     "date": "2026-09-23",
+     "time": "15:00"
+    }
+   ]
+  },
+  {
+   "note": "Tonight I watch football match with my friends.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Watch football match with friends",
+     "date": "2026-09-21",
+     "time": "20:00"
+    }
+   ]
+  },
+  {
+   "note": "Next Monday I go to Samarkand by train, so today I must buy the tickets.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Go to Samarkand by train",
+     "date": "2026-09-28",
+     "time": null
+    },
+    {
+     "title": "Buy train tickets",
+     "date": "2026-09-21",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Remind me take my medicine at 4 p.m.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Take medicine",
+     "date": "2026-09-21",
+     "time": "16:00"
+    }
+   ]
+  },
+  {
+   "note": "Thank you, that's all for now.",
+   "profile": "nonnative",
+   "tasks": []
+  },
+  {
+   "note": "On October 5th meeting with landlord about the apartment.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Meeting with landlord about the apartment",
+     "date": "2026-10-05",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Send email to my teacher, print the homework, wash the car and call the plumber.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Send email to teacher",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Print the homework",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Wash the car",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Call the plumber",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "At 11 I have call with the client, and at noon lunch with Aziz and Dilnoza.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Call with the client",
+     "date": "2026-09-21",
+     "time": "11:00"
+    },
+    {
+     "title": "Lunch with Aziz and Dilnoza",
+     "date": "2026-09-21",
+     "time": "12:00"
+    }
+   ]
+  },
+  {
+   "note": "Uh, on the 3rd I need to renew my passport.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Renew passport",
+     "date": "2026-10-03",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Tomorrow morning go to post office and send package to my sister, and in the afternoon buy vitamins for grandmother.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Send package to sister",
+     "date": "2026-09-22",
+     "time": "09:00"
+    },
+    {
+     "title": "Buy vitamins for grandmother",
+     "date": "2026-09-22",
+     "time": "14:00"
+    }
+   ]
+  },
+  {
+   "note": "Pick up Malika from the airport at six.",
+   "profile": "nonnative",
+   "tasks": [
+    {
+     "title": "Pick up Malika from the airport",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Remind me to call Anna tomorrow at 3 PM.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Call Anna",
+     "date": "2026-09-22",
+     "time": "15:00"
+    }
+   ]
+  },
+  {
+   "note": "Okay, so I need to send the invoice to the Henderson client, pick up the kids from school at 3.30 p.m. and then buy bread and milk on the way home.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Send the invoice to the Henderson client",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Pick up the kids from school",
+     "date": "2026-09-21",
+     "time": "15:30"
+    },
+    {
+     "title": "Buy bread and milk",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Hi, good morning. Um, I'm just testing if this thing works.",
+   "profile": "busy",
+   "tasks": []
+  },
+  {
+   "note": "First, finish the quarterly report by Friday. Second, book a meeting room for the client demo. And then email Sardor about the contract.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Finish the quarterly report",
+     "date": "2026-09-25",
+     "time": null
+    },
+    {
+     "title": "Book a meeting room for the client demo",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Email Sardor about the contract",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Doctor's appointment for Lily on Wednesday at 9.15 a.m.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Doctor's appointment for Lily",
+     "date": "2026-09-23",
+     "time": "09:15"
+    }
+   ]
+  },
+  {
+   "note": "In two hours deploy the new build to staging, and then message the QA team tomorrow morning.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Deploy the new build to staging",
+     "date": "2026-09-21",
+     "time": "12:00"
+    },
+    {
+     "title": "Message the QA team",
+     "date": "2026-09-22",
+     "time": "09:00"
+    }
+   ]
+  },
+  {
+   "note": "Pay the electricity bill on the 25th.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Pay the electricity bill",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Okay, thanks, that's all for now.",
+   "profile": "busy",
+   "tasks": []
+  },
+  {
+   "note": "Um, next week I have to renew my passport, and uh, call the insurance company tonight.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Renew passport",
+     "date": "2026-09-28",
+     "time": null
+    },
+    {
+     "title": "Call the insurance company",
+     "date": "2026-09-21",
+     "time": "20:00"
+    }
+   ]
+  },
+  {
+   "note": "Meeting with Sardor at 4 PM today.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Meeting with Sardor",
+     "date": "2026-09-21",
+     "time": "16:00"
+    }
+   ]
+  },
+  {
+   "note": "So I'm walking to the office right now and I need to review Jake's pull request, then at noon I have a call with the marketing agency, I also need to update the budget spreadsheet, and oh, the dentist for Max is on October 5th.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Review Jake's pull request",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Call with the marketing agency",
+     "date": "2026-09-21",
+     "time": "12:00"
+    },
+    {
+     "title": "Update the budget spreadsheet",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Dentist appointment for Max",
+     "date": "2026-10-05",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Remind me at 9 to send the weekly status update.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Send the weekly status update",
+     "date": "2026-09-22",
+     "time": "09:00"
+    }
+   ]
+  },
+  {
+   "note": "Grocery list, eggs, bread, apples and some chicken for dinner.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Buy eggs, bread, apples and chicken",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Call the plumber this evening and ask him about the leaking kitchen sink.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Call the plumber about the leaking kitchen sink",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Next Monday at 10 a.m. there's the board meeting, so I need to prepare the slides by Sunday.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Board meeting",
+     "date": "2026-09-28",
+     "time": "10:00"
+    },
+    {
+     "title": "Prepare the slides",
+     "date": "2026-09-27",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Uh, pick up Emma from football practice at six.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Pick up Emma from football practice",
+     "date": "2026-09-21",
+     "time": "18:00"
+    }
+   ]
+  },
+  {
+   "note": "Okay, so I have a few tasks for today, let me think.",
+   "profile": "busy",
+   "tasks": []
+  },
+  {
+   "note": "Tomorrow morning call the bank about the mortgage, and tomorrow afternoon take the car to the garage.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Call the bank about the mortgage",
+     "date": "2026-09-22",
+     "time": "09:00"
+    },
+    {
+     "title": "Take the car to the garage",
+     "date": "2026-09-22",
+     "time": "14:00"
+    }
+   ]
+  },
+  {
+   "note": "Send the invoice to Acme by 5 PM, and um, reply to Olga's email.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Send the invoice to Acme",
+     "date": "2026-09-21",
+     "time": "17:00"
+    },
+    {
+     "title": "Reply to Olga's email",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "On the first of October submit the tax documents to the accountant.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Submit the tax documents to the accountant",
+     "date": "2026-10-01",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Remind me to water the plants.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Water the plants",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Dinner with the Johnsons on Friday at 7 p.m. Also renew the gym membership.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Dinner with the Johnsons",
+     "date": "2026-09-25",
+     "time": "19:00"
+    },
+    {
+     "title": "Renew the gym membership",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Call with the investors on Thursday at 15:00.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Call with the investors",
+     "date": "2026-09-24",
+     "time": "15:00"
+    }
+   ]
+  },
+  {
+   "note": "Parent-teacher conference on the 3rd at 5.30 p.m.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Parent-teacher conference",
+     "date": "2026-10-03",
+     "time": "17:30"
+    }
+   ]
+  },
+  {
+   "note": "Okay so I need to finish the client proposal, call the school about Tom's field trip form, transfer the rent to the landlord, and at 8 tonight check the server logs.",
+   "profile": "busy",
+   "tasks": [
+    {
+     "title": "Finish the client proposal",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Call the school about Tom's field trip form",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Transfer the rent to the landlord",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Check the server logs",
+     "date": "2026-09-21",
+     "time": "20:00"
+    }
+   ]
+  },
+  {
+   "note": "Thank you.",
+   "profile": "edge",
+   "tasks": []
+  },
+  {
+   "note": "Milk.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Buy milk",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Send the build and the release notes to James by Friday.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Send the build and release notes to James",
+     "date": "2026-09-25",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Buy 3 apples, 2 lemons and a bag of rice.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Buy 3 apples, 2 lemons and a bag of rice",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "I need to march down to the store and grab some eggs before noon.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Buy eggs from the store",
+     "date": "2026-09-21",
+     "time": "12:00"
+    }
+   ]
+  },
+  {
+   "note": "Remind me to call May from accounting tomorrow at 9.30.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Call May from accounting",
+     "date": "2026-09-22",
+     "time": "09:30"
+    }
+   ]
+  },
+  {
+   "note": "The sun is out, so mow the lawn this afternoon.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Mow the lawn",
+     "date": "2026-09-21",
+     "time": "14:00"
+    }
+   ]
+  },
+  {
+   "note": "Remind me in 30 minutes to take the chicken out of the oven.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Take the chicken out of the oven",
+     "date": "2026-09-21",
+     "time": "10:30"
+    }
+   ]
+  },
+  {
+   "note": "Don't forget to renew the car insurance before the 30th.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Renew the car insurance",
+     "date": "2026-09-30",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Book room 15 for the design review on Thursday at 2 PM.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Book room 15 for the design review",
+     "date": "2026-09-24",
+     "time": "14:00"
+    }
+   ]
+  },
+  {
+   "note": "Update the app to version 2.1 and email the changelog to Lena.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Update the app to version 2.1",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Email the changelog to Lena",
+     "date": null,
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Call the dentist tomorrow. Call the dentist tomorrow.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Call the dentist",
+     "date": "2026-09-22",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Okay, so I have a few things to do today.",
+   "profile": "edge",
+   "tasks": []
+  },
+  {
+   "note": "First, pick up the dry cleaning. Second, drop off the package at the post office. Third, pay the electricity bill by the 3rd.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Pick up the dry cleaning",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Drop off the package at the post office",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Pay the electricity bill",
+     "date": "2026-10-03",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Meeting with Sardor on October 5th at 11.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Meeting with Sardor",
+     "date": "2026-10-05",
+     "time": "11:00"
+    }
+   ]
+  },
+  {
+   "note": "Um so I need to call the landlord about the leaking sink and I also have to finish the quarterly report by Wednesday and oh yeah pick up Anna from the airport tonight at 8.45 and I think that's it.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Call the landlord about the leaking sink",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Finish the quarterly report",
+     "date": "2026-09-23",
+     "time": null
+    },
+    {
+     "title": "Pick up Anna from the airport",
+     "date": "2026-09-21",
+     "time": "20:45"
+    }
+   ]
+  },
+  {
+   "note": "Remind me at 9 to water the plants.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Water the plants",
+     "date": "2026-09-22",
+     "time": "09:00"
+    }
+   ]
+  },
+  {
+   "note": "Pay the rent on the first of October and cancel the gym membership next week.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Pay the rent",
+     "date": "2026-10-01",
+     "time": null
+    },
+    {
+     "title": "Cancel the gym membership",
+     "date": "2026-09-28",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Call mom at six. Also buy flowers for her birthday on Saturday.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Call mom",
+     "date": "2026-09-21",
+     "time": "18:00"
+    },
+    {
+     "title": "Buy flowers for mom's birthday",
+     "date": "2026-09-26",
+     "time": null
+    }
+   ]
+  },
+  {
+   "note": "Dentist appointment at 15:00 on the 25th.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Dentist appointment",
+     "date": "2026-09-25",
+     "time": "15:00"
+    }
+   ]
+  },
+  {
+   "note": "In two hours submit the timesheet.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Submit the timesheet",
+     "date": "2026-09-21",
+     "time": "12:00"
+    }
+   ]
+  },
+  {
+   "note": "Book a table for four at Luigi's on Friday at 7.30 p.m.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Book a table for four at Luigi's",
+     "date": "2026-09-25",
+     "time": "19:30"
+    }
+   ]
+  },
+  {
+   "note": "Uh, remind me to, uh, to text Jamal back, and tomorrow at noon lunch with the team.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Text Jamal back",
+     "date": null,
+     "time": null
+    },
+    {
+     "title": "Lunch with the team",
+     "date": "2026-09-22",
+     "time": "12:00"
+    }
+   ]
+  },
+  {
+   "note": "May I add one more? Pick up the package from room 204 at 4 p.m.",
+   "profile": "edge",
+   "tasks": [
+    {
+     "title": "Pick up the package from room 204",
+     "date": "2026-09-21",
+     "time": "16:00"
+    }
+   ]
+  },
+  {
+   "note": "Testing, testing, one, two, three.",
+   "profile": "edge",
+   "tasks": []
+  }
+ ]
+}

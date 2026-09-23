@@ -26,10 +26,12 @@ speechRecognizerProvider = Provider<SpeechRecognizer>((Ref ref) {
   return recognizer;
 });
 
-/// Whether transcription can run at all right now. Re-read rather than cached:
-/// the answer changes when the asset copy finishes and when the microphone
-/// permission changes.
-final FutureProvider<SpeechAvailability> speechAvailabilityProvider =
-    FutureProvider<SpeechAvailability>(
-      (Ref ref) => ref.watch(speechRecognizerProvider).availability(),
-    );
+// ⚠️ There was a `speechAvailabilityProvider` here, and nothing ever watched
+// it. It has been deleted rather than wired up: availability is a question with
+// an answer that expires (the microphone permission can change while the app is
+// backgrounded), so the one place that needs it — `VoiceCapturePipeline
+// .startRecording` — asks the recogniser directly, at the moment it matters. A
+// cached AsyncValue of it could only ever be stale.
+//
+// `test/arch/provider_reachability_test.dart` now fails the build on any
+// provider that nothing consumes, which is what would have caught it.

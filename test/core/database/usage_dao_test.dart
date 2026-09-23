@@ -43,7 +43,7 @@ void main() {
 
     test('concurrent captures all land', () async {
       // The increment happens inside SQLite, so twenty overlapping writes
-      // cannot lose one to a stale read — which is what "5 free captures a day"
+      // cannot lose one to a stale read — which is what the daily free quota
       // depends on being exactly true.
       await Future.wait<void>(<Future<void>>[
         for (int i = 0; i < 20; i++)
@@ -193,6 +193,22 @@ void main() {
       expect(
         await repository.read(kToday.addDays(-120)),
         DailyUsage.empty(kToday.addDays(-120)),
+      );
+      expect((await repository.read(kToday)).captureCount, 1);
+    });
+
+    test('"Delete all data" cannot reset the free quota', () async {
+      // `databaseResetProvider` calls prune(today, keepDays: 0). Every earlier
+      // day goes; today's count stays, or wiping the app's data would be a
+      // way to get another free capture every day.
+      await repository.recordCapture(kToday.addDays(-1), taskCount: 2);
+      await repository.recordCapture(kToday, taskCount: 1);
+
+      await repository.prune(kToday, keepDays: 0);
+
+      expect(
+        await repository.read(kToday.addDays(-1)),
+        DailyUsage.empty(kToday.addDays(-1)),
       );
       expect((await repository.read(kToday)).captureCount, 1);
     });
