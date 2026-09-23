@@ -1,0 +1,87 @@
+# App Store screenshots from a real iOS simulator.
+#
+# The same integration_test/screenshots_test.dart that made the Android set,
+# run on the largest iPhone the runner has, so the captures come out at the
+# 6.9" size App Store Connect asks for (1320×2868 on a 16/17 Pro Max). Nothing
+# on Linux can produce these: an Android emulator resized to iPhone pixels still
+# renders Android scroll physics, fonts and safe-area insets.
+name: iOS Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      # Same pin as ci.yml and ios-release.yml.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.5
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # The newest "Pro Max" runtime the image ships, picked rather than named:
+      # a hardcoded device name is a red build the day the image drops it.
+      - name: Boot the simulator
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+          devices = json.load(sys.stdin)["devices"]
+          best = None
+          for runtime, items in devices.items():
+              if "iOS" not in runtime:
+                  continue
+              version = tuple(int(n) for n in re.findall(r"\d+", runtime.split("iOS")[-1]))
+              for d in items:
+                  if "Pro Max" in d["name"]:
+                      key = (version, d["name"])
+                      if best is None or key > best[0]:
+                          best = (key, d["udid"], d["name"], runtime)
+          if best is None:
+              sys.exit("no iPhone Pro Max simulator available")
+          print(best[1])
+          print(f"{best[2]} / {best[3]}", file=sys.stderr)
+          ')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+
+      # The driver writes to store/screenshots/; the Android set in the repo is
+      # cleared first so the artifact holds iPhone captures only.
+      - name: Capture
+        run: |
+          set -euo pipefail
+          rm -rf store/screenshots
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/screenshots_test.dart \
+            -d "$UDID"
+
+          COUNT=$(find store/screenshots -name '*.png' | wc -l | tr -d ' ')
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::error::the run produced no screenshots"
+            exit 1
+          fi
+          for f in store/screenshots/*.png; do
+            echo "$f: $(sips -g pixelWidth -g pixelHeight "$f" | awk '/pixel/ {printf "%s ", $2}')"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots-${{ github.run_number }}
+          path: store/screenshots/*.png
+          if-no-files-found: error
+          retention-days: 14

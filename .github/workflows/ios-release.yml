@@ -226,6 +226,11 @@ jobs:
             AUTH=(--apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID")
             echo "Authenticating with the App Store Connect API key"
           elif [ -n "${APPLE_ID:-}" ] && [ -n "${APP_PASSWORD:-}" ]; then
+            # Trimmed: a secret pasted with a trailing newline or space fails
+            # as -22938 "Sign in with the app-specific password", which reads
+            # like a wrong password rather than stray whitespace.
+            APPLE_ID="$(printf '%s' "$APPLE_ID" | tr -d '[:space:]')"
+            export APP_PASSWORD="$(printf '%s' "$APP_PASSWORD" | tr -d '[:space:]')"
             AUTH=(--username "$APPLE_ID" --password "@env:APP_PASSWORD")
             echo "Authenticating as $APPLE_ID with an app-specific password"
           else
