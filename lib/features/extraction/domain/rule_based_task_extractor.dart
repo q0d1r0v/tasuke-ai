@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:tasuke_ai/core/time/local_date.dart';
 import 'package:tasuke_ai/core/time/local_date_time.dart';
 import 'package:tasuke_ai/core/time/local_time_of_day.dart';
@@ -41,6 +43,20 @@ final class RuleBasedTaskExtractor implements TaskExtractor {
     String transcript, {
     required LocalDateTime now,
   }) async {
+    // ⚠️ A long transcript is read on an isolate of its own. Read here, a
+    // whisper repetition loop — "at 5, at 5, at 5…" for 2,000 characters
+    // took five seconds on a laptop — froze the UI for all of it, and the
+    // pipeline's timeout could not fire until the work was already done.
+    if (transcript.length > ExtractionDefaults.inlineExtractionChars) {
+      return Isolate.run(() => _extract(transcript, now: now));
+    }
+    return _extract(transcript, now: now);
+  }
+
+  List<ExtractedTask> _extract(
+    String transcript, {
+    required LocalDateTime now,
+  }) {
     final List<ExtractedTask> tasks = <ExtractedTask>[];
 
     // The date the speaker has put the rest of the note under, if any:
@@ -407,6 +423,18 @@ final class RuleBasedTaskExtractor implements TaskExtractor {
         spokenDate = null;
       }
 
+      // "…about the missing order from yesterday": a day already gone names
+      // the thing, not when to do it. ⚠️ Kept, the card was overdue the
+      // moment it was made. (What was done on it never gets here.)
+      if (date != null && date.isBefore(now.date)) {
+        // Its clock time the next time it comes round, like a bare "at 10".
+        date = time == null
+            ? null
+            : time.minuteOfDay < now.time.minuteOfDay
+            ? now.date.addDays(1)
+            : now.date;
+      }
+
       if (tasks.any(
         (ExtractedTask t) =>
             t.title.toLowerCase() == title.toLowerCase() &&
@@ -416,6 +444,16 @@ final class RuleBasedTaskExtractor implements TaskExtractor {
         // whisper repeats itself on a long pause: "Call the dentist tomorrow.
         // Call the dentist tomorrow." is one task said twice.
         continue;
+      }
+      // "Take the medicine, take the medicine at 8 pm": said again to give
+      // it a when. ⚠️ Kept, it was two cards, one with no day.
+      if (tasks.length > sentenceStart &&
+          tasks.last.title.toLowerCase() == title.toLowerCase()) {
+        if (tasks.last.date == null && tasks.last.time == null) {
+          tasks.removeLast();
+        } else if (date == null && time == null) {
+          continue;
+        }
       }
 
       if (time != null) {

@@ -27,7 +27,7 @@ final class TitleCleaner {
     String text = _cut(
       clause,
       spans ?? <MatchSpan>[MatchSpan(matchStart, matchEnd)],
-    );
+    ).replaceAll(_musicNotes, ' ');
     text = _withoutVagueWhen(text).replaceAll(_whitespace, ' ').trim();
     text = _withoutSetOffFiller(text);
     text = text.replaceAll(_strandedPunctuation, ' ').trim();
@@ -78,8 +78,16 @@ final class TitleCleaner {
           ? topic
           : '$topic: ${verbFirst ? _lowerFirst(text) : text}';
     }
-    return TaskTitle.normalise(_sentenceCase(text));
+    final String title = TaskTitle.normalise(_sentenceCase(text));
+    // "?", "'", "♪" — what is left of "Then tonight?" or whisper's music
+    // notes once the when is cut. ⚠️ Kept, each was a card of its own.
+    return _saysSomething.hasMatch(title) ? title : '';
   }
+
+  static final RegExp _saysSomething = RegExp(r'[\p{L}\p{N}]', unicode: true);
+
+  /// The music notes whisper writes for a tune it hears.
+  static final RegExp _musicNotes = RegExp('[\u266A\u266B\u266C]+');
 
   static String _lowerFirst(String text) =>
       text.isEmpty ? text : '${text[0].toLowerCase()}${text.substring(1)}';
@@ -246,6 +254,11 @@ final class TitleCleaner {
     final String rest = text.substring(match.end);
     final String lower = rest.toLowerCase();
     final String next = wordAfter(lower, lower.startsWith('to ') ? 3 : 0);
+    // ⚠️ A verb alone only after "for (a day)": "my plan for today is cook",
+    // not "the job is open", which was a card called "Open".
+    if (!rest.trim().contains(' ') && !match[0]!.contains(RegExp(r'\bfor\b'))) {
+      return text;
+    }
     return _isVerb(next) ? rest : text;
   }
 
@@ -289,9 +302,11 @@ final class TitleCleaner {
         if (m.end >= text.length) return '';
         final String before = wordBefore(text, m.start).toLowerCase();
         final String after = wordAfter(text, m.end).toLowerCase();
+        // "order the water from, uh, Hydrolife": after a preposition the
+        // phrase goes on, and the comma went with the "uh".
         final bool inPhrase =
             _isVerb(before) ||
-            before == 'to' ||
+            _phraseGoesOn.contains(before) ||
             _isVerb(after) ||
             _phraseGoesOn.contains(after);
         return inPhrase ? ' ' : ', ';
@@ -536,6 +551,10 @@ final class TitleCleaner {
     r"|(?:,\s*|\s+)(?:don['\u2019]t forget|please|ok|okay)$"
     // "Order the cake from Bon too", "…and then what else"
     r'|(?:,\s*|\s+)(?:too|as\s+well)$'
+    // "Call Anna at five actually", "…at seven rather than eight": what is
+    // left of a time kept or taken back once the time is cut.
+    r'|(?:,\s*|\s+)(?:actually|sorry)$'
+    r'|(?:,\s*|\s+)rather\s+than(?:\s+at)?\s+[a-z0-9:.]+(?:\s*[ap]\.?m\.?)?$'
     r'|(?:,\s*|\s+)(?:and\s+)?(?:then\s+)?what\s+else$'
     // "change the oil on Saturday maybe": a hedge left behind by the day.
     r'|(?:,\s*|\s+)(?:maybe|probably|perhaps)$'

@@ -153,6 +153,7 @@ final class FakeTaskExtractor implements TaskExtractor {
 
   String? lastTranscript;
   LocalDateTime? lastNow;
+  int calls = 0;
 
   @override
   Future<bool> isReady() async => ready;
@@ -162,6 +163,7 @@ final class FakeTaskExtractor implements TaskExtractor {
     String transcript, {
     required LocalDateTime now,
   }) async {
+    calls++;
     lastTranscript = transcript;
     lastNow = now;
     if (delay != null) await Future<void>.delayed(delay!);

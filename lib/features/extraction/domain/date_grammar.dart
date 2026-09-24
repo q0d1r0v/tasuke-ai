@@ -88,14 +88,33 @@ abstract final class DateGrammar {
       final int byStart = a.start.compareTo(b.start);
       return byStart != 0 ? byStart : b.length.compareTo(a.length);
     });
-    return _withoutMovedDays(found, text);
+    final List<(int, int)> moved = _movedRanges(found, text);
+    found.removeWhere(
+      (DateMatch m) =>
+          moved.any(((int, int) r) => m.start >= r.$1 && m.start <= r.$2),
+    );
+    return found;
   }
 
-  /// [found] without the two days of "move the appointment from Friday to
-  /// Monday": the old and the new day of the thing moved, not the day of the
-  /// task. ⚠️ Read as a when, the call took the old day, and the title lost
-  /// it: "Call the dentist to move the appointment from to Monday".
-  static List<DateMatch> _withoutMovedDays(List<DateMatch> found, String text) {
+  /// Where [phrase] says "move the appointment from Friday to Monday": from
+  /// the old day to the end of the new one. Both days, and a time said right
+  /// after the new one ("…to Monday at 3"), belong to the thing moved, not to
+  /// the task. ⚠️ Read as a when, the call took the old day, and the title
+  /// lost it: "Call the dentist to move the appointment from to Monday".
+  static List<(int, int)> movedRanges(String phrase) {
+    final String text = foldTemporalCase(phrase);
+    final List<DateMatch> found = <DateMatch>[];
+    for (final _DateRule rule in _rules) {
+      for (final RegExpMatch match in rule.pattern.allMatches(text)) {
+        final DateMatch? hit = rule.resolve(match, _anyMoment, text);
+        if (hit != null) found.add(hit);
+      }
+    }
+    return _movedRanges(found, text);
+  }
+
+  static List<(int, int)> _movedRanges(List<DateMatch> found, String text) {
+    final List<(int, int)> ranges = <(int, int)>[];
     for (final RegExpMatch move in _moveFrom.allMatches(text)) {
       final int from = move.end;
       final DateMatch? old = found
@@ -105,18 +124,23 @@ abstract final class DateGrammar {
       final Match? to = _to.matchAsPrefix(text, old.end);
       if (to == null) continue;
       final int onward = to.end;
-      if (!found.any((DateMatch m) => m.start == onward)) continue;
-      found.removeWhere((DateMatch m) => m.start >= from && m.start <= onward);
+      int end = -1;
+      for (final DateMatch m in found) {
+        if (m.start == onward && m.end > end) end = m.end;
+      }
+      if (end >= 0) ranges.add((from, end));
     }
-    return found;
+    return ranges;
   }
 
   static final RegExp _moveFrom = RegExp(
     r'\b(?:move|moving|moved|reschedule|rescheduling|change|changing|shift'
-    r'|push|postpone|switch)\b[^.,;!?]{0,60}?\bfrom\s+',
+    r'|push|postpone)\b[^.,;!?]{0,60}?\bfrom\s+',
   );
 
-  static final RegExp _to = RegExp(r'\s+(?:to|till|until)\s+');
+  /// ⚠️ "to" only: "change the bandage from today until Sunday at 8 am" is
+  /// how long, not where to, and lost its 08:00.
+  static final RegExp _to = RegExp(r'\s+to\s+');
 
   /// The date [phrase] is about: the best of [allMatches], unless a date that
   /// names its month, or a day of the month after a weekday, is part of the
@@ -994,9 +1018,10 @@ abstract final class DateGrammar {
       r'\b(?:in|after)\s+(?:(?:about|around|like|maybe|approximately'
       r'|roughly|another|just)\s+)?';
 
-  /// "in an hour or so" — ⚠️ without it the "so" split the note, and "Or"
-  /// was a card of its own.
-  static const String _orSo = r'(?:\s+or\s+so)?';
+  /// "in an hour or so", "in 10 minutes or sooner" — ⚠️ without it the "so"
+  /// split the note, and "Or" was a card of its own.
+  static const String _orSo =
+      r'(?:\s+or\s+(?:so|sooner|earlier|later|less|more|something)\b)?';
 
   static const String _hourCountWords =
       r'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve';

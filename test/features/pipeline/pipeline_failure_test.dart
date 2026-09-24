@@ -10,6 +10,7 @@ import 'package:tasuke_ai/core/permissions/app_permission.dart';
 import 'package:tasuke_ai/core/speech/speech_recognizer.dart';
 import 'package:tasuke_ai/core/time/local_date_time.dart';
 import 'package:tasuke_ai/features/extraction/domain/extracted_task.dart';
+import 'package:tasuke_ai/features/extraction/domain/extraction_defaults.dart';
 import 'package:tasuke_ai/features/extraction/domain/task_extractor.dart';
 import 'package:tasuke_ai/features/pipeline/domain/voice_capture_pipeline.dart';
 import 'package:tasuke_ai/features/tasks/domain/task_draft.dart';
@@ -196,6 +197,8 @@ final class HangingExtractor implements TaskExtractor {
   final Completer<List<ExtractedTask>> _never =
       Completer<List<ExtractedTask>>();
 
+  int calls = 0;
+
   @override
   Future<bool> isReady() async => true;
 
@@ -203,7 +206,10 @@ final class HangingExtractor implements TaskExtractor {
   Future<List<ExtractedTask>> extract(
     String transcript, {
     required LocalDateTime now,
-  }) => _never.future;
+  }) {
+    calls++;
+    return _never.future;
+  }
 }
 
 /// An extractor that cannot even answer whether it is ready.
@@ -615,6 +621,50 @@ void main() {
           'Call mum',
         );
         expect(fallback.lastTranscript, 'call mum');
+
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+
+    test(
+      'a failed extractor that is its own fallback is not run again',
+      () async {
+        final FakeTaskExtractor only = FakeTaskExtractor(
+          throws: StateError('rule crashed'),
+        );
+        final VoiceCapturePipeline pipeline = pipelineOver(
+          primary: only,
+          fallback: only,
+        );
+
+        final CaptureOutcome outcome = await pipeline.extract('call mum');
+
+        expect(only.calls, 1);
+        expect((outcome as CaptureDrafts).drafts, hasLength(1));
+      },
+    );
+
+    testWidgets(
+      'a timed-out extractor that is its own fallback is not run again',
+      (WidgetTester tester) async {
+        // ⚠️ In the app the primary and the fallback are the same extractor.
+        // Run again on the same words after a timeout, it doubled the wait
+        // for the draft the user gets either way.
+        final HangingExtractor only = HangingExtractor();
+        final VoiceCapturePipeline pipeline = pipelineOver(
+          primary: only,
+          fallback: only,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        final Future<CaptureOutcome> pending = pipeline.extract('call mum');
+        await tester.pump();
+        await tester.pump(ExtractionDefaults.extractionTimeout);
+        await tester.pump(const Duration(seconds: 1));
+
+        final CaptureOutcome outcome = await pending;
+        expect(only.calls, 1);
+        expect((outcome as CaptureDrafts).drafts, hasLength(1));
 
         await tester.pumpWidget(const SizedBox.shrink());
       },

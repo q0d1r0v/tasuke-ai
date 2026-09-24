@@ -40,17 +40,22 @@ abstract final class ExtractionDefaults {
   static const int maxTasksPerCapture = 20;
 
   /// How long the pipeline waits for extraction before it gives up on it and
-  /// runs the fallback extractor once more.
+  /// shows the transcript as one draft to edit.
   ///
   /// ⚠️ It was 45 s, sized for on-device language-model inference, which the
   /// app no longer does. The rule-based extractor takes a few milliseconds on
-  /// a normal note and about 1.5 s on a laptop for the worst transcript
-  /// whisper can produce (60 s of a repetition loop), so 5 s only ever means
-  /// a hung extractor, and it still fits the 10 s p95 budget for Stop →
-  /// Confirm. It bounds the wait, not the work: `extract` does everything
-  /// before it returns its future, so the timer starts once the work is
-  /// done. It only bites if extraction ever moves off this isolate.
+  /// a normal note; a whisper repetition loop took up to five seconds on a
+  /// laptop, several times that on a phone. A transcript longer than
+  /// [inlineExtractionChars] is read on its own isolate, so this timer runs
+  /// while the work does and the UI never waits on it.
   static const Duration extractionTimeout = Duration(seconds: 5);
+
+  /// Up to this many characters a transcript is read on the calling isolate:
+  /// a few milliseconds, less than starting another. Longer ones — most of a
+  /// minute of speech, or a repetition loop — get an isolate of their own.
+  /// ⚠️ At 400, a loop of ", at 5" just under it took a quarter of a second
+  /// on a laptop, on the UI isolate.
+  static const int inlineExtractionChars = 160;
 
   /// How long the recogniser may take to finalise after Stop before the
   /// pipeline gives up and keeps whatever it already heard.

@@ -25,7 +25,10 @@ abstract final class NonTask {
         .where((String part) => part.isNotEmpty && !_onlyFiller.hasMatch(part))
         .toList();
     final List<String> said = parts
-        .where((String part) => !_dayAlone.hasMatch(part))
+        .where(
+          (String part) =>
+              !_dayAlone.hasMatch(part) && !_restart.hasMatch(part),
+        )
         .toList();
     // "Tomorrow:", "Okay, for Saturday." — the day, which the extractor
     // reads as the day of what follows. Set aside only beside a preamble.
@@ -241,7 +244,10 @@ abstract final class NonTask {
     r"(?:is|are|isn't|aren't|was|wasn't) (?:(?:not|still|almost|already"
     r'|completely|totally|very|so|again|really) )*(?:working|broken|dead'
     r'|finished|empty|full|low|crowded|closed|late|terrible|awful|angry|sick'
-    r'|tired|busy)\b'
+    // "the room is clean, cook dinner" — ⚠️ read as "the room is" and a
+    // verb, it was a card called "Clean". Not "ready": "the suit is ready
+    // tomorrow, pick it up" gives its day to the task after it.
+    r'|tired|busy|clean|dirty)\b'
     // how today is or was: "today was crazy at work", "today is my father's
     // birthday" — the day being described, not something to do in it
     r"|(?:today|yesterday) (?:is|was|'s|has been)\b"
@@ -268,13 +274,21 @@ abstract final class NonTask {
   );
 
   static const String _fillerWord =
-      '${ClauseLexicon.hesitations}|ah|ooh|like|so|well|oh|and|but|then|now';
+      '${ClauseLexicon.hesitations}|ah|ooh|like|so|well|oh|and|but|then|now'
+      '|okay|ok|yeah|yes|alright|anyway';
 
   /// A piece that is only the day, or the day and a dangling "is": "Tomorrow,
   /// I have two tasks", "Tomorrow is, I have some tasks" — the speaker
   /// starting the sentence twice. The day still frames the list.
   static final RegExp _dayAlone = RegExp(
     '^(?:for |on )?$_day(?: is| was| will be|\x27s)?\$',
+  );
+
+  /// A start the speaker said again: "Tomorrow I have, I have three
+  /// things". Set aside, like [_dayAlone], only beside a preamble.
+  static final RegExp _restart = RegExp(
+    '^(?:(?:for |on )?$_day )?'
+    r"(?:i|we)(?: have got| have|'ve got|'ve| got)$",
   );
 
   /// The day a list is for: "tomorrow", "this Friday", "Monday morning",
@@ -332,9 +346,11 @@ abstract final class NonTask {
     '^$_filler'
     // "Tomorrow I have…", "on Friday there are…", "for tomorrow I have…"
     '(?:(?:for |on )?$_day\\s+)?'
-    r"(?:(?:(?:i|we) (?:have|have got|'ve got|got|need to do|must do|want to do"
-    r'|should do)'
-    r'|there (?:are|is)|here (?:are|is)|here s|these are|this is)\s+)?'
+    // "I've got", "here's": _normalise keeps the apostrophe.
+    r"(?:(?:(?:i|we)(?: have got| have|'ve got|'ve| got| need to do| must do"
+    r'| want to do| should do)'
+    r"|there (?:are|is)|there's|here (?:are|is)|here's|here s|these are"
+    r'|this is)\s+)?'
     // ⚠️ Any number of them: whisper wrote "I have one some tasks" for a
     // speaker who changed their mind mid-word. One word each — "a few",
     // "a lot of" are two and three — so that a phrase can be read only one

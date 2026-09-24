@@ -114,11 +114,23 @@ final class WhenParser {
     final String text = foldTemporalCase(phrase);
 
     final DateMatch? dateHit = DateGrammar.firstMatch(text, now: now);
-    final List<TimeMatch> timeHits = TimeGrammar.allMatches(
-      text,
-      excludeStart: dateHit?.start ?? -1,
-      excludeEnd: dateHit?.end ?? -1,
-    );
+    // "…move the appointment from Friday to Monday at 3": the 3 is the new
+    // slot's, like the two days. ⚠️ Kept, the call got a reminder today at 15:00.
+    final List<(int, int)> moved = DateGrammar.movedRanges(text);
+    final List<TimeMatch> timeHits =
+        TimeGrammar.allMatches(
+          text,
+          excludeStart: dateHit?.start ?? -1,
+          excludeEnd: dateHit?.end ?? -1,
+        )..removeWhere(
+          (TimeMatch t) => moved.any(
+            ((int, int) r) =>
+                t.start >= r.$1 &&
+                RegExp(r'^[\s,]*$').hasMatch(
+                  text.substring(r.$2, t.start < r.$2 ? r.$2 : t.start),
+                ),
+          ),
+        );
     TimeMatch? timeHit = timeHits.isEmpty ? null : timeHits.first;
     if (dateHit == null && timeHit == null) return ParsedWhen.empty;
     // "In the evening go to the gym at 7", "At 7 go jogging in the morning":

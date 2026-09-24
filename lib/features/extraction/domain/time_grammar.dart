@@ -207,6 +207,80 @@ abstract final class TimeGrammar {
   /// sentence parse two different ways depending on the minute it was spoken
   /// in, which is untestable and, worse, unexplainable to the user standing in
   /// front of the Confirm screen.
+  /// [_hourWithoutMeridiem], except that 7–10 said with a dinner, a concert,
+  /// drinks is the evening: "Friday at 7 dinner with Sardor's family". ⚠️
+  /// Read as written, the dinner was at 07:00.
+  ///
+  /// ⚠️ Only near the hour: read over the whole note for every hour in it,
+  /// a note of 300 times "at 8" took 2.5 times as long.
+  static int _hourInContext(
+    RegExpMatch match,
+    String text,
+    int hour, {
+    required bool writtenAs24h,
+  }) {
+    final int mapped = _hourWithoutMeridiem(hour, writtenAs24h: writtenAs24h);
+    if (writtenAs24h || mapped < 7 || mapped > 10) return mapped;
+    return _theEvent(match, text) ? mapped + 12 : mapped;
+  }
+
+  /// Whether the hour is the time of the event itself — "at 7 dinner with
+  /// Sardor's family", "dinner with the team at 8", "tomorrow the concert at
+  /// 9" — and not of an errand about it: "buy drinks at 10", "at 9 call the
+  /// concert hall about the tickets". ⚠️ Read as the event's, the errand
+  /// moved to 22:00.
+  static bool _theEvent(RegExpMatch match, String text) {
+    if (_eventNext.matchAsPrefix(text, match.end) != null) return true;
+    final int from = match.start < 60 ? 0 : match.start - 60;
+    final String before = text.substring(from, match.start);
+    final List<RegExpMatch> events = _eveningEvent.allMatches(before).toList();
+    if (events.isEmpty) return false;
+    final RegExpMatch event = events.last;
+    // Nothing but who with and which day between the event and its hour:
+    // "dinner with the team at 8", "the concert tomorrow at 9". ⚠️ Not
+    // "concert tickets go on sale at 10", "the banquet hall deposit is due
+    // at 9": there the event only says which tickets, which hall.
+    if (_eventToHour.matchAsPrefix(before.substring(event.end)) == null) {
+      return false;
+    }
+    // Only when no other verb has the event as its object.
+    return !RegExp(r'[a-z]+')
+        .allMatches(before.substring(0, event.start))
+        .any(
+          (RegExpMatch w) =>
+              ClauseLexicon.isImperativeVerb(w[0]!) &&
+              !_toTheEvent.contains(w[0]),
+        );
+  }
+
+  static final RegExp _eventToHour = RegExp(
+    r"(?:\s+(?:with\s+[a-z']+(?:\s+[a-z']+){0,3}?|tomorrow|today|tonight"
+    r'|on\s+[a-z]+|this\s+[a-z]+|next\s+[a-z]+))*\s*(?:,\s*)?$',
+  );
+
+  static final RegExp _eveningEvent = RegExp(
+    r'\b(?:dinner|supper|banquet|concert|drinks|date\s+night|iftar)\b',
+  );
+
+  static final RegExp _eventNext = RegExp(
+    r'\s*(?:[ap]\.?\s?m\.?\s+)?(?:(?:a|the|our|my)\s+)?'
+    r'(?:dinner|supper|banquet|concert|drinks|date\s+night|iftar)\b'
+    // "at 10 the concert hall opens": the hall, not the concert.
+    r'(?!\s+(?:hall|halls|tickets?|venue|menu|deposit|booking|bookings'
+    r'|reservation|preparations?|shopping|order)\b)',
+  );
+
+  /// Verbs whose hour is still the event's: "have dinner at 8", "remind me
+  /// about the concert at 9", "book a table for dinner at 8".
+  static const Set<String> _toTheEvent = <String>{
+    'have',
+    'go',
+    'attend',
+    'remind',
+    'book',
+    'reserve',
+  };
+
   static int _hourWithoutMeridiem(int hour, {required bool writtenAs24h}) {
     if (writtenAs24h || hour >= 13 || hour == 0) return hour;
     return hour <= 6 ? hour + 12 : hour;
@@ -252,7 +326,9 @@ abstract final class TimeGrammar {
     final int? hour = int.tryParse(hourText);
     final int? minute = int.tryParse(match[2]!);
     if (hour == null || minute == null || minute > 59) return null;
-    final int mapped = _hourWithoutMeridiem(
+    final int mapped = _hourInContext(
+      match,
+      text,
       hour,
       writtenAs24h: hourText.length == 2 && hourText.startsWith('0'),
     );
@@ -287,7 +363,9 @@ abstract final class TimeGrammar {
     final String hourText = match[1]!;
     final int? hour = int.tryParse(hourText);
     if (hour == null) return null;
-    final int mapped = _hourWithoutMeridiem(
+    final int mapped = _hourInContext(
+      match,
+      text,
       hour,
       writtenAs24h: hourText.length == 2 && hourText.startsWith('0'),
     );
@@ -303,12 +381,33 @@ abstract final class TimeGrammar {
   /// a day, or the next thing to do follows ("at six call Anna").
   static bool endsClockTime(String text, int end) {
     final String next = wordAfter(text, end);
+    if (next.isEmpty || _punctuationNext.matchAsPrefix(text, end) != null) {
+      return true;
+    }
+    // "at five no six", "at five no, four thirty" — the time taken back, if
+    // what replaces it is a clock time too. ⚠️ Not "about 5 no 6 kilos of
+    // meat", a count corrected, which was read as 17:00. With no hour after
+    // it ("at five actually.", "at seven rather than eight") the time stands.
+    if (_takenBack.contains(next)) {
+      final Match? instead = _correctedTo.matchAsPrefix(text, end);
+      // One correction deep: a loop of "no at six no at seven…" read each
+      // one again from every hour before it.
+      return instead == null || _endsPlainly(text, instead.end);
+    }
+    return _endsPlainly(text, end);
+  }
+
+  static bool _endsPlainly(String text, int end) {
+    final String next = wordAfter(text, end);
     return next.isEmpty ||
-        RegExp(r'^\s*[.,;:!?]').hasMatch(text.substring(end)) ||
+        _punctuationNext.matchAsPrefix(text, end) != null ||
+        _takenBack.contains(next) ||
         _wordHourFollowers.contains(next) ||
         ClauseLexicon.isImperativeVerb(next) ||
         ClauseLexicon.isEventNoun(next);
   }
+
+  static final RegExp _punctuationNext = RegExp(r'\s*[.,;:!?]');
 
   static LocalTimeOfDay? _wordHour(RegExpMatch match, String text) {
     // ⚠️ An allowlist of what may follow, not a blocklist of nouns: "look at
@@ -331,7 +430,7 @@ abstract final class TimeGrammar {
         ? _hourWithMeridiem(hour, meridiem)
         : dayPart != null
         ? _hourInDayPart(hour, dayPart)
-        : _hourWithoutMeridiem(hour, writtenAs24h: false);
+        : _hourInContext(match, text, hour, writtenAs24h: false);
     if (mapped < 0) return null;
     return LocalTimeOfDay.tryFromMinutes((mapped * 60) + minute);
   }
@@ -392,7 +491,7 @@ abstract final class TimeGrammar {
     } else if (match[5] != null) {
       mapped = _hourInDayPart(hour, match[5]!);
     } else {
-      mapped = _hourWithoutMeridiem(hour, writtenAs24h: hour >= 13);
+      mapped = _hourInContext(match, text, hour, writtenAs24h: hour >= 13);
     }
     final bool forward = match[2] == 'past' || match[2] == 'after';
     final int total = (mapped * 60) + (forward ? minutes : -minutes);
@@ -469,13 +568,30 @@ abstract final class TimeGrammar {
     'sunday',
     'i',
     'we',
-    // "at five no six", "at five, sorry, six" — the time taken back.
+    // "pick up Anna at six from the station", "call the plumber at nine
+    // about the leak" — where from and what about, after the hour.
+    'from',
+    'about',
+    'near',
+  };
+
+  static const Set<String> _takenBack = <String>{
     'no',
     'sorry',
     'actually',
     'wait',
     'rather',
   };
+
+  /// What follows a clock time taken back, up to the end of the hour said
+  /// instead: ", sorry, six", " no wait 6 pm", " actually make it 6".
+  static final RegExp _correctedTo = RegExp(
+    r'(?:[\s,.;–—-]+(?:no|sorry|actually|wait|rather|i\s+mean|make\s+(?:it|that)))+'
+    r'[\s,.;–—-]+(?:at\s+)?(?:\d{1,2}(?:[:.]\d{2})?|one|two|three|four|five|six'
+    r'|seven|eight|nine|ten|eleven|twelve)\b'
+    r'(?:\s+(?:fifteen|thirty|forty[\s-]five|o\x27?\s?clock))?'
+    r'(?:\s*[ap]\.?\s?m\.?(?![a-z]))?',
+  );
 
   static const Map<String, int> _hourWords = <String, int>{
     'one': 1,
@@ -510,17 +626,44 @@ abstract final class TimeGrammar {
   /// the first hour. ⚠️ Read as nothing, the "and" split the note and left
   /// "Meet Sardor between 2" with no time.
   static LocalTimeOfDay? _between(RegExpMatch match, String text) {
-    final String? meridiem = match[3] ?? match[4];
-    if (meridiem == null && !endsClockTime(text, match.end)) return null;
     final int hour = int.parse(match[1]!);
     final int minute = match[2] == null ? 0 : int.parse(match[2]!);
     if (minute > 59) return null;
-    final int mapped = meridiem != null
-        ? _hourWithMeridiem(hour, meridiem)
-        : _hourWithoutMeridiem(
-            hour,
-            writtenAs24h: match[1]!.length == 2 && match[1]!.startsWith('0'),
-          );
+    final int end = int.parse(match[4]!);
+    final String? ownMeridiem = match[3];
+    final String? endMeridiem = match[5];
+    final String? part = match[6];
+    if (ownMeridiem == null &&
+        endMeridiem == null &&
+        part == null &&
+        !endsClockTime(text, match.end)) {
+      return null;
+    }
+    final int mapped;
+    if (ownMeridiem != null) {
+      mapped = _hourWithMeridiem(hour, ownMeridiem);
+    } else if (endMeridiem != null) {
+      // "between 2 and 4 pm" is 14:00 — but "between 11 and 1 pm" and
+      // "between 10 and 12 pm" start before noon. ⚠️ The end's pm put on the
+      // start made them 23:00 and 22:00.
+      final int until = _hourWithMeridiem(end, endMeridiem);
+      final int same = _hourWithMeridiem(hour, endMeridiem);
+      mapped = until < 0 || same < 0
+          ? -1
+          : same <= until
+          ? same
+          : hour % 12;
+    } else if (part != null) {
+      // "between 7 and 8 in the evening"
+      mapped = _hourInDayPart(hour, part);
+    } else {
+      mapped = _hourInContext(
+        match,
+        text,
+        hour,
+        writtenAs24h: match[1]!.length == 2 && match[1]!.startsWith('0'),
+      );
+    }
     if (mapped < 0 || mapped > 23) return null;
     return LocalTimeOfDay.tryFromMinutes((mapped * 60) + minute);
   }
@@ -529,8 +672,12 @@ abstract final class TimeGrammar {
     _TimeRule(
       RegExp(
         r'\bbetween\s+(\d{1,2})(?:[:.](\d{2}))?(?:\s*([ap])\.?\s?m\.?)?'
-        r'\s+and\s+\d{1,2}(?:[:.]\d{2})?(?:\s*([ap])\.?\s?m\.?(?![a-z]))?'
-        r'(?![:.]?\d)',
+        r'\s+and\s+(\d{1,2})(?:[:.]\d{2})?(?:\s*([ap])\.?\s?m\.?(?![a-z]))?'
+        r'(?![:.]?\d)'
+        // Not "this evening": that is a when of its own, which the parser
+        // pairs with the clock time.
+        r'(?:\s+(?:in\s+the\s+|at\s+(?=night))'
+        r'(morning|afternoon|evening|night)\b)?',
       ),
       _between,
     ),
@@ -687,7 +834,8 @@ abstract final class TimeGrammar {
     _TimeRule(
       RegExp(
         r'(?<!\b(?:one|two|three|four|five|six|seven|eight|nine|ten|step|side'
-        r'|day|little)\s)'
+        // "look at three from each box": what is looked at, not when.
+        r'|day|little|look|looking|looked)\s)'
         r'\b(?:at|around|before|until|till)\s+'
         r'(one|two|three|four|five|six|seven|eight|nine|ten'
         r'|eleven|twelve)'

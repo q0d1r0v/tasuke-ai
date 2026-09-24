@@ -401,20 +401,37 @@ final class VoiceCapturePipeline {
     } on TimeoutException {
       // A timeout is not a dead end: the fallback gets one more go, and even
       // nothing from it still ends in a draft the user can edit (below).
-      Log.w('extraction timed out; falling back to the rule-based extractor');
-      try {
-        extracted = await _fallback.extract(transcript, now: now);
-      } on Object catch (error, stack) {
-        Log.e('fallback extraction failed', error, stack);
+      // ⚠️ Not when the fallback is what just timed out: run again on the
+      // same words, it made the user wait twice as long for the same draft.
+      if (identical(extractor, _fallback)) {
+        Log.w('extraction timed out; keeping the transcript as a draft');
         extracted = const <ExtractedTask>[];
+      } else {
+        Log.w('extraction timed out; falling back to the rule-based extractor');
+        try {
+          extracted = await _fallback
+              .extract(transcript, now: now)
+              .timeout(ExtractionDefaults.extractionTimeout);
+        } on Object catch (error, stack) {
+          Log.e('fallback extraction failed', error, stack);
+          extracted = const <ExtractedTask>[];
+        }
       }
     } on Object catch (error, stack) {
       Log.e('extraction failed', error, stack);
-      try {
-        extracted = await _fallback.extract(transcript, now: now);
-      } on Object catch (error2, stack2) {
-        Log.e('fallback extraction failed', error2, stack2);
+      // ⚠️ As after a timeout: the same extractor on the same words fails the
+      // same way, and only doubles the wait for the draft.
+      if (identical(extractor, _fallback)) {
         extracted = const <ExtractedTask>[];
+      } else {
+        try {
+          extracted = await _fallback
+              .extract(transcript, now: now)
+              .timeout(ExtractionDefaults.extractionTimeout);
+        } on Object catch (error2, stack2) {
+          Log.e('fallback extraction failed', error2, stack2);
+          extracted = const <ExtractedTask>[];
+        }
       }
     }
 

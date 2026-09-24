@@ -191,8 +191,10 @@ abstract final class ClauseLexicon {
   /// Uzbek and Russian speakers hesitate, and "Eh, call Anna at 5" came back
   /// as two cards, one of them titled "Eh". And every length whisper spells
   /// them in — "Ugh. Call the car dealer" was a card titled "Ugh".
+  // "ahum", "umokay": two of them run together, the way whisper writes them.
   static const String hesitations =
-      'um|umm|ummm|uh|uhh|uhhh|ugh|uhm|er|erm|hmm|hmmm|hm|eh|ehh|ehm|ee|mm|mmm';
+      'um|umm|ummm|uh|uhh|uhhh|ugh|uhm|er|erm|hmm|hmmm|hm|eh|ehh|ehm|ee|mm|mmm'
+      '|ahum|ahem|umokay|uhokay|umso|uhso';
 
   static final Set<String> _hesitationWords = hesitations.split('|').toSet();
 
@@ -518,7 +520,19 @@ final class ClauseSplitter {
     final String text = transcript
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim()
-        .replaceAllMapped(_stutter, (Match m) => m[1] ?? m[2] ?? m[3]!)
+        .replaceAllMapped(_stutter, (Match m) => m[1] ?? m[2] ?? m[3] ?? m[4]!)
+        .replaceAllMapped(
+          _verbRestart,
+          (Match m) =>
+              ClauseLexicon.isImperativeVerb(
+                    m[1]!.split(' ').first.toLowerCase(),
+                  ) &&
+                  _clauseStartBefore.hasMatch(
+                    m.input.substring(m.start < 40 ? 0 : m.start - 40, m.start),
+                  )
+              ? m[1]!
+              : m[0]!,
+        )
         // "And by the way, get the tyres changed" — an afterthought, the "oh"
         // of "Oh, and…": something new, not more of the task before. ⚠️
         // Kept, it was a card of its own, "By the way".
@@ -526,7 +540,13 @@ final class ClauseSplitter {
           _byTheWay,
           (Match m) => '${m[1]}${m[2] == 'B' ? 'Oh' : 'oh'}',
         )
-        .replaceAllMapped(_danglingJoint, (Match m) => '${m[1]}, ');
+        .replaceAllMapped(
+          _danglingJoint,
+          (Match m) =>
+              _newStart.contains(wordAfter(m.input, m.end).toLowerCase())
+              ? m[0]!
+              : '${m[1]}, ',
+        );
     if (text.isEmpty) return const <SplitClause>[];
     final List<SplitClause> clauses = <SplitClause>[];
     final List<String> sentences = _toppedSentences(
@@ -589,9 +609,59 @@ final class ClauseSplitter {
     r'([Bb])y the way\b',
   );
 
+  /// "tell, tell Aziz", "Order, um, order the water", "pick up, pick up the
+  /// laptop" — the verb said again as the speaker starts over. ⚠️ Kept, the
+  /// first was a card of its own: "Tell", "Order", "Pick up".
+  ///
+  /// ⚠️ Each hesitation ends in exactly one kind of gap — a comma, or spaces.
+  /// With `\s*,?\s*` a space could go to either `\s*`, and "So, um um um…
+  /// call Anna" took five seconds for 95 characters.
+  /// Where a clause can start: the note's start, a stop or a comma, or a
+  /// hesitation. ⚠️ Only there is a verb said twice a restart: in "buy water,
+  /// water the plants" the first "water" ends a task, and the two were one.
+  static final RegExp _clauseStartBefore = RegExp(
+    '(?:^|[.!?,;:]|\\b(?:and|then|so|okay|ok|well|${ClauseLexicon.hesitations}))'
+    r'\s*$',
+    caseSensitive: false,
+  );
+
+  static final RegExp _verbRestart = RegExp(
+    r"(?<![\w'-])([a-z]+(?:\s+(?:up|out|off|back|in|down|on))?)"
+    '\\s*,\\s*(?:(?:${ClauseLexicon.hesitations})(?:\\s*,\\s*|\\s+))*'
+    r"\1(?![\w'-])",
+    caseSensitive: false,
+  );
+
   /// "…call my brother Jamshid and. Uh. Transfer him the money": the "and"
   /// whisper ended a sentence with, and the hesitation it wrote as one of its
-  /// own. ⚠️ Read as two stops, the transfer lost the day of the call.
+  /// own. ⚠️ Read as two stops, the transfer lost the day of the call. Not
+  /// before a new start — a day, "I", "okay": "…and. Uh. Tomorrow I have two
+  /// tasks." is two sentences.
+  static const Set<String> _newStart = <String>{
+    'today',
+    'tomorrow',
+    'tonight',
+    'on',
+    'for',
+    'next',
+    'this',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+    'i',
+    'we',
+    'here',
+    'there',
+    'my',
+    'that',
+    'thank',
+    'thanks',
+  };
+
   static final RegExp _danglingJoint = RegExp(
     r'\b(and then|and|then)[.!]+\s+'
     '(?:(?:${ClauseLexicon.hesitations})[.,!]*\\s+)*(?=\\S)',
@@ -619,11 +689,16 @@ final class ClauseSplitter {
   /// And "had had" and "that that" are English.
   static final RegExp _stutter = RegExp(
     r"(?<![\w'-])(at|to|for|with|about|from|the|a|an|and|or|but|so|then|i|we"
-    r"|my|today|tomorrow|tonight)(?:,\s*\1(?![\w'-]))+"
-    // "Tomorrow tomorrow I have to…" — ⚠️ only one was cut from the title.
+    r"|my)(?:,\s*\1(?![\w'-]))+"
+    // "Tomorrow tomorrow I have to…", "Tomorrow, tomorrow call Anna" — ⚠️
+    // only one was cut from the title. Not before a clock time: "finish the
+    // report today, today at 5 call the boss" ends one task and starts the
+    // next.
     r"|(?<![\w'-])(at|to|for|the|a|an|and|i|we|my|today|tomorrow|tonight)"
     r"(?:\s+\2(?![\w'-]))+"
-    r"|(?<![\w'-])([a-z']+)(?:,\s*\3(?![\w'-])){2,}",
+    r"|(?<![\w'-])([a-z']+)(?:,\s*\3(?![\w'-])){2,}"
+    r"|(?<![\w'-])(today|tomorrow|tonight)(?:,\s*\4(?![\w'-]))+"
+    r'(?!\s+(?:at|by|around|before|until|in)\b)',
     caseSensitive: false,
   );
 
@@ -996,7 +1071,11 @@ final class ClauseSplitter {
       final String said = 'at ${words![0]}';
       final bool reads = TimeGrammar.allMatches(said).any(
         (TimeMatch m) =>
-            m.start == 0 && m.end > 3 && TimeGrammar.endsClockTime(said, m.end),
+            m.start == 0 &&
+            m.end > 3 &&
+            // "at 4, sorry, 5 from the gym": where from, after the hour.
+            (TimeGrammar.endsClockTime(said, m.end) ||
+                wordAfter(said, m.end) == 'from'),
       );
       if (reads) out = '${out.substring(0, at)}at ${out.substring(at)}';
     }
@@ -1108,9 +1187,23 @@ final class ClauseSplitter {
 
   /// What follows the last connective in [text]: "at 9 a.m." in "…mortgage,
   /// and on October 7th at 9 a.m.".
+  ///
+  /// ⚠️ Not an "and" inside a when: "between 2 and 3 pm." ended with "3 pm",
+  /// a when alone, and "Call Anna." after it was folded into the window's
+  /// card.
   String _lastPart(String text) {
+    final String folded = foldTemporalCase(text);
+    final List<(int, int)> whens = <(int, int)>[
+      ...DateGrammar.spans(folded),
+      for (final TimeMatch m in TimeGrammar.allMatches(folded))
+        (m.start, m.end),
+    ];
     final List<RegExpMatch> joints = _connective
-        .allMatches(foldTemporalCase(text))
+        .allMatches(folded)
+        .where(
+          (RegExpMatch j) =>
+              !whens.any(((int, int) w) => w.$1 < j.start && j.end <= w.$2),
+        )
         .toList();
     return joints.isEmpty ? text : text.substring(joints.last.end);
   }
@@ -1176,11 +1269,17 @@ final class ClauseSplitter {
           _alsoGlue.contains(wordBefore(folded, match.start))) {
         continue;
       }
-      // "Finish the report before that meeting": a "that" of its own. Only
-      // "…, before that buy a gift", "before that, call Anna" join two tasks.
+      // "Finish the report before that meeting", "…before that call
+      // tomorrow": a "that" of its own, before a noun that may also be a
+      // verb. A comma, "and", "but" or "then" says it joins two tasks —
+      // "…, before that buy a gift", "…but before that print the slides" —
+      // and so does a verb with its object: "…at 5 before that buy
+      // flowers".
       if (joint.startsWith('before') &&
+          !match[0]!.contains(',') &&
           !RegExp(r'^\s*,').hasMatch(folded.substring(match.end)) &&
-          !ClauseLexicon.isImperativeVerb(wordAfter(folded, match.end))) {
+          !_beforeThatJoins.hasMatch(folded.substring(0, match.start)) &&
+          !_opensTaskAfterThat(folded, match.end)) {
         continue;
       }
       // "It's raining so cancel the picnic" — "so" and "but" only join two
@@ -1217,6 +1316,36 @@ final class ClauseSplitter {
     if (tail.isNotEmpty) out.add(_Fragment(separator: pending, text: tail));
     return out;
   }
+
+  static final RegExp _beforeThatJoins = RegExp(
+    r'(?:^|,|\b(?:and|but|then))\s*$',
+  );
+
+  /// Whether "before that" is followed by a verb and what it is done to: "buy
+  /// flowers", "email Bob" — not "call tomorrow", "call at 5", "meeting".
+  bool _opensTaskAfterThat(String folded, int from) {
+    final String verb = wordAfter(folded, from);
+    if (!ClauseLexicon.isImperativeVerb(verb)) return false;
+    final int at = folded.indexOf(verb, from) + verb.length;
+    if (RegExp(r'^\s*(?:[,.;!?]|$)').hasMatch(folded.substring(at))) {
+      return false;
+    }
+    return !_notAnObject.contains(wordAfter(folded, at));
+  }
+
+  static const Set<String> _notAnObject = <String>{
+    'today',
+    'tomorrow',
+    'tonight',
+    'at',
+    'on',
+    'in',
+    'with',
+    'is',
+    'was',
+    'and',
+    'then',
+  };
 
   /// Whether the words from [from] open with a when and go on to a task: "on
   /// Monday get new photos", "this Sunday, write the first draft", "on
@@ -1448,8 +1577,13 @@ final class ClauseSplitter {
         continue;
       }
       if (carried.isNotEmpty) {
+        // ⚠️ Only onto a task of its own: "buy bread and, uh, milk" is one
+        // task, and with the "and" as its joint the "uh" stayed in its title.
         fragment = _Fragment(
-          separator: fragment.separator == ',' && carriedJoint.isNotEmpty
+          separator:
+              fragment.separator == ',' &&
+                  carriedJoint.isNotEmpty &&
+                  _isClause(fragment.text)
               ? carriedJoint
               : fragment.separator,
           text: '$carried${fragment.text}',

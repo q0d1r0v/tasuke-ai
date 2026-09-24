@@ -6,7 +6,7 @@ strings, and `test/app/platform/store_products_test.dart` asserts this file and
 that file agree — so a typo surfaces as a red test rather than as a paywall that
 renders nothing on one platform.
 
-App: **Tasuke AI** — `uz.digitalgroup.tasuke` — 1.0.0+3
+App: **Tasuke AI** — `uz.digitalgroup.tasuke` — 1.0.0+9
 
 ## The two products
 
