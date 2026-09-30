@@ -301,7 +301,7 @@ abstract class AppLocalizations {
   /// No description provided for @permissionsAllowAll.
   ///
   /// In en, this message translates to:
-  /// **'Allow all'**
+  /// **'Continue'**
   String get permissionsAllowAll;
 
   /// No description provided for @permissionsNotNow.

@@ -402,7 +402,7 @@ void main() {
       );
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
 
-      await tester.tap(find.text('Allow all'));
+      await tester.tap(find.text('Continue'));
       await pumpSettled(tester);
 
       // Microphone first, exact alarms last: the dependency order.
@@ -430,7 +430,7 @@ void main() {
       );
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
 
-      await tester.tap(find.text('Allow all'));
+      await tester.tap(find.text('Continue'));
       await pumpSettled(tester);
 
       expect(permissions.requested, <AppPermission>[
@@ -447,12 +447,12 @@ void main() {
       // Every prompt answered "Don't Allow".
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
 
-      await tester.tap(find.text('Allow all'));
+      await tester.tap(find.text('Continue'));
       await pumpSettled(tester);
 
       expect(permissions.requested, hasLength(3));
       expect(find.byType(PermissionsScreen), findsOneWidget);
-      expect(find.text('Allow all'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
       expect(preferences.getBool(PrefKeys.permissionsPrimerSeen), isNull);
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -471,7 +471,7 @@ void main() {
       );
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
 
-      await tester.tap(find.text('Allow all'));
+      await tester.tap(find.text('Continue'));
       await pumpSettled(tester);
 
       // One trip out of the app, not one per permission.
@@ -601,7 +601,7 @@ void main() {
 
       expect(find.text('Turn On Permissions'), findsOneWidget);
 
-      await tester.tap(find.text('Allow all'));
+      await tester.tap(find.text('Continue'));
       await pumpSettled(tester);
 
       expect(find.byType(PermissionsScreen), findsNothing);

@@ -118,7 +118,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'So reminders ring on the exact minute';
 
   @override
-  String get permissionsAllowAll => 'Allow all';
+  String get permissionsAllowAll => 'Continue';
 
   @override
   String get permissionsNotNow => 'Not now';
