@@ -121,9 +121,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionsAllowAll => 'Continue';
 
   @override
-  String get permissionsNotNow => 'Not now';
-
-  @override
   String get permissionsTurnOnInSettings =>
       'Your phone won\'t ask again. Turn it on in Settings.';
 

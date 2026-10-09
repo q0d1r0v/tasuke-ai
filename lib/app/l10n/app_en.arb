@@ -35,7 +35,6 @@
   "permissionsExactAlarmTitle": "Alarms & reminders",
   "permissionsExactAlarmSubtitle": "So reminders ring on the exact minute",
   "permissionsAllowAll": "Continue",
-  "permissionsNotNow": "Not now",
   "permissionsTurnOnInSettings": "Your phone won't ask again. Turn it on in Settings.",
   "permissionsFixTitle": "Turn On Permissions",
   "permissionsFixSubtitle": "Voice capture and reminders can't work until these are allowed.",

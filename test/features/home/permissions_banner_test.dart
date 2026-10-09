@@ -19,7 +19,7 @@ import '../../helpers/pump_app.dart';
 /// The Home warning that stays up while a required permission is off.
 ///
 /// ⚠️ It is the only thing that makes the permissions non-optional — the
-/// primer has a "Not now" on purpose — so a regression here is silent: the
+/// primer moves on even when every prompt was refused — so a regression here is silent: the
 /// app just quietly stops ringing or listening, with nothing on screen to say
 /// why. That is exactly how a 6:11 PM reminder went missing on a real phone.
 void main() {

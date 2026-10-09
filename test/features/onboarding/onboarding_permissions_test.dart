@@ -389,7 +389,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('Allow all asks for each one in order, then moves on', (
+    testWidgets('Continue asks for each one in order, then moves on', (
       WidgetTester tester,
     ) async {
       permissions = FakePermissionService(
@@ -417,7 +417,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('Allow all skips what is already granted', (
+    testWidgets('Continue skips what is already granted', (
       WidgetTester tester,
     ) async {
       permissions = FakePermissionService(
@@ -441,24 +441,29 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('Allow all stays put while something is still refused', (
+    testWidgets('Continue moves on even when every prompt is refused', (
       WidgetTester tester,
     ) async {
       // Every prompt answered "Don't Allow".
       await pumpFirstRun(tester, at: AppRoute.permissions.path);
 
+      // ⚠️ App Review 5.1.1(iv): the primer offers no way out but the OS
+      // prompt, so it must not block on the answer either — iOS never prompts
+      // twice. The Home banner is what keeps nagging.
+      expect(find.text('Not now'), findsNothing);
+
       await tester.tap(find.text('Continue'));
       await pumpSettled(tester);
 
       expect(permissions.requested, hasLength(3));
-      expect(find.byType(PermissionsScreen), findsOneWidget);
-      expect(find.text('Continue'), findsOneWidget);
-      expect(preferences.getBool(PrefKeys.permissionsPrimerSeen), isNull);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.byType(PermissionsScreen), findsNothing);
+      expect(preferences.getBool(PrefKeys.permissionsPrimerSeen), isTrue);
 
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('Allow all sends permanent denials to Settings, once', (
+    testWidgets('Continue sends permanent denials to Settings, once', (
       WidgetTester tester,
     ) async {
       permissions = FakePermissionService(
@@ -477,27 +482,7 @@ void main() {
       // One trip out of the app, not one per permission.
       expect(permissions.settingsOpened, 1);
       expect(permissions.requested, <AppPermission>[AppPermission.exactAlarm]);
-      expect(find.byType(PermissionsScreen), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('Not now works with nothing granted — a primer, not a gate', (
-      WidgetTester tester,
-    ) async {
-      permissions
-        ..set(AppPermission.microphone, PermissionState.permanentlyDenied)
-        ..set(AppPermission.notifications, PermissionState.denied);
-      await pumpFirstRun(tester, at: AppRoute.permissions.path);
-
-      // ⚠️ A blocked way forward would be a dead end the app cannot escape:
-      // iOS never prompts twice. The Home banner is what keeps nagging.
-      await tester.tap(find.text('Not now'));
-      await pumpSettled(tester);
-
       expect(find.text('Home'), findsOneWidget);
-      expect(find.byType(PermissionsScreen), findsNothing);
-      expect(preferences.getBool(PrefKeys.permissionsPrimerSeen), isTrue);
 
       await tester.pumpWidget(const SizedBox.shrink());
     });
@@ -612,10 +597,12 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('Not now pops back too', (WidgetTester tester) async {
+    testWidgets('pops back even when the prompts are refused', (
+      WidgetTester tester,
+    ) async {
       await pumpFix(tester);
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.text('Continue'));
       await pumpSettled(tester);
 
       expect(find.byType(PermissionsScreen), findsNothing);

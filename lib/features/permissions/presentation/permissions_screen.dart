@@ -15,15 +15,16 @@ import 'package:tasuke_ai/core/storage/prefs.dart';
 /// The permissions primer, and — with [fixing] — the screen the Home warning
 /// banner opens when a required permission is still off.
 ///
-/// The main button asks for everything that is missing, in
-/// [kRequiredPermissions] order, and moves on by itself once all of it is
-/// granted. That makes granting the path of least resistance.
+/// The one button asks for everything that is missing, in
+/// [kRequiredPermissions] order, and then moves on whatever the answers were.
 ///
-/// ⚠️ Still a primer, not a gate: "Not now" always works. If this blocked on
-/// the OS grant, a user who tapped "Don't Allow" would be stuck forever — iOS
-/// never re-prompts, so there would be no way forward — and App Review
-/// rejects apps that withhold themselves until a permission is granted. What
-/// replaces the gate is the Home banner: it stays until the gap is closed.
+/// ⚠️ "Continue" is the only way out, on purpose. App Review rejected 1.0
+/// twice under 5.1.1(iv): once for an "Allow" button, then for a "Not now"
+/// that let the user leave before the OS prompt. The primer may only lead to
+/// the OS prompt; the choice happens there. It is still not a gate: the
+/// screen leaves after asking even when everything was refused — iOS never
+/// re-prompts, so blocking would be a dead end. What keeps nagging is the
+/// Home banner, which stays until the gap is closed.
 class PermissionsScreen extends ConsumerStatefulWidget {
   const PermissionsScreen({this.fixing = false, super.key});
 
@@ -84,16 +85,7 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
         // trip there leaves the app, and three in a row lose the user.
         if (await _ask(permission, openSettings: false)) settingsNeeded = true;
       }
-      if (settingsNeeded) {
-        await service.openSettings();
-        return;
-      }
-
-      // Asked from the service, not from the providers: the providers were
-      // just invalidated and may not have re-read yet.
-      for (final AppPermission permission in kRequiredPermissions) {
-        if (isFixableGap(await service.status(permission))) return;
-      }
+      if (settingsNeeded) await service.openSettings();
       if (mounted) _leave();
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -201,13 +193,6 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
                           : context.l10n.permissionsAllowAll,
                       onPressed: _busy ? null : (allSet ? _leave : _allowAll),
                     ),
-                    if (!allSet) ...<Widget>[
-                      const SizedBox(height: TasukeSpacing.sm),
-                      TextLinkButton(
-                        label: context.l10n.permissionsNotNow,
-                        onPressed: _busy ? null : _leave,
-                      ),
-                    ],
                     const SizedBox(height: TasukeSpacing.lg),
                     Text(
                       context.l10n.permissionsPrivacyNote,
